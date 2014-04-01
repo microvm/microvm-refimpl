@@ -1,38 +1,71 @@
 package uvm.inst;
 
-import uvm.IRTreeNode;
+import uvm.BasicBlock;
 import uvm.Instruction;
-import uvm.Label;
 import uvm.OpCode;
+import uvm.Type;
+import uvm.UseBox;
 import uvm.Value;
 
+/**
+ * A binary conditional branch. Branch to ifTrue if cond is true, or branch to
+ * ifFalse otherwise.
+ */
 public class InstBranch2 extends Instruction {
-    Value cond;
-    Label ifTrue;
-    Label ifFalse;
-    
-    public InstBranch2(Value cond, Label ifTrue, Label ifFalse) {
-        this.cond = cond;
+    /**
+     * The condition which decides the destination.
+     */
+    private UseBox cond;
+    /**
+     * The BasicBlock to branch to if cond is 1.
+     */
+    private BasicBlock ifTrue;
+    /**
+     * The BasicBlock to branch to if cond is 0.
+     */
+    private BasicBlock ifFalse;
+
+    public InstBranch2() {
+    }
+
+    public InstBranch2(Value cond, BasicBlock ifTrue, BasicBlock ifFalse) {
+        this.cond = use(cond);
         this.ifTrue = ifTrue;
         this.ifFalse = ifFalse;
-        operands.add(cond);
-        opcode = OpCode.BRANCH2;
+    }
+
+    public Value getCond() {
+        return cond.getDst();
+    }
+
+    public void setCond(Value cond) {
+        assertNotReset(this.cond);
+        this.cond = use(cond);
+    }
+
+    public BasicBlock getIfTrue() {
+        return ifTrue;
+    }
+
+    public void setIfTrue(BasicBlock ifTrue) {
+        this.ifTrue = ifTrue;
+    }
+
+    public BasicBlock getIfFalse() {
+        return ifFalse;
+    }
+
+    public void setIfFalse(BasicBlock ifFalse) {
+        this.ifFalse = ifFalse;
     }
 
     @Override
-    public String prettyPrint() {
-        return "(BRANCH2 " + cond.prettyPrint() + " " + ifTrue.prettyPrint() + " " + ifFalse.prettyPrint() + ")";
+    public Type getType() {
+        return null;
     }
     
-    public Value getCond() {
-        return cond;
-    }
-    
-    public Label getIfTrue() {
-        return ifTrue;
-    }
-    
-    public Label getIfFalse() {
-        return ifFalse;
+    @Override
+    public int opcode() {
+        return OpCode.BRANCH2;
     }
 }

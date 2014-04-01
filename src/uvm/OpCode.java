@@ -43,8 +43,8 @@ public abstract class OpCode {
     public static final int ULT     = 0x29;
     
     // fp cmp
-    public static final int FALSE   = 0xC0;
-    public static final int TRUE    = 0xC1;
+    public static final int FFALSE  = 0xC0;
+    public static final int FTRUE   = 0xC1;
     public static final int FUNO    = 0xC2; // unordered
     public static final int FUEQ    = 0xC3; // unordered or EQ
     public static final int FUNE    = 0xC4; 
@@ -111,7 +111,7 @@ public abstract class OpCode {
     // misc
     public static final int PHI     = 0xA0;
     public static final int RET     = 0xA1;
-    public static final int RET2    = 0xA2;
+    public static final int RETVOID = 0xA2;
     public static final int SELECT  = 0xA3;
     public static final int PARAM   = 0xA4;
     

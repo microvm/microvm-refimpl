@@ -1,104 +1,100 @@
 package uvm;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
+/**
+ * A function is a callable thing in µVM. It is identified by an numerical ID
+ * and optionally a human-readable name. It has an unchangeable signature stored
+ * in the sig field and a run-time redefineable body represented by the cfg
+ * field.
+ * <p>
+ * .funcdecl creates a new Function object, but .funcdef also creates a CFG.
+ */
+public class Function implements Identified {
 
-import compiler.UVMCompiler;
-import uvm.mc.AbstractMachineCode;
-import uvm.metadata.Const;
+    /**
+     * The unique function ID
+     */
+    private int id;
 
-public class Function {
-    private static int funcCount = 0;
-    
-    int ID;
-    
-    String name;
-    FunctionSignature sig;
-    
-    boolean defined = false;
-    
-    // to define a function. The following need to be provided
-    
-    HashMap<String, Const> constPool;
-    List<BasicBlock> BBs;
-    
-    // IR tree
-    public List<IRTreeNode> tree = new ArrayList<IRTreeNode>();
-    
-    public HashMap<String, Register> registers = new HashMap<String, Register>();
-    
-    public Register findOrCreateRegister(String name) {
-        Register ret = registers.get(name);
-        if (ret == null) {
-            ret = new Register(name);
-            registers.put(name, ret);
-        }
-        
-        return ret;
-    }
-    
-    public HashMap<String, Label> labels = new HashMap<String, Label>();
-    
-    public Label findOrCreateLabel(String name) {
-        if (labels.containsKey(name))
-            return labels.get(name);
-        
-        Label ret = new Label(name);
-        labels.put(name, ret);
-        return ret;
-    }
-    
+    /**
+     * An optional function name
+     */
+    private String name;
 
-    public void resolveLabels() {
-        for (BasicBlock bb : BBs) {
-            Label label = labels.get(bb.getName());
-            if (label == null)
-                UVMCompiler.error("Cant find label for basic block " + bb.getName());
-            
-            bb.getInsts().get(0).setLabel(label);
-        } 
+    /**
+     * The signature of this function
+     */
+    private FunctionSignature sig;
+
+    /**
+     * Its current control flow graph. It is null if the function is declared
+     * but not defined. When the function is re-defined, this will be changed.
+     */
+    private CFG cfg;
+
+    /**
+     * Its current compiled function. It has non-null value only when it is
+     * defined and a compiled version of the currently defined version of CFG is
+     * compiled.
+     */
+    private CompiledFunction compiledFunc;
+
+    public Function() {
     }
-    
-    public Function(String name, FunctionSignature sig) {
-        this.ID = funcCount;
-        funcCount++;
-        
+
+    public Function(int id, String name, FunctionSignature sig) {
+        this.id = id;
         this.name = name;
         this.sig = sig;
+        this.cfg = null;
+        this.compiledFunc = null;
     }
-    
-    public void defineFunction(HashMap<String, Const> constPool, List<BasicBlock> BBs) {
-        if (defined)
-            throw new RuntimeException("Redefining function: " + name + ", probably by an error");
-        
-        this.constPool = constPool;
-        this.BBs = BBs;
-        defined = true;
-    }
-    
+
     @Override
     public String toString() {
         return name + " = " + sig;
     }
 
+
+    @Override
     public int getID() {
-        return ID;
+        return id;
     }
 
+    public void setID(int id) {
+        this.id = id;
+    }
+
+    @Override
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public FunctionSignature getSig() {
         return sig;
     }
 
-    public HashMap<String, Const> getConstPool() {
-        return constPool;
+    public void setSig(FunctionSignature sig) {
+        this.sig = sig;
     }
 
-    public List<BasicBlock> getBBs() {
-        return BBs;
+    public CFG getCFG() {
+        return cfg;
     }
+
+    public void setCFG(CFG cfg) {
+        this.cfg = cfg;
+    }
+
+    public CompiledFunction getCompiledFunc() {
+        return compiledFunc;
+    }
+
+    public void setCompiledFunc(CompiledFunction compiledFunc) {
+        this.compiledFunc = compiledFunc;
+    }
+
 }

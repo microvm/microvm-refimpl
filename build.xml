@@ -25,6 +25,7 @@
 		<mkdir dir="${uir-parser-generated}"/>
 		<java jar="${antlr-jar}" fork="true" failonerror="true">
 			<arg value="${uir-rule}"/>
+            <arg line="-visitor"/>
 			<arg line="-package ${uir-parser-package}"/>
 			<arg line="-o ${uir-parser-generated}/${uir-parser-package}/"/>
 		</java>

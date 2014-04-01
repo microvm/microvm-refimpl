@@ -1,25 +1,39 @@
 package uvm.inst;
 
-import uvm.IRTreeNode;
+import uvm.BasicBlock;
 import uvm.Instruction;
-import uvm.Label;
 import uvm.OpCode;
-import uvm.Register;
+import uvm.Type;
 
+/**
+ * An unconditional branching.
+ */
 public class InstBranch extends Instruction {
-    Label target;
-    
-    public InstBranch(Label target) {
+
+    private BasicBlock target;
+
+    public InstBranch() {
+    }
+
+    public InstBranch(BasicBlock target) {
         this.target = target;
-        opcode = OpCode.BRANCH;
+    }
+
+    public BasicBlock getTarget() {
+        return target;
+    }
+
+    public void setTarget(BasicBlock target) {
+        this.target = target;
     }
 
     @Override
-    public String prettyPrint() {
-        return "(BRANCH " + target.prettyPrint() + ")";
+    public Type getType() {
+        return null;
     }
     
-    public Label getTarget() {
-        return target;
+    @Override
+    public int opcode() {
+        return OpCode.BRANCH;
     }
 }

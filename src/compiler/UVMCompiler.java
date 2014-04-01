@@ -7,30 +7,32 @@ import java.io.IOException;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
+
+import parser.RecursiveBundleBuilder;
+import parser.uIRLexer;
+import parser.uIRParser;
+import uvm.BasicBlock;
+import uvm.Bundle;
+import uvm.Constant;
+import uvm.Function;
+import uvm.IdentifiedHelper;
+import uvm.Instruction;
 
 import compiler.phase.DefUseGeneration;
 import compiler.phase.IRTreeGeneration;
 import compiler.phase.InstructionSelection;
 import compiler.phase.MachineCodeEmission;
 
-import parser.uIRLexer;
-import parser.uIRListenerImpl;
-import parser.uIRParser;
-import uvm.BasicBlock;
-import uvm.Function;
-import uvm.Instruction;
-import uvm.MicroVM;
-
 public class UVMCompiler {
-    
+
     public static final String file = "tests/micro-bm/int-prime-number/prime-number.uir";
-    
+
     public static void main(String[] args) {
 
         try {
             // create a CharStream that reads from standard input
-            ANTLRInputStream input = new ANTLRInputStream(new FileInputStream(file));
+            ANTLRInputStream input = new ANTLRInputStream(new FileInputStream(
+                    file));
             // create a lexer that feeds off of input CharStream
             uIRLexer lexer = new uIRLexer(input);
             // create a buffer of tokens pulled from the lexer
@@ -38,37 +40,49 @@ public class UVMCompiler {
             // create a parser that feeds off the tokens buffer
             uIRParser parser = new uIRParser(tokens);
             ParseTree tree = parser.ir(); // begin parsing at init rule
-            
+
             System.out.println("Parsing Tree:");
             System.out.println(tree.toStringTree(parser));
             System.out.println();
-            
-            // Create a generic parse tree walker that can trigger callbacks
-            ParseTreeWalker walker = new ParseTreeWalker();
-            // Walk the tree created during the parse, trigger callbacks
-            walker.walk(new uIRListenerImpl(), tree);
-            System.out.println(); // print a \n after translation
-            
-            // see the tree
-            for (Function f : MicroVM.v.funcs.values()) {
-                System.out.println("function " + f.getName() + " of " + f.getSig());
-                for (BasicBlock bb : f.getBBs()) {
-                    System.out.println("BB[" + bb.getName() + "]:");
+
+            RecursiveBundleBuilder rbb = new RecursiveBundleBuilder();
+            rbb.build(tree);
+
+            Bundle bundle = rbb.getBundle();
+
+            for (Function func : bundle.getFuncs().values()) {
+                System.out.format("function %s : %s\n",
+                        IdentifiedHelper.repr(func), func.getSig());
+                
+                System.out.println("Constants:");
+                
+                for (Constant c : func.getCFG().getConstPool().values()) {
+                    System.out.format("  %s = %s\n",
+                            IdentifiedHelper.repr(c), c);
+                }
+                
+                System.out.println();
+
+                for (BasicBlock bb : func.getCFG().getBBs()) {
+                    System.out.format("%s:\n", bb.getName());
+
                     for (Instruction inst : bb.getInsts()) {
-                        System.out.println(inst.prettyPrint());
+                        System.out.format("  %s = %s\n",
+                                IdentifiedHelper.repr(inst), inst);
                     }
-                    System.out.println();
                 }
                 System.out.println();
             }
-            
+
+            System.exit(0); // TODO: For debug only. Remove when fixed.
+
             // get uses
             new DefUseGeneration("defusegen").execute();
-            
+
             new IRTreeGeneration("treegen").execute();
-            
+
             new InstructionSelection("instsel").execute();
-            
+
             new MachineCodeEmission("mcemit").execute();
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
@@ -79,13 +93,13 @@ public class UVMCompiler {
         }
 
     }
-    
+
     public static final void error(String message) {
         System.err.print(message);
         Thread.dumpStack();
         System.exit(1);
     }
-    
+
     public static final void _assert(boolean cond, String message) {
         if (!cond)
             error(message);

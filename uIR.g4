@@ -37,8 +37,8 @@ typeDef
     ;
 
 funcSig
-    :   IDENTIFIER
-    |   type '(' type* ')'
+    :   IDENTIFIER          # ReferencedFuncSig
+    |   type '(' type* ')'  # InLineFuncSig
     ;
 
 funcBody
@@ -56,8 +56,8 @@ label
     ;
 
 type
-    :   IDENTIFIER
-    |   typeConstructor
+    :   IDENTIFIER          # ReferencedType
+    |   typeConstructor     # InLineType
     ;
 
 immediate
@@ -81,24 +81,24 @@ typeConstructor
     ;
 
 inst
-    :   IDENTIFIER '=' instBody
-    |   instBody
+    :   IDENTIFIER '=' instBody             # NamedInstruction
+    |   instBody                            # AnonymousInstruction
     ;
 
 instBody
     :   'PARAM' intImmediate                    # InstParam
 
     // Integer/FP Arithmetic
-    |   binOps '<' type '>' value value         # InstBinOp
+    |   BINOPS '<' type '>' value value         # InstBinOp
 
     // Integer/FP Comparison
-    |   cmpOps '<' type '>' value value         # InstCmp
+    |   CMPOPS '<' type '>' value value         # InstCmp
     
     // Select
     |   'SELECT' '<' type '>' value value value     # InstSelect
 
     // Conversions
-    |   convOps  '<' type type '>' value            # InstConversion
+    |   CONVOPS  '<' type type '>' value            # InstConversion
 
     // Intra-function Control Flow
     |   'BRANCH' IDENTIFIER                         # InstBranch
@@ -136,10 +136,10 @@ instBody
     |   'GETFIXEDPARTIREF'  '<' type '>' value          # InstGetFixedPartIRef
     |   'GETVARPARTIREF'    '<' type '>' value          # InstGetVarPartIRef
     
-    |   'LOAD' atomicDecl? '<' type '>' value           # InstLoad
-    |   'STORE' atomicDecl? '<' type '>' value value    # InstStore
-    |   'CMPXCHG' atomicDecl? '<' type '>' value value value   # InstCmpXChg
-    |   'ATOMICRMW' atomicDecl? atomicRMWOp
+    |   'LOAD' ATOMICDECL? '<' type '>' value           # InstLoad
+    |   'STORE' ATOMICDECL? '<' type '>' value value    # InstStore
+    |   'CMPXCHG' ATOMICDECL? '<' type '>' value value value   # InstCmpXChg
+    |   'ATOMICRMW' ATOMICDECL? ATOMICRMWOP
                 '<' type '>' value value                # InstAtomicRMW
 
     // Thread and Stack Operations
@@ -155,7 +155,7 @@ instBody
     |   'TRAPCALL' '<' type '>' args                    # InstTrapCall
 
     // Foreign Function Interface
-    |   'CCALL' callConv funcCallBody                   # InstCCall
+    |   'CCALL' CALLCONV funcCallBody                   # InstCCall
     ;
 
 funcCallBody
@@ -166,69 +166,69 @@ args
     :   '(' value* ')'
     ;
 
-callConv : 'DEFAULT' ;
+CALLCONV : 'DEFAULT' ;
 
-binOps : iBinOps | fBinOps ;
+BINOPS : IBINOPS | FBINOPS ;
 
-iBinOps
-    : 'ADD'                                             # InstAdd
-    | 'SUB'                                             # InstSub
-    | 'MUL'                                             # InstMul
-    | 'UDIV'                                            # InstUDiv
-    | 'SDIV'                                            # InstSDiv
-    | 'UREM'                                            # InstURem
-    | 'SREM'                                            # InstSRem
-    | 'SHL'                                             # InstShl
-    | 'LSHR'                                            # InstLshr
-    | 'ASHR'                                            # InstAshr
-    | 'AND'                                             # InstAnd
-    | 'OR'                                              # InstOr
-    | 'XOR'                                             # InstXor
+IBINOPS
+    : 'ADD'
+    | 'SUB'
+    | 'MUL'
+    | 'UDIV'
+    | 'SDIV'
+    | 'UREM'
+    | 'SREM'
+    | 'SHL'
+    | 'LSHR'
+    | 'ASHR'
+    | 'AND'
+    | 'OR'
+    | 'XOR'
     ;
     
-fBinOps
+FBINOPS
     : 'FADD' | 'FSUB' | 'FMUL' | 'FDIV' | 'FREM'
     ;
 
-cmpOps : iCmpOps | fCmpOps ;
+CMPOPS : ICMPOPS | FCMPOPS ;
 
-iCmpOps
-    : 'EQ'                                              # InstEq
-    | 'NE'                                              # InstNe
-    | 'SGT'                                             # InstSgt
-    | 'SLT'                                             # InstSlt
-    | 'SGE'                                             # InstSge
-    | 'SLE'                                             # InstSle
-    | 'UGT'                                             # InstUgt
-    | 'ULT'                                             # InstUlt
-    | 'UGE'                                             # InstUge
-    | 'ULE'                                             # InstUle
+ICMPOPS
+    : 'EQ'
+    | 'NE'
+    | 'SGT'
+    | 'SLT'
+    | 'SGE'
+    | 'SLE'
+    | 'UGT'
+    | 'ULT'
+    | 'UGE'
+    | 'ULE'
     ;
 
-fCmpOps
+FCMPOPS
     : 'FTRUE' | 'FFALSE' 
     | 'FUNO' | 'FUEQ' | 'FUNE' | 'FUGT' | 'FULT' | 'FUGE' | 'FULE'
     | 'FORD' | 'FOEQ' | 'FONE' | 'FOGT' | 'FOLT' | 'FOGE' | 'FOLE'
     ;
     
-convOps
+CONVOPS
     : 'TRUNC' | 'ZEXT' | 'SEXT' | 'FPTRUNC' | 'FPEXT'
     | 'FPTOUI' | 'FPTOSI' | 'UITOFP' | 'SITOFP' | 'BITCAST'
     | 'REFCAST' | 'IREFCAST'
     ;
 
-atomicDecl
+ATOMICDECL
     : 'NOT_ATOMIC' | 'UNORDERED' | 'MONOTONIC' | 'AQUIRE' | 'RELEASE'
     | 'ACQ_REL' | 'SQL_CST'
     ;
 
-atomicRMWOp
+ATOMICRMWOP
     : 'XCHG' | 'ADD' | 'SUB' | 'AND' | 'NAND' | 'OR' | 'XOR'
     | 'MAX' | 'MIN' | 'UMAX' | 'UMIN'
     ;
 value
-    :   IDENTIFIER
-    |   immediate
+    :   IDENTIFIER      # ReferencedValue
+    |   immediate       # ImmediateValue
     ;
 
 intImmediate
@@ -236,8 +236,7 @@ intImmediate
     ;
 
 fpImmediate
-    :   ('+'|'-')? DIGITS 'e' ('+'|'-')? DIGITS
-    |   ('+'|'-')? DIGITS '.' DIGITS
+    :   ('+'|'-')? DIGITS '.' DIGITS ('e' ('+'|'-')? DIGITS)?
     ;
 
 // LEXER
