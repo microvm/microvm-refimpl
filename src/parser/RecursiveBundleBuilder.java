@@ -190,7 +190,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public FuncBuilder(Function func) {
             this.func = func;
             func.setCFG(cfg);
-            cfg.setSig(func.getSig());
+            cfg.setFunc(func);
         }
 
         @Override

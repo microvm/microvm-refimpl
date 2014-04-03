@@ -17,6 +17,8 @@ import uvm.Constant;
 import uvm.Function;
 import uvm.IdentifiedHelper;
 import uvm.Instruction;
+import uvm.irtree.IRTreeBuilder;
+import uvm.irtree.IRTreeNode;
 
 import compiler.phase.DefUseGeneration;
 import compiler.phase.IRTreeGeneration;
@@ -53,14 +55,14 @@ public class UVMCompiler {
             for (Function func : bundle.getFuncs().values()) {
                 System.out.format("function %s : %s\n",
                         IdentifiedHelper.repr(func), func.getSig());
-                
+
                 System.out.println("Constants:");
-                
+
                 for (Constant c : func.getCFG().getConstPool().values()) {
-                    System.out.format("  %s = %s\n",
-                            IdentifiedHelper.repr(c), c);
+                    System.out.format("  %s = %s\n", IdentifiedHelper.repr(c),
+                            c);
                 }
-                
+
                 System.out.println();
 
                 for (BasicBlock bb : func.getCFG().getBBs()) {
@@ -72,6 +74,11 @@ public class UVMCompiler {
                     }
                 }
                 System.out.println();
+            }
+
+            for (Function func : bundle.getFuncs().values()) {
+                IRTreeNode<Void> irTree = IRTreeBuilder.build(func.getCFG());
+                IRTreeBuilder.prettyPrintIRTree(irTree);
             }
 
             System.exit(0); // TODO: For debug only. Remove when fixed.

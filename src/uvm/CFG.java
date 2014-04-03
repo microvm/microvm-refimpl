@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public class CFG {
     private Map<Integer, Constant> constPool = new HashMap<Integer, Constant>();
-    private FunctionSignature sig;
+    private Function func;
     private List<BasicBlock> bbs = new ArrayList<BasicBlock>();
     private BasicBlock entry;
 
@@ -19,12 +19,16 @@ public class CFG {
         return constPool;
     }
 
-    public FunctionSignature getSig() {
-        return sig;
+    public Function getFunc() {
+        return func;
     }
 
-    public void setSig(FunctionSignature sig) {
-        this.sig = sig;
+    public void setFunc(Function func) {
+        this.func = func;
+    }
+
+    public FunctionSignature getSig() {
+        return func.getSig();
     }
 
     public List<BasicBlock> getBBs() {

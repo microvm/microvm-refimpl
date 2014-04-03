@@ -1,6 +1,7 @@
 package uvm.inst;
 
 import uvm.BasicBlock;
+import uvm.IdentifiedHelper;
 import uvm.Instruction;
 import uvm.OpCode;
 import uvm.Type;
@@ -67,5 +68,14 @@ public class InstBranch2 extends Instruction {
     @Override
     public int opcode() {
         return OpCode.BRANCH2;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s%s %s %s %s", getClass().getSimpleName(),
+                IdentifiedHelper.repr(this),
+                IdentifiedHelper.repr(getCond()),
+                IdentifiedHelper.repr(getIfTrue()),
+                IdentifiedHelper.repr(getIfFalse()));
     }
 }
