@@ -17,7 +17,7 @@ metaData
     ;
 
 constDef
-    :   '.const' IDENTIFIER '<' type '>' '=' immediate
+    :   '.const' IDENTIFIER '<' type '>' '=' constExpr
     ;
 
 funcSigDef
@@ -34,6 +34,11 @@ funcDef
 
 typeDef
     :   '.typedef' IDENTIFIER type
+    ;
+
+constExpr
+    :   immediate           # ImmediateConst
+    |   '{' constExpr* '}'  # StructConst
     ;
 
 funcSig
@@ -71,6 +76,7 @@ typeConstructor
     |   'double'                            # DoubleType
     |   'ref' '<' type '>'                  # RefType
     |   'iref' '<' type '>'                 # IRefType
+    |   'weakref' '<' type '>'              # WeakRefType
     |   'struct' '<' type+ '>'              # StructType
     |   'array' '<' type intImmediate '>'   # ArrayType
     |   'hybrid' '<' type type '>'          # HybridType
@@ -78,6 +84,7 @@ typeConstructor
     |   'func' '<' funcSig '>'              # FuncType
     |   'thread'                            # ThreadType
     |   'stack'                             # StackType
+    |   'tagref64'                          # TagRef64Type
     ;
 
 inst
@@ -109,8 +116,8 @@ instBody
             (IDENTIFIER ':' value ';')* '}'         # InstPhi
 
     // Inter-function Control Flow
-    |   'CALL' funcCallBody                         # InstCall
-    |   'INVOKE' funcCallBody IDENTIFIER IDENTIFIER # InstInvoke
+    |   'CALL' funcCallBody keepAlive?              # InstCall
+    |   'INVOKE' funcCallBody IDENTIFIER IDENTIFIER keepAlive? # InstInvoke
     |   'TAILCALL' funcCallBody                     # InstTailCall
 
     |   'RET' '<' type '>' value                    # InstRet
@@ -138,24 +145,29 @@ instBody
     
     |   'LOAD' ATOMICDECL? '<' type '>' value           # InstLoad
     |   'STORE' ATOMICDECL? '<' type '>' value value    # InstStore
-    |   'CMPXCHG' ATOMICDECL? '<' type '>' value value value   # InstCmpXChg
+    |   'CMPXCHG' ATOMICDECL ATOMICDECL
+                    '<' type '>' value value value      # InstCmpXChg
     |   'ATOMICRMW' ATOMICDECL? ATOMICRMWOP
                 '<' type '>' value value                # InstAtomicRMW
 
-    // Thread and Stack Operations
-    |   'NEWSTACK'  funcCallBody                        # InstNewStack
-    |   'NEWTHREAD' value                               # InstNewThread
-    |   'SWAPSTACK' value                               # InstSwapStack
-    |   'KILLSTACK' value                               # InstKillStack
-    |   'SWAPANDKILL' value                             # InstSwapAndKill
-    |   'THREADEXIT'                                    # InstThreadExit
+    |   'FENCE' ATOMICDECL                              # InstFence
 
     // Trap
-    |   'TRAP' args                                     # InstTrap
-    |   'TRAPCALL' '<' type '>' args                    # InstTrapCall
+    |   'TRAP' '<' type '>'
+            IDENTIFIER IDENTIFIER keepAlive             # InstTrap
+    |   'WATCHPOINT' intImmediate '<' type '>'
+            IDENTIFIER IDENTIFIER keepAlive             # InstWatchPoint
 
     // Foreign Function Interface
-    |   'CCALL' CALLCONV funcCallBody                   # InstCCall
+    |   'CCALL' CALLCONV funcCallBody keepAlive?        # InstCCall
+
+    // Thread and Stack Operations
+    |   'NEWSTACK'  funcCallBody                        # InstNewStack
+
+    // Intrinsic Functions
+    |   'INTRINSICCALL' IDENTIFIER args keepAlive?      # InstCall
+    |   'INTRINSICINVOKE' IDENTIFIER args
+            IDENTIFIER IDENTIFIER keepAlive?            # InstInvoke
     ;
 
 funcCallBody
@@ -164,6 +176,10 @@ funcCallBody
 
 args
     :   '(' value* ')'
+    ;
+
+keepAlive
+    :   'KEEPALIVE' '(' value* ')'
     ;
 
 CALLCONV : 'DEFAULT' ;
@@ -228,7 +244,7 @@ ATOMICRMWOP
     ;
 value
     :   IDENTIFIER      # ReferencedValue
-    |   immediate       # ImmediateValue
+    |   constExpr       # InlineConstValue
     ;
 
 intImmediate

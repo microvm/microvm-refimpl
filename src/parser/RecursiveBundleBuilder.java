@@ -29,6 +29,7 @@ import parser.uIRParser.NamedInstructionContext;
 import parser.uIRParser.ReferencedFuncSigContext;
 import parser.uIRParser.ReferencedTypeContext;
 import parser.uIRParser.ReferencedValueContext;
+import parser.uIRParser.StructConstContext;
 import parser.uIRParser.TypeContext;
 import parser.uIRParser.ValueContext;
 import uvm.BasicBlock;
@@ -51,6 +52,7 @@ import uvm.inst.InstPhi;
 import uvm.inst.InstRet;
 import uvm.inst.InstRetVoid;
 import uvm.type.Int;
+
 import compiler.UVMCompiler;
 
 /**
@@ -139,6 +141,23 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
     @Override
     public Type visitFloatType(FloatTypeContext ctx) {
         throw new ASTParsingException("float type not implemented");
+    }
+
+    // Constant expression helpers
+
+    @Override
+    public Object visitStructConst(StructConstContext ctx) {
+        throw new ASTParsingException("Struct constant not implemented");
+    }
+
+    @Override
+    public Long visitIntImmediate(IntImmediateContext ctx) {
+        return new Long(ctx.getText());
+    }
+
+    @Override
+    public Double visitFpImmediate(FpImmediateContext ctx) {
+        return new Double(ctx.getText());
     }
 
     // Functions and instructions.
@@ -244,7 +263,9 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
                 Constant constant;
 
                 if (type instanceof Int) {
-                    long value = Long.parseLong(ctx.immediate().getText());
+                    long value = (long) visit(ctx);
+                    // May be wrong type. In that case it throws an exception.
+
                     constant = new IntConstant(type, value);
                     constant.setID(makeID());
                     constant.setName(name);
