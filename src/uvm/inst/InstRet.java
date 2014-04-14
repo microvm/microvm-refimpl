@@ -5,6 +5,7 @@ import uvm.OpCode;
 import uvm.Type;
 import uvm.UseBox;
 import uvm.Value;
+import uvm.ValueVisitor;
 
 /**
  * The Ret instruction returns from the current function, carrying a value.
@@ -50,5 +51,10 @@ public class InstRet extends Instruction {
     @Override
     public int opcode() {
         return OpCode.RET;
+    }
+    
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitRet(this);
     }
 }

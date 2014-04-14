@@ -9,6 +9,7 @@ import uvm.OpCode;
 import uvm.Type;
 import uvm.UseBox;
 import uvm.Value;
+import uvm.ValueVisitor;
 
 /**
  * A phi-node in the SSA form. Its value depends on the incoming control flow.
@@ -84,5 +85,10 @@ public class InstPhi extends Instruction {
     @Override
     public int opcode() {
         return OpCode.PHI;
+    }
+    
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitPhi(this);
     }
 }

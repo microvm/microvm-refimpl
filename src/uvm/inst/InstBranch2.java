@@ -7,6 +7,7 @@ import uvm.OpCode;
 import uvm.Type;
 import uvm.UseBox;
 import uvm.Value;
+import uvm.ValueVisitor;
 
 /**
  * A binary conditional branch. Branch to ifTrue if cond is true, or branch to
@@ -77,5 +78,10 @@ public class InstBranch2 extends Instruction {
                 IdentifiedHelper.repr(getCond()),
                 IdentifiedHelper.repr(getIfTrue()),
                 IdentifiedHelper.repr(getIfFalse()));
+    }
+    
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitBranch2(this);
     }
 }

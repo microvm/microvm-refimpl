@@ -5,6 +5,7 @@ import uvm.IdentifiedHelper;
 import uvm.Instruction;
 import uvm.OpCode;
 import uvm.Type;
+import uvm.ValueVisitor;
 
 /**
  * An unconditional branching.
@@ -42,5 +43,10 @@ public class InstBranch extends Instruction {
     public String toString() {
         return String.format("%s%s %s", getClass().getSimpleName(),
                 IdentifiedHelper.repr(getTarget()));
+    }
+    
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitBranch(this);
     }
 }

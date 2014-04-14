@@ -5,6 +5,7 @@ import uvm.Instruction;
 import uvm.Type;
 import uvm.UseBox;
 import uvm.Value;
+import uvm.ValueVisitor;
 import uvm.type.Int;
 
 /**
@@ -90,5 +91,10 @@ public class InstCmp extends Instruction {
                 IdentifiedHelper.repr(this), optr.toString(),
                 IdentifiedHelper.repr(getOp1()),
                 IdentifiedHelper.repr(getOp2()));
+    }
+    
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitCmp(this);
     }
 }

@@ -104,4 +104,6 @@ public abstract class Value implements Identified, HasOpCode {
         }
         return sb.toString();
     }
+    
+    public abstract <T> T accept(ValueVisitor<T> visitor);
 }

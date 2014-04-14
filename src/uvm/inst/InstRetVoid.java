@@ -3,6 +3,7 @@ package uvm.inst;
 import uvm.Instruction;
 import uvm.OpCode;
 import uvm.Type;
+import uvm.ValueVisitor;
 
 /**
  * The RetVoid instruction returns from the current function of void return
@@ -20,5 +21,10 @@ public class InstRetVoid extends Instruction {
     @Override
     public int opcode() {
         return OpCode.RETVOID;
+    }
+    
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitRetVoid(this);
     }
 }

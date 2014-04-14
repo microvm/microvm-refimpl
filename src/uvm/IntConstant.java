@@ -27,4 +27,9 @@ public class IntConstant extends Constant {
     public int opcode() {
         return OpCode.INT_IMM;
     }
+    
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitIntConstant(this);
+    }
 }

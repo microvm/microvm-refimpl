@@ -6,6 +6,7 @@ import uvm.OpCode;
 import uvm.Type;
 import uvm.UseBox;
 import uvm.Value;
+import uvm.ValueVisitor;
 
 /**
  * A binary operation.
@@ -89,4 +90,8 @@ public class InstBinOp extends Instruction {
                 IdentifiedHelper.repr(getOp2()));
     }
 
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitBinOp(this);
+    }
 }

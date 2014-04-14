@@ -23,4 +23,9 @@ public class Parameter extends Instruction {
     public int opcode() {
         return OpCode.PARAM;
     }
+    
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitParameter(this);
+    }
 }
