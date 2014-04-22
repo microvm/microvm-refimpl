@@ -10,6 +10,7 @@ ir
 
 metaData
     :   constDef
+    |   globalDef
     |   funcSigDef
     |   funcDecl
     |   funcDef
@@ -18,6 +19,10 @@ metaData
 
 constDef
     :   '.const' IDENTIFIER '<' type '>' '=' constExpr
+    ;
+    
+globalDef
+    :   '.global' IDENTIFIER '<' type '>'
     ;
 
 funcSigDef
@@ -33,12 +38,13 @@ funcDef
     ;
 
 typeDef
-    :   '.typedef' IDENTIFIER type
+    :   '.typedef' IDENTIFIER typeConstructor
     ;
 
 constExpr
     :   immediate           # ImmediateConst
     |   '{' constExpr* '}'  # StructConst
+    |   'NULL'              # NullConst
     ;
 
 funcSig
@@ -156,7 +162,7 @@ instBody
     |   'TRAP' '<' type '>'
             IDENTIFIER IDENTIFIER keepAlive             # InstTrap
     |   'WATCHPOINT' intImmediate '<' type '>'
-            IDENTIFIER IDENTIFIER keepAlive             # InstWatchPoint
+            IDENTIFIER IDENTIFIER IDENTIFIER keepAlive  # InstWatchPoint
 
     // Foreign Function Interface
     |   'CCALL' CALLCONV funcCallBody keepAlive?        # InstCCall
