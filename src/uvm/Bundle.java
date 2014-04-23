@@ -3,6 +3,9 @@ package uvm;
 import java.util.HashMap;
 import java.util.Map;
 
+import uvm.ssavalue.Constant;
+import uvm.type.Type;
+
 /**
  * A "bundle" is analog to JVM's class file and one Bundle corresponds to one
  * uir file.

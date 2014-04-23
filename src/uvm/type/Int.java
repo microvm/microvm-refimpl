@@ -1,48 +1,30 @@
 package uvm.type;
 
-import uvm.MicroVM;
-import uvm.Type;
-
+/**
+ * Integer type.
+ */
 public class Int extends Type {
-    int size;
-    
-    public static Int findOrCreate(int size) {
-        for (Type t : MicroVM.v.types.values()) {
-            if (t instanceof Int && ((Int)t).size == size)
-                return (Int)t;
-        }
-        
-        Int ret = new Int(size);
-        MicroVM.v.declareType(null, ret);
-        
-        return ret;
+    private int size;
+
+    public Int() {
     }
-    
-    protected Int(int size) {
+
+    public Int(int size) {
         super();
         this.size = size;
     }
 
-    @Override
-    public int size() {
+    public int getSize() {
         return size;
     }
-    
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof Int))
-            return false;
-        
-        return this.size == ((Int)o).size;
-    }
-    
-    @Override
-    public String toString() {
-        return "int<" + size + ">";
+
+    public void setSize(int size) {
+        this.size = size;
     }
 
     @Override
-    public String prettyPrint() {
-        return toString();
+    public <T> T accept(TypeVisitor<T> visitor) {
+        return visitor.visitInt(this);
     }
+
 }

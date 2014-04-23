@@ -1,4 +1,4 @@
-package uvm.inst;
+package uvm.ssavalue;
 
 import uvm.Instruction;
 

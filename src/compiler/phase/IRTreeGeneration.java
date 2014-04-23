@@ -10,8 +10,7 @@ import uvm.Label;
 import uvm.MicroVM;
 import uvm.OpCode;
 import uvm.Register;
-import uvm.Value;
-import uvm.inst.*;
+import uvm.ssavalue.*;
 
 public class IRTreeGeneration extends CompilationPhase{
     public IRTreeGeneration(String name) {

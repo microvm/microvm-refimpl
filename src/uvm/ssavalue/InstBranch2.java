@@ -1,13 +1,10 @@
-package uvm.inst;
+package uvm.ssavalue;
 
 import uvm.BasicBlock;
 import uvm.IdentifiedHelper;
 import uvm.Instruction;
 import uvm.OpCode;
-import uvm.Type;
-import uvm.UseBox;
-import uvm.Value;
-import uvm.ValueVisitor;
+import uvm.type.Type;
 
 /**
  * A binary conditional branch. Branch to ifTrue if cond is true, or branch to

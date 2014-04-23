@@ -1,21 +1,16 @@
 package uvm.type;
 
-import uvm.Type;
-
-public class Float extends Type {
+/**
+ * 32-bit floating point type.
+ */
+public class Float extends FPType {
     
     protected Float() {
         super();
     }
 
     @Override
-    public int size() {
-        return 32;
+    public <T> T accept(TypeVisitor<T> visitor) {
+        return visitor.visitFloat(this);
     }
-
-    @Override
-    public String prettyPrint() {
-        return "float";
-    }
-
 }

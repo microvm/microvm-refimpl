@@ -35,24 +35,23 @@ import parser.uIRParser.ValueContext;
 import uvm.BasicBlock;
 import uvm.Bundle;
 import uvm.CFG;
-import uvm.Constant;
 import uvm.Function;
 import uvm.FunctionSignature;
 import uvm.Instruction;
-import uvm.IntConstant;
-import uvm.Parameter;
-import uvm.Type;
-import uvm.Value;
-import uvm.inst.BinOptr;
-import uvm.inst.CmpOptr;
-import uvm.inst.InstBinOp;
-import uvm.inst.InstBranch2;
-import uvm.inst.InstCmp;
-import uvm.inst.InstPhi;
-import uvm.inst.InstRet;
-import uvm.inst.InstRetVoid;
+import uvm.ssavalue.BinOptr;
+import uvm.ssavalue.CmpOptr;
+import uvm.ssavalue.Constant;
+import uvm.ssavalue.InstBinOp;
+import uvm.ssavalue.InstBranch2;
+import uvm.ssavalue.InstCmp;
+import uvm.ssavalue.InstPhi;
+import uvm.ssavalue.InstRet;
+import uvm.ssavalue.InstRetVoid;
+import uvm.ssavalue.IntConstant;
+import uvm.ssavalue.Parameter;
+import uvm.ssavalue.Value;
 import uvm.type.Int;
-
+import uvm.type.Type;
 import compiler.UVMCompiler;
 
 /**
@@ -135,7 +134,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
     @Override
     public Type visitIntType(IntTypeContext ctx) {
         int bitSize = Integer.parseInt(ctx.intImmediate().getText());
-        return Int.findOrCreate(bitSize);
+        return new Int(bitSize);
     }
 
     @Override

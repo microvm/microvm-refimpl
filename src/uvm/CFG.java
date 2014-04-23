@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import uvm.ssavalue.Constant;
+
 /**
  * A CFG (Control Flow Graph) is the body of a Function. It has many basic
  * blocks which then contains many instructions.

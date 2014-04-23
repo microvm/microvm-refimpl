@@ -1,7 +1,11 @@
-package uvm;
+package uvm.ssavalue;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import uvm.Identified;
+import uvm.IdentifiedHelper;
+import uvm.type.Type;
 
 /**
  * This is the base class of all SSA Values. An SSA Value can be either a

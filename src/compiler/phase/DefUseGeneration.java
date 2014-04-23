@@ -6,7 +6,7 @@ import uvm.IRTreeNode;
 import uvm.Instruction;
 import uvm.MicroVM;
 import uvm.Register;
-import uvm.Value;
+import uvm.ssavalue.Value;
 
 public class DefUseGeneration extends CompilationPhase{
     static final boolean VERBOSE = false;

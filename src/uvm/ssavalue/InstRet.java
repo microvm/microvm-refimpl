@@ -1,11 +1,8 @@
-package uvm.inst;
+package uvm.ssavalue;
 
 import uvm.Instruction;
 import uvm.OpCode;
-import uvm.Type;
-import uvm.UseBox;
-import uvm.Value;
-import uvm.ValueVisitor;
+import uvm.type.Type;
 
 /**
  * The Ret instruction returns from the current function, carrying a value.

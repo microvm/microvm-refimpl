@@ -1,4 +1,9 @@
-package uvm;
+package uvm.ssavalue;
+
+import uvm.FunctionSignature;
+import uvm.Instruction;
+import uvm.OpCode;
+import uvm.type.Type;
 
 /**
  * A parameter to a function. It is a subclass of Instruction because currently

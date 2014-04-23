@@ -1,23 +1,21 @@
 package uvm.type;
 
-import uvm.MicroVM;
-import uvm.Type;
 
-public class Ref extends Type {
-    Type referenced;
-    
-    protected Ref(Type referenced) {
+/**
+ * Object reference type.
+ */
+public class Ref extends AbstractReferenceType {
+    public Ref() {
+    }
+
+    public Ref(Type referenced) {
         super();
         this.referenced = referenced;
     }
-    
-    @Override
-    public int size() {
-        return MicroVM.POINTER_SIZE;
-    }
 
     @Override
-    public String prettyPrint() {
-        return "ref<" + referenced.prettyPrint() + ">";
+    public <T> T accept(TypeVisitor<T> visitor) {
+        return visitor.visitRef(this);
     }
+
 }

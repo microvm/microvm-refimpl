@@ -1,4 +1,4 @@
-package uvm;
+package uvm.ssavalue;
 
 /**
  * Constant is the base class of all constant SSA Values.

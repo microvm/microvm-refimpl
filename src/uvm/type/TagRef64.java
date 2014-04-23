@@ -1,9 +1,8 @@
 package uvm.type;
 
-public class Void extends Type {
-
+public class TagRef64 extends Type {
     @Override
     public <T> T accept(TypeVisitor<T> visitor) {
-        return visitor.visitVoid(this);
+        return visitor.visitTagRef64(this);
     }
 }

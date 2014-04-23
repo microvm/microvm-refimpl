@@ -13,13 +13,12 @@ import parser.uIRLexer;
 import parser.uIRParser;
 import uvm.BasicBlock;
 import uvm.Bundle;
-import uvm.Constant;
 import uvm.Function;
 import uvm.IdentifiedHelper;
 import uvm.Instruction;
 import uvm.irtree.IRTreeBuilder;
 import uvm.irtree.IRTreeNode;
-
+import uvm.ssavalue.Constant;
 import compiler.phase.DefUseGeneration;
 import compiler.phase.IRTreeGeneration;
 import compiler.phase.InstructionSelection;

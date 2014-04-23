@@ -1,4 +1,4 @@
-package uvm;
+package uvm.ssavalue;
 
 public interface HasOpCode {
     int opcode();

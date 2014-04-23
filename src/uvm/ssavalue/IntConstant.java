@@ -1,4 +1,7 @@
-package uvm;
+package uvm.ssavalue;
+
+import uvm.OpCode;
+import uvm.type.Type;
 
 public class IntConstant extends Constant {
     Type type;

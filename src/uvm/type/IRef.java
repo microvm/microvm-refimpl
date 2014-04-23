@@ -1,25 +1,19 @@
 package uvm.type;
 
-import uvm.MicroVM;
-import uvm.Type;
+/**
+ * Internal reference.
+ */
+public class IRef extends AbstractReferenceType {
+    public IRef() {
+    }
 
-public class IRef extends Type {
-    Type referenced;
-    
-    protected IRef(Type referenced) {
+    public IRef(Type referenced) {
         super();
         this.referenced = referenced;
     }
-    
-    @Override
-    public int size() {
-        // actual pointer + base pointer
-        return MicroVM.POINTER_SIZE * 2;
-    }
 
     @Override
-    public String prettyPrint() {
-        return "iref<" + referenced.prettyPrint() + ">";
+    public <T> T accept(TypeVisitor<T> visitor) {
+        return visitor.visitIRef(this);
     }
-
 }

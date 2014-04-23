@@ -1,41 +1,38 @@
-package uvm.inst;
+package uvm.ssavalue;
 
 import uvm.IdentifiedHelper;
 import uvm.Instruction;
-import uvm.Type;
-import uvm.UseBox;
-import uvm.Value;
-import uvm.ValueVisitor;
-import uvm.type.Int;
+import uvm.type.Type;
 
 /**
- * A binary comparison.
+ * A binary operation.
  */
-public class InstCmp extends Instruction {
-
+public class InstBinOp extends Instruction {
     /**
      * The expected type of the operands.
      */
-    private Type opndType;
-
+    private Type type;
     /**
-     * The comparing operator
+     * The operator.
      */
-    private CmpOptr optr;
+    private BinOptr optr;
     /**
-     * The first operand
+     * The first operand.
      */
     private UseBox op1;
     /**
-     * The second operand
+     * The second operand.
      */
     private UseBox op2;
 
-    public InstCmp() {
+    /**
+     * Empty constructor. Conveinent for two-step JavaBean-style constructing.
+     */
+    public InstBinOp() {
     }
 
-    public InstCmp(Type opndType, CmpOptr optr, Value op1, Value op2) {
-        this.opndType = opndType;
+    public InstBinOp(Type type, BinOptr optr, Value op1, Value op2) {
+        this.type = type;
         this.optr = optr;
         this.op1 = use(op1);
         this.op2 = use(op2);
@@ -43,22 +40,18 @@ public class InstCmp extends Instruction {
 
     @Override
     public Type getType() {
-        return Int.findOrCreate(1);
+        return type;
     }
 
-    public Type getOpndType() {
-        return opndType;
+    public void setType(Type type) {
+        this.type = type;
     }
 
-    public void setOpndType(Type opndType) {
-        this.opndType = opndType;
-    }
-
-    public CmpOptr getOptr() {
+    public BinOptr getOptr() {
         return optr;
     }
 
-    public void setOptr(CmpOptr optr) {
+    public void setOptr(BinOptr optr) {
         this.optr = optr;
     }
 
@@ -92,9 +85,9 @@ public class InstCmp extends Instruction {
                 IdentifiedHelper.repr(getOp1()),
                 IdentifiedHelper.repr(getOp2()));
     }
-    
+
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
-        return visitor.visitCmp(this);
+        return visitor.visitBinOp(this);
     }
 }

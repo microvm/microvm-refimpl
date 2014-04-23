@@ -1,12 +1,5 @@
-package uvm;
+package uvm.ssavalue;
 
-import uvm.inst.InstBinOp;
-import uvm.inst.InstBranch;
-import uvm.inst.InstBranch2;
-import uvm.inst.InstCmp;
-import uvm.inst.InstPhi;
-import uvm.inst.InstRet;
-import uvm.inst.InstRetVoid;
 
 /**
  * Visitor to a subclass of Value. Good for writing a polymorphic function over

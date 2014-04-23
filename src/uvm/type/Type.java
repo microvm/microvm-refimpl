@@ -1,11 +1,13 @@
-package uvm;
+package uvm.type;
 
+import uvm.Identified;
+
+/**
+ * Supertype of all µVM types.
+ */
 public abstract class Type implements Identified {
     private int id;
     private String name;
-
-    protected Type() {
-    }
 
     @Override
     public int getID() {
@@ -25,7 +27,5 @@ public abstract class Type implements Identified {
         this.name = name;
     }
 
-    public abstract int size();
-
-    public abstract String prettyPrint();
+    public abstract <T> T accept(TypeVisitor<T> visitor);
 }

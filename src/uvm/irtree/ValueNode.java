@@ -1,6 +1,6 @@
 package uvm.irtree;
 
-import uvm.Value;
+import uvm.ssavalue.Value;
 
 public class ValueNode<T> extends BaseIRTreeNode<T> {
     private Value value;

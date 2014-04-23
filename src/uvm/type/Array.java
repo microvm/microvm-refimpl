@@ -1,25 +1,36 @@
 package uvm.type;
 
-import uvm.Type;
-
 public class Array extends Type {
-    Type eleType;
-    int length;
-    
-    protected Array(Type eleType, int length) {
+    private Type elemType;
+    private int length;
+
+    public Array() {
+    }
+
+    public Array(Type elemType, int length) {
         super();
-        this.eleType = eleType;
+        this.elemType = elemType;
+        this.length = length;
+    }
+
+    public Type getElemType() {
+        return elemType;
+    }
+
+    public void setElemType(Type elemType) {
+        this.elemType = elemType;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public void setLength(int length) {
         this.length = length;
     }
 
     @Override
-    public int size() {
-        return eleType.size() * length;
+    public <T> T accept(TypeVisitor<T> visitor) {
+        return visitor.visitArray(this);
     }
-
-    @Override
-    public String prettyPrint() {
-        return "array<" + eleType.prettyPrint() + " " + length + ">";
-    }
-
 }

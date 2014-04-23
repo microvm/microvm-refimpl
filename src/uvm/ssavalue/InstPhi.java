@@ -1,4 +1,4 @@
-package uvm.inst;
+package uvm.ssavalue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,10 +6,7 @@ import java.util.Map;
 import uvm.BasicBlock;
 import uvm.Instruction;
 import uvm.OpCode;
-import uvm.Type;
-import uvm.UseBox;
-import uvm.Value;
-import uvm.ValueVisitor;
+import uvm.type.Type;
 
 /**
  * A phi-node in the SSA form. Its value depends on the incoming control flow.

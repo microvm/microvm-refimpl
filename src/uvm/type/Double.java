@@ -1,21 +1,16 @@
 package uvm.type;
 
-import uvm.Type;
+/**
+ * 64-bit floating point type.
+ */
+public class Double extends FPType {
 
-public class Double extends Type {
-    
     protected Double() {
         super();
     }
 
     @Override
-    public int size() {
-        return 64;
+    public <T> T accept(TypeVisitor<T> visitor) {
+        return visitor.visitDouble(this);
     }
-
-    @Override
-    public String prettyPrint() {
-        return "double";
-    }
-
 }

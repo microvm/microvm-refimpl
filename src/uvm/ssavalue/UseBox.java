@@ -1,4 +1,4 @@
-package uvm;
+package uvm.ssavalue;
 
 /**
  * The UseBox represents a "use" relation between SSA Values. One SSA Value

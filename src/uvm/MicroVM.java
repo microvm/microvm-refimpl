@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import uvm.type.Type;
+
 public class MicroVM {
     public static final int POINTER_SIZE = 64;
     

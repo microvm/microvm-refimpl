@@ -3,6 +3,8 @@ package uvm;
 import java.util.ArrayList;
 import java.util.List;
 
+import uvm.type.Type;
+
 public class FunctionSignature implements Identified {
     private int id;
     private String name;

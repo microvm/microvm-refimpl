@@ -11,16 +11,16 @@ import uvm.BasicBlock;
 import uvm.CFG;
 import uvm.IdentifiedHelper;
 import uvm.Instruction;
-import uvm.IntConstant;
 import uvm.OpCode;
-import uvm.Value;
-import uvm.inst.InstBinOp;
-import uvm.inst.InstBranch;
-import uvm.inst.InstBranch2;
-import uvm.inst.InstCmp;
-import uvm.inst.InstPhi;
-import uvm.inst.InstRet;
-import uvm.inst.InstRetVoid;
+import uvm.ssavalue.InstBinOp;
+import uvm.ssavalue.InstBranch;
+import uvm.ssavalue.InstBranch2;
+import uvm.ssavalue.InstCmp;
+import uvm.ssavalue.InstPhi;
+import uvm.ssavalue.InstRet;
+import uvm.ssavalue.InstRetVoid;
+import uvm.ssavalue.IntConstant;
+import uvm.ssavalue.Value;
 
 /**
  * This class builds an IR Tree from a CFG.
