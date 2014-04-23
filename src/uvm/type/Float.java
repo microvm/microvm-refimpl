@@ -5,7 +5,7 @@ package uvm.type;
  */
 public class Float extends FPType {
     
-    protected Float() {
+    public Float() {
         super();
     }
 

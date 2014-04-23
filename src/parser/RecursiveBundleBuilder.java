@@ -8,10 +8,18 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import parser.uIRParser.AnonymousInstructionContext;
+import parser.uIRParser.ArrayTypeContext;
 import parser.uIRParser.ConstDefContext;
+import parser.uIRParser.DoubleTypeContext;
 import parser.uIRParser.FloatTypeContext;
 import parser.uIRParser.FpImmediateContext;
 import parser.uIRParser.FuncDefContext;
+import parser.uIRParser.FuncSigConstructorContext;
+import parser.uIRParser.FuncSigContext;
+import parser.uIRParser.FuncSigDefContext;
+import parser.uIRParser.FuncTypeContext;
+import parser.uIRParser.HybridTypeContext;
+import parser.uIRParser.IRefTypeContext;
 import parser.uIRParser.InLineFuncSigContext;
 import parser.uIRParser.InLineTypeContext;
 import parser.uIRParser.InstBinOpContext;
@@ -26,12 +34,20 @@ import parser.uIRParser.IntImmediateContext;
 import parser.uIRParser.IntTypeContext;
 import parser.uIRParser.LabelContext;
 import parser.uIRParser.NamedInstructionContext;
+import parser.uIRParser.RefTypeContext;
 import parser.uIRParser.ReferencedFuncSigContext;
 import parser.uIRParser.ReferencedTypeContext;
 import parser.uIRParser.ReferencedValueContext;
+import parser.uIRParser.StackTypeContext;
 import parser.uIRParser.StructConstContext;
+import parser.uIRParser.StructTypeContext;
+import parser.uIRParser.TagRef64TypeContext;
+import parser.uIRParser.ThreadTypeContext;
 import parser.uIRParser.TypeContext;
+import parser.uIRParser.TypeDefContext;
 import parser.uIRParser.ValueContext;
+import parser.uIRParser.VoidTypeContext;
+import parser.uIRParser.WeakRefTypeContext;
 import uvm.BasicBlock;
 import uvm.Bundle;
 import uvm.CFG;
@@ -50,8 +66,16 @@ import uvm.ssavalue.InstRetVoid;
 import uvm.ssavalue.IntConstant;
 import uvm.ssavalue.Parameter;
 import uvm.ssavalue.Value;
+import uvm.type.Array;
+import uvm.type.Func;
+import uvm.type.Hybrid;
+import uvm.type.IRef;
 import uvm.type.Int;
+import uvm.type.Ref;
+import uvm.type.Struct;
+import uvm.type.TagRef64;
 import uvm.type.Type;
+import uvm.type.WeakRef;
 import compiler.UVMCompiler;
 
 /**
@@ -77,14 +101,114 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
     }
 
     /**
-     * Start building from the tree root.
+     * Build the bundle.
      * 
      * @param pt
      *            The ParseTree object of the root, i.e. the result of
      *            parser.ir()
      */
     public void build(ParseTree pt) {
-        visit(pt); // Auto recursive visit
+        // Build types in two passes.
+
+        // The first pass, create a stub for all .typedef and .funcsig.
+        uIRBaseVisitor<Void> makeDeclaredTypes = new uIRBaseVisitor<Void>() {
+            @Override
+            public Void visitTypeDef(TypeDefContext ctx) {
+                Type type = shallowTypeMaker.visit(ctx.typeConstructor());
+                String name = ctx.IDENTIFIER().getText();
+                type.setName(name);
+                bundle.registerType(type.getID(), name, type);
+                return null;
+            }
+
+            @Override
+            public Void visitFuncSigDef(FuncSigDefContext ctx) {
+                FunctionSignature sig = shallowFuncSigMaker.visit(ctx
+                        .funcSigConstructor());
+                String name = ctx.IDENTIFIER().getText();
+                sig.setName(name);
+                bundle.registerFuncSig(sig.getID(), name, sig);
+                return null;
+            }
+        };
+        makeDeclaredTypes.visit(pt);
+
+        // The second pass, populate its dependencies.
+        uIRBaseVisitor<Void> refineDeclaredTypes = new uIRBaseVisitor<Void>() {
+            @Override
+            public Void visitTypeDef(TypeDefContext ctx) {
+                String name = ctx.IDENTIFIER().getText();
+                final Type oldType = bundle.getTypeByName(name);
+
+                new uIRBaseVisitor<Void>() {
+
+                    @Override
+                    public Void visitRefType(RefTypeContext ctx) {
+                        Ref type = (Ref) oldType;
+                        typeAndSigRefiner.visitRefType(type, ctx);
+                        return null;
+                    }
+
+                    @Override
+                    public Void visitIRefType(IRefTypeContext ctx) {
+                        IRef type = (IRef) oldType;
+                        typeAndSigRefiner.visitIRefType(type, ctx);
+                        return null;
+                    }
+
+                    @Override
+                    public Void visitWeakRefType(WeakRefTypeContext ctx) {
+                        WeakRef type = (WeakRef) oldType;
+                        typeAndSigRefiner.visitWeakRefType(type, ctx);
+                        return null;
+                    }
+
+                    @Override
+                    public Void visitStructType(StructTypeContext ctx) {
+                        Struct type = (Struct) oldType;
+                        typeAndSigRefiner.visitStructType(type, ctx);
+                        return null;
+                    }
+
+                    @Override
+                    public Void visitArrayType(ArrayTypeContext ctx) {
+                        Array type = (Array) oldType;
+                        typeAndSigRefiner.visitArrayType(type, ctx);
+                        return null;
+                    }
+
+                    @Override
+                    public Void visitHybridType(HybridTypeContext ctx) {
+                        Hybrid type = (Hybrid) oldType;
+                        typeAndSigRefiner.visitHybridType(type, ctx);
+                        return null;
+                    }
+
+                    @Override
+                    public Void visitFuncType(FuncTypeContext ctx) {
+                        Func type = (Func) oldType;
+                        typeAndSigRefiner.visitFuncType(type, ctx);
+                        return null;
+                    }
+                }.visit(ctx.typeConstructor());
+
+                return null;
+            }
+
+            @Override
+            public Void visitFuncSigDef(FuncSigDefContext ctx) {
+                String name = ctx.IDENTIFIER().getText();
+                FunctionSignature sig = bundle.getFuncSigByName(name);
+
+                typeAndSigRefiner.visitFuncSigConstructor(sig,
+                        ctx.funcSigConstructor());
+
+                return null;
+            }
+
+        };
+        refineDeclaredTypes.visit(pt);
+
     }
 
     // ID facilities
@@ -104,7 +228,280 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         return thisId;
     }
 
-    // Types
+    // Types and function signatures
+
+    /**
+     * Make types according to the grammar, but never handle recursive types (
+     * which takes other types as parameters).
+     */
+    private class ShallowTypeMaker extends uIRBaseVisitor<Type> {
+        @Override
+        public Type visitIntType(IntTypeContext ctx) {
+            int bitSize = Integer.parseInt(ctx.intImmediate().getText());
+            Int type = new Int(bitSize);
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public uvm.type.Float visitFloatType(FloatTypeContext ctx) {
+            uvm.type.Float type = new uvm.type.Float();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public uvm.type.Double visitDoubleType(DoubleTypeContext ctx) {
+            uvm.type.Double type = new uvm.type.Double();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public Ref visitRefType(RefTypeContext ctx) {
+            Ref type = new Ref();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public IRef visitIRefType(IRefTypeContext ctx) {
+            IRef type = new IRef();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public WeakRef visitWeakRefType(WeakRefTypeContext ctx) {
+            WeakRef type = new WeakRef();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public Struct visitStructType(StructTypeContext ctx) {
+            Struct type = new Struct();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public uvm.type.Array visitArrayType(ArrayTypeContext ctx) {
+            uvm.type.Array type = new uvm.type.Array();
+            type.setLength(Integer.parseInt(ctx.intImmediate().getText()));
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public Hybrid visitHybridType(HybridTypeContext ctx) {
+            Hybrid type = new Hybrid();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public uvm.type.Void visitVoidType(VoidTypeContext ctx) {
+            uvm.type.Void type = new uvm.type.Void();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public Func visitFuncType(FuncTypeContext ctx) {
+            Func type = new Func();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public uvm.type.Thread visitThreadType(ThreadTypeContext ctx) {
+            uvm.type.Thread type = new uvm.type.Thread();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public uvm.type.Stack visitStackType(StackTypeContext ctx) {
+            uvm.type.Stack type = new uvm.type.Stack();
+            type.setID(makeID());
+            return type;
+        }
+
+        @Override
+        public TagRef64 visitTagRef64Type(TagRef64TypeContext ctx) {
+            TagRef64 type = new TagRef64();
+            type.setID(makeID());
+            return type;
+        }
+    }
+
+    /**
+     * Similar to ShallowTypeMaker, but works on ".funcsig" definitions.
+     */
+    private class ShallowFuncSigMaker extends uIRBaseVisitor<FunctionSignature> {
+        @Override
+        public FunctionSignature visitFuncSigConstructor(
+                FuncSigConstructorContext ctx) {
+            FunctionSignature sig = new FunctionSignature();
+            sig.setID(makeID());
+            return sig;
+        }
+    }
+
+    private ShallowTypeMaker shallowTypeMaker = new ShallowTypeMaker();
+    private ShallowFuncSigMaker shallowFuncSigMaker = new ShallowFuncSigMaker();
+
+    /**
+     * Visit types and function signatures, fill in their dependencies to other
+     * types or function signatures.
+     */
+    private class TypeAndSigRefiner {
+
+        public void visitRefType(Ref type, RefTypeContext ctx) {
+            type.setReferenced(deepTypeMaker.visit(ctx.type()));
+        }
+
+        public void visitIRefType(IRef type, IRefTypeContext ctx) {
+            type.setReferenced(deepTypeMaker.visit(ctx.type()));
+        }
+
+        public void visitWeakRefType(WeakRef type, WeakRefTypeContext ctx) {
+            type.setReferenced(deepTypeMaker.visit(ctx.type()));
+        }
+
+        public void visitStructType(Struct type, StructTypeContext ctx) {
+            for (TypeContext childCtx : ctx.type()) {
+                Type childType = deepTypeMaker.visit(childCtx);
+                type.getFieldTypes().add(childType);
+            }
+        }
+
+        public void visitArrayType(Array type, ArrayTypeContext ctx) {
+            type.setElemType(deepTypeMaker.visit(ctx.type()));
+        }
+
+        public void visitHybridType(Hybrid type, HybridTypeContext ctx) {
+            type.setFixedPart(deepTypeMaker.visit(ctx.type(0)));
+            type.setVarPart(deepTypeMaker.visit(ctx.type(1)));
+        }
+
+        public void visitFuncType(Func type, FuncTypeContext ctx) {
+            type.setSig(deepFuncSigMaker.visit(ctx.funcSig()));
+        }
+
+        public void visitFuncSigConstructor(FunctionSignature sig,
+                FuncSigConstructorContext ctx) {
+            List<TypeContext> types = ctx.type();
+
+            Type returnType = deepTypeMaker.visit(types.get(0));
+            sig.setReturnType(returnType);
+
+            for (int i = 1; i < types.size(); i++) {
+                Type paramType = deepTypeMaker.visit(types.get(i));
+                sig.getParamTypes().add(paramType);
+            }
+        }
+    }
+
+    private TypeAndSigRefiner typeAndSigRefiner = new TypeAndSigRefiner();
+
+    /**
+     * Visit types recursively. This visitor class assumes that all declared
+     * types (by .typedef) and declared function signatures (by .funcsig) are
+     * already handled and will lookup the bundle for those types.
+     */
+    private class DeepTypeMaker extends ShallowTypeMaker {
+        @Override
+        public Type visitReferencedType(ReferencedTypeContext ctx) {
+            String name = ctx.IDENTIFIER().getText();
+            Type type = bundle.getTypeByName(name);
+
+            if (type == null) {
+                throw new ASTParsingException("Undefined type " + name);
+            }
+
+            return type;
+        }
+
+        @Override
+        public Ref visitRefType(RefTypeContext ctx) {
+            Ref type = super.visitRefType(ctx);
+            typeAndSigRefiner.visitRefType(type, ctx);
+            return type;
+        }
+
+        @Override
+        public IRef visitIRefType(IRefTypeContext ctx) {
+            IRef type = super.visitIRefType(ctx);
+            typeAndSigRefiner.visitIRefType(type, ctx);
+            return type;
+        }
+
+        @Override
+        public WeakRef visitWeakRefType(WeakRefTypeContext ctx) {
+            WeakRef type = super.visitWeakRefType(ctx);
+            typeAndSigRefiner.visitWeakRefType(type, ctx);
+            return type;
+        }
+
+        @Override
+        public Struct visitStructType(StructTypeContext ctx) {
+            Struct type = super.visitStructType(ctx);
+            typeAndSigRefiner.visitStructType(type, ctx);
+            return type;
+        }
+
+        @Override
+        public uvm.type.Array visitArrayType(ArrayTypeContext ctx) {
+            Array type = super.visitArrayType(ctx);
+            typeAndSigRefiner.visitArrayType(type, ctx);
+            return type;
+        }
+
+        @Override
+        public Hybrid visitHybridType(HybridTypeContext ctx) {
+            Hybrid type = super.visitHybridType(ctx);
+            typeAndSigRefiner.visitHybridType(type, ctx);
+            return type;
+        }
+
+        @Override
+        public Func visitFuncType(FuncTypeContext ctx) {
+            Func type = super.visitFuncType(ctx);
+            typeAndSigRefiner.visitFuncType(type, ctx);
+            return type;
+        }
+    }
+
+    /**
+     * Similar to DeepTypeMaker, but works on ".funcsig" definitions.
+     */
+    private class DeepFuncSigMaker extends ShallowFuncSigMaker {
+        @Override
+        public FunctionSignature visitReferencedFuncSig(
+                ReferencedFuncSigContext ctx) {
+            String name = ctx.IDENTIFIER().getText();
+            FunctionSignature sig = bundle.getFuncSigByName(name);
+
+            if (sig == null) {
+                throw new ASTParsingException("Undefined sig " + name);
+            }
+
+            return sig;
+        }
+
+        @Override
+        public FunctionSignature visitFuncSigConstructor(
+                FuncSigConstructorContext ctx) {
+            FunctionSignature sig = super.visitFuncSigConstructor(ctx);
+            typeAndSigRefiner.visitFuncSigConstructor(sig, ctx);
+            return sig;
+        }
+    }
+
+    private DeepTypeMaker deepTypeMaker = new DeepTypeMaker();
+    private DeepFuncSigMaker deepFuncSigMaker = new DeepFuncSigMaker();
 
     /**
      * Not a visitor method. A shorthand for getting a type from a node.
@@ -117,6 +514,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
      *            The TypeContext for either a ReferencedType or a InLineType
      * @return the type.
      */
+    @Deprecated
     public Type myVisitType(TypeContext ctx) {
         return (Type) visit(ctx);
     }
@@ -133,13 +531,12 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
 
     @Override
     public Type visitIntType(IntTypeContext ctx) {
-        int bitSize = Integer.parseInt(ctx.intImmediate().getText());
-        return new Int(bitSize);
+        return shallowTypeMaker.visitIntType(ctx);
     }
 
     @Override
     public Type visitFloatType(FloatTypeContext ctx) {
-        throw new ASTParsingException("float type not implemented");
+        return shallowTypeMaker.visitFloatType(ctx);
     }
 
     // Constant expression helpers
@@ -501,7 +898,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         FunctionSignature sig = new FunctionSignature();
         sig.setID(makeID());
 
-        List<TypeContext> types = ctx.type();
+        List<TypeContext> types = ctx.funcSigConstructor().type();
 
         Type returnType = (Type) visit(types.get(0));
         System.out.printf("Return type is %s\n", returnType);

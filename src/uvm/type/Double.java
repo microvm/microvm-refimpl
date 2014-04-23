@@ -5,7 +5,7 @@ package uvm.type;
  */
 public class Double extends FPType {
 
-    protected Double() {
+    public Double() {
         super();
     }
 

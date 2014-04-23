@@ -4,13 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Struct extends Type {
-    private List<Type> types = new ArrayList<Type>();
+    private List<Type> fieldTypes = new ArrayList<Type>();
 
     public Struct() {
     }
 
     public Struct(List<Type> types) {
-        this.types.addAll(types);
+        this.fieldTypes.addAll(types);
+    }
+
+    public List<Type> getFieldTypes() {
+        return fieldTypes;
     }
 
     @Override

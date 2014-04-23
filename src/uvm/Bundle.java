@@ -31,7 +31,14 @@ public class Bundle {
     /**
      * A mapping between numerical IDs and textual names.
      */
-    private Map<Integer, String> nameDict = new HashMap<Integer, String>();
+    private Map<Integer, String> idToName = new HashMap<Integer, String>();
+    /**
+     * A mapping between textual names and numerical IDs. Not all objects have
+     * names.
+     */
+    private Map<String, Integer> nameToId = new HashMap<String, Integer>();
+
+    // Dictionary accessors
 
     public Map<Integer, Constant> getConstants() {
         return constants;
@@ -49,8 +56,59 @@ public class Bundle {
         return types;
     }
 
-    public Map<Integer, String> getNameDict() {
-        return nameDict;
+    public Map<Integer, String> getIdToName() {
+        return idToName;
+    }
+
+    public Map<String, Integer> getNameToId() {
+        return nameToId;
+    }
+
+    // Convenient methods for adding objects.
+
+    private void bind(int id, String name) {
+        if (name != null) {
+            idToName.put(id, name);
+            nameToId.put(name, id);
+        }
+    }
+
+    public void registerConstant(int id, String name, Constant constant) {
+        constants.put(id, constant);
+        bind(id, name);
+    }
+
+    public void registerType(int id, String name, Type type) {
+        types.put(id, type);
+        bind(id, name);
+    }
+
+    public void registerFuncSig(int id, String name, FunctionSignature funcSig) {
+        funcSigs.put(id, funcSig);
+        bind(id, name);
+    }
+
+    public void registerFunc(int id, String name, Function func) {
+        funcs.put(id, func);
+        bind(id, name);
+    }
+
+    // Convenient methods for getting.
+
+    public Constant getConstantByName(String name) {
+        return constants.get(nameToId.get(name));
+    }
+
+    public Type getTypeByName(String name) {
+        return types.get(nameToId.get(name));
+    }
+
+    public FunctionSignature getFuncSigByName(String name) {
+        return funcSigs.get(nameToId.get(name));
+    }
+
+    public Function getFuncByName(String name) {
+        return funcs.get(nameToId.get(name));
     }
 
 }

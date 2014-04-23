@@ -26,7 +26,7 @@ globalDef
     ;
 
 funcSigDef
-    :   '.funcsig' IDENTIFIER '=' funcSig
+    :   '.funcsig' IDENTIFIER '=' funcSigConstructor
     ;
 
 funcDecl
@@ -49,7 +49,11 @@ constExpr
 
 funcSig
     :   IDENTIFIER          # ReferencedFuncSig
-    |   type '(' type* ')'  # InLineFuncSig
+    |   funcSigConstructor  # InLineFuncSig
+    ;
+
+funcSigConstructor
+    :   type '(' type* ')'
     ;
 
 funcBody
@@ -83,7 +87,7 @@ typeConstructor
     |   'ref' '<' type '>'                  # RefType
     |   'iref' '<' type '>'                 # IRefType
     |   'weakref' '<' type '>'              # WeakRefType
-    |   'struct' '<' type+ '>'              # StructType
+    |   'struct' '<' type* '>'              # StructType
     |   'array' '<' type intImmediate '>'   # ArrayType
     |   'hybrid' '<' type type '>'          # HybridType
     |   'void'                              # VoidType
