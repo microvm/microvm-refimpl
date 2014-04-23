@@ -26,7 +26,7 @@ globalDef
     ;
 
 funcSigDef
-    :   '.funcsig' IDENTIFIER funcSig
+    :   '.funcsig' IDENTIFIER '=' funcSig
     ;
 
 funcDecl
@@ -38,7 +38,7 @@ funcDef
     ;
 
 typeDef
-    :   '.typedef' IDENTIFIER typeConstructor
+    :   '.typedef' IDENTIFIER '=' typeConstructor
     ;
 
 constExpr
