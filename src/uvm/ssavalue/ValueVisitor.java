@@ -13,6 +13,8 @@ package uvm.ssavalue;
 public interface ValueVisitor<T> {
     T visitIntConstant(IntConstant intConstant);
 
+    T visitFPConstant(FPConstant fpConstant);
+
     T visitParameter(Parameter parameter);
 
     T visitBinOp(InstBinOp instBinOp);
@@ -28,4 +30,9 @@ public interface ValueVisitor<T> {
     T visitRet(InstRet instRet);
 
     T visitRetVoid(InstRetVoid instRetVoid);
+
+    T visitStructConstant(StructConstant structConstant);
+
+    T visitNullConstant(NullConstant nullConstant);
+
 }

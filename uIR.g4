@@ -42,7 +42,8 @@ typeDef
     ;
 
 constExpr
-    :   immediate           # ImmediateConst
+    :   intLiteral          # IntConst
+    |   fpLiteral           # FPConst
     |   '{' constExpr* '}'  # StructConst
     |   'NULL'              # NullConst
     ;
@@ -75,20 +76,15 @@ type
     |   typeConstructor     # InLineType
     ;
 
-immediate
-    :   intImmediate
-    |   fpImmediate
-    ;
-
 typeConstructor
-    :   'int' '<' intImmediate '>'          # IntType
+    :   'int' '<' intLiteral '>'            # IntType
     |   'float'                             # FloatType
     |   'double'                            # DoubleType
     |   'ref' '<' type '>'                  # RefType
     |   'iref' '<' type '>'                 # IRefType
     |   'weakref' '<' type '>'              # WeakRefType
     |   'struct' '<' type* '>'              # StructType
-    |   'array' '<' type intImmediate '>'   # ArrayType
+    |   'array' '<' type intLiteral '>'     # ArrayType
     |   'hybrid' '<' type type '>'          # HybridType
     |   'void'                              # VoidType
     |   'func' '<' funcSig '>'              # FuncType
@@ -103,7 +99,7 @@ inst
     ;
 
 instBody
-    :   'PARAM' intImmediate                    # InstParam
+    :   'PARAM' intLiteral                      # InstParam
 
     // Integer/FP Arithmetic
     |   BINOPS '<' type '>' value value         # InstBinOp
@@ -136,8 +132,8 @@ instBody
     |   'LANDINGPAD'                                # InstLandingPad
 
     // Aggregate Operations
-    |   'EXTRACTVALUE' '<' type intImmediate '>' value  # InstExtractValue
-    |   'INSERTVALUE' '<' type intImmediate '>' value value # InstInsertValue
+    |   'EXTRACTVALUE' '<' type intLiteral '>' value        # InstExtractValue
+    |   'INSERTVALUE' '<' type intLiteral '>' value value   # InstInsertValue
 
     // Memory Operations
     |   'NEW'           '<' type '>'                # InstNew
@@ -147,7 +143,7 @@ instBody
     
     |   'GETIREF'       '<' type '>' value              # InstGetIRef
 
-    |   'GETFIELDIREF'  '<' type intImmediate '>' value # InstGetFieldIRef
+    |   'GETFIELDIREF'  '<' type intLiteral '>' value   # InstGetFieldIRef
     |   'GETELEMIREF'   '<' type '>' value value        # InstGetElemIRef
     |   'SHIFTIREF'     '<' type '>' value value        # InstShiftIRef
     |   'GETFIXEDPARTIREF'  '<' type '>' value          # InstGetFixedPartIRef
@@ -165,7 +161,7 @@ instBody
     // Trap
     |   'TRAP' '<' type '>'
             IDENTIFIER IDENTIFIER keepAlive             # InstTrap
-    |   'WATCHPOINT' intImmediate '<' type '>'
+    |   'WATCHPOINT' intLiteral '<' type '>'
             IDENTIFIER IDENTIFIER IDENTIFIER keepAlive  # InstWatchPoint
 
     // Foreign Function Interface
@@ -257,23 +253,32 @@ value
     |   constExpr       # InlineConstValue
     ;
 
-intImmediate
-    :   ('+'|'-')? DIGITS
+intLiteral
+    :   INT_DEC     # DecIntLiteral
+    |   INT_OCT     # OctIntLiteral
+    |   INT_HEX     # HexIntLiteral
     ;
 
-fpImmediate
-    :   ('+'|'-')? DIGITS '.' DIGITS ('e' ('+'|'-')? DIGITS)?
+fpLiteral
+    :   FP_NUM
     ;
 
 // LEXER
 
-DIGITS
-    : DIGIT+
+INT_DEC
+    :   ('+'|'-')? DIGIT_NON_ZERO DIGIT*
+    ;
+    
+INT_OCT
+    :   ('+'|'-')? '0' DIGIT*
     ;
 
-fragment
-DIGIT
-    :   [0-9]
+INT_HEX
+    :   ('+'|'-')? '0x' HEX_DIGIT+
+    ;
+    
+FP_NUM
+    :   ('+'|'-')? DIGIT+ '.' DIGIT+ ('e' ('+'|'-')? DIGIT+)?
     ;
 
 IDENTIFIER
@@ -281,7 +286,25 @@ IDENTIFIER
     |   LOCAL_ID_PREFIX IDCHAR+
     ;
 
+fragment
+DIGIT
+    :   [0-9]
+    ;
+
+fragment
+DIGIT_NON_ZERO
+    :   [1-9]
+    ;
+
+fragment
+HEX_DIGIT
+    :   [0-9a-fA-F]
+    ;
+
+fragment
 GLOBAL_ID_PREFIX: '@';
+
+fragment
 LOCAL_ID_PREFIX: '%';
 
 fragment

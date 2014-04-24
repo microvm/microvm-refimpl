@@ -10,14 +10,17 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import parser.uIRParser.AnonymousInstructionContext;
 import parser.uIRParser.ArrayTypeContext;
 import parser.uIRParser.ConstDefContext;
+import parser.uIRParser.ConstExprContext;
+import parser.uIRParser.DecIntLiteralContext;
 import parser.uIRParser.DoubleTypeContext;
+import parser.uIRParser.FPConstContext;
 import parser.uIRParser.FloatTypeContext;
-import parser.uIRParser.FpImmediateContext;
+import parser.uIRParser.FpLiteralContext;
 import parser.uIRParser.FuncDefContext;
 import parser.uIRParser.FuncSigConstructorContext;
-import parser.uIRParser.FuncSigContext;
 import parser.uIRParser.FuncSigDefContext;
 import parser.uIRParser.FuncTypeContext;
+import parser.uIRParser.HexIntLiteralContext;
 import parser.uIRParser.HybridTypeContext;
 import parser.uIRParser.IRefTypeContext;
 import parser.uIRParser.InLineFuncSigContext;
@@ -30,10 +33,13 @@ import parser.uIRParser.InstParamContext;
 import parser.uIRParser.InstPhiContext;
 import parser.uIRParser.InstRetContext;
 import parser.uIRParser.InstRetVoidContext;
-import parser.uIRParser.IntImmediateContext;
+import parser.uIRParser.IntConstContext;
+import parser.uIRParser.IntLiteralContext;
 import parser.uIRParser.IntTypeContext;
 import parser.uIRParser.LabelContext;
 import parser.uIRParser.NamedInstructionContext;
+import parser.uIRParser.NullConstContext;
+import parser.uIRParser.OctIntLiteralContext;
 import parser.uIRParser.RefTypeContext;
 import parser.uIRParser.ReferencedFuncSigContext;
 import parser.uIRParser.ReferencedTypeContext;
@@ -57,6 +63,7 @@ import uvm.Instruction;
 import uvm.ssavalue.BinOptr;
 import uvm.ssavalue.CmpOptr;
 import uvm.ssavalue.Constant;
+import uvm.ssavalue.FPConstant;
 import uvm.ssavalue.InstBinOp;
 import uvm.ssavalue.InstBranch2;
 import uvm.ssavalue.InstCmp;
@@ -64,9 +71,13 @@ import uvm.ssavalue.InstPhi;
 import uvm.ssavalue.InstRet;
 import uvm.ssavalue.InstRetVoid;
 import uvm.ssavalue.IntConstant;
+import uvm.ssavalue.NullConstant;
 import uvm.ssavalue.Parameter;
+import uvm.ssavalue.StructConstant;
 import uvm.ssavalue.Value;
+import uvm.type.AbstractReferenceType;
 import uvm.type.Array;
+import uvm.type.FPType;
 import uvm.type.Func;
 import uvm.type.Hybrid;
 import uvm.type.IRef;
@@ -110,14 +121,14 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
     public void build(ParseTree pt) {
         // Build types in two passes.
 
-        // The first pass, create a stub for all .typedef and .funcsig.
+        // // The first pass, create a stub for all .typedef and .funcsig.
         uIRBaseVisitor<Void> makeDeclaredTypes = new uIRBaseVisitor<Void>() {
             @Override
             public Void visitTypeDef(TypeDefContext ctx) {
                 Type type = shallowTypeMaker.visit(ctx.typeConstructor());
                 String name = ctx.IDENTIFIER().getText();
                 type.setName(name);
-                bundle.registerType(type.getID(), name, type);
+                bundle.bind(type.getID(), name);
                 return null;
             }
 
@@ -127,13 +138,13 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
                         .funcSigConstructor());
                 String name = ctx.IDENTIFIER().getText();
                 sig.setName(name);
-                bundle.registerFuncSig(sig.getID(), name, sig);
+                bundle.bind(sig.getID(), name);
                 return null;
             }
         };
         makeDeclaredTypes.visit(pt);
 
-        // The second pass, populate its dependencies.
+        // // The second pass, populate its dependencies.
         uIRBaseVisitor<Void> refineDeclaredTypes = new uIRBaseVisitor<Void>() {
             @Override
             public Void visitTypeDef(TypeDefContext ctx) {
@@ -209,6 +220,22 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         };
         refineDeclaredTypes.visit(pt);
 
+        // Visit all global constant definitions. Skip local definitions in this
+        // step.
+        uIRBaseVisitor<Void> globalConstDefVisitor = new uIRBaseVisitor<Void>() {
+            @Override
+            public Void visitConstDef(ConstDefContext ctx) {
+                handleGlobalConstDef(ctx);
+                return null;
+            }
+            
+            @Override
+            public Void visitFuncDef(FuncDefContext ctx) {
+                return null; // Skip functions to skip local ".const"
+            }
+        };
+
+        globalConstDefVisitor.visit(pt);
     }
 
     // ID facilities
@@ -237,9 +264,10 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
     private class ShallowTypeMaker extends uIRBaseVisitor<Type> {
         @Override
         public Type visitIntType(IntTypeContext ctx) {
-            int bitSize = Integer.parseInt(ctx.intImmediate().getText());
+            int bitSize = intLitToInt(ctx.intLiteral());
             Int type = new Int(bitSize);
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -247,6 +275,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public uvm.type.Float visitFloatType(FloatTypeContext ctx) {
             uvm.type.Float type = new uvm.type.Float();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -254,6 +283,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public uvm.type.Double visitDoubleType(DoubleTypeContext ctx) {
             uvm.type.Double type = new uvm.type.Double();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -261,6 +291,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public Ref visitRefType(RefTypeContext ctx) {
             Ref type = new Ref();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -268,6 +299,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public IRef visitIRefType(IRefTypeContext ctx) {
             IRef type = new IRef();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -275,6 +307,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public WeakRef visitWeakRefType(WeakRefTypeContext ctx) {
             WeakRef type = new WeakRef();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -282,14 +315,16 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public Struct visitStructType(StructTypeContext ctx) {
             Struct type = new Struct();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
         @Override
         public uvm.type.Array visitArrayType(ArrayTypeContext ctx) {
             uvm.type.Array type = new uvm.type.Array();
-            type.setLength(Integer.parseInt(ctx.intImmediate().getText()));
+            type.setLength(intLitToInt(ctx.intLiteral()));
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -297,6 +332,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public Hybrid visitHybridType(HybridTypeContext ctx) {
             Hybrid type = new Hybrid();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -304,6 +340,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public uvm.type.Void visitVoidType(VoidTypeContext ctx) {
             uvm.type.Void type = new uvm.type.Void();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -311,6 +348,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public Func visitFuncType(FuncTypeContext ctx) {
             Func type = new Func();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -318,6 +356,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public uvm.type.Thread visitThreadType(ThreadTypeContext ctx) {
             uvm.type.Thread type = new uvm.type.Thread();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -325,6 +364,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public uvm.type.Stack visitStackType(StackTypeContext ctx) {
             uvm.type.Stack type = new uvm.type.Stack();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
 
@@ -332,6 +372,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         public TagRef64 visitTagRef64Type(TagRef64TypeContext ctx) {
             TagRef64 type = new TagRef64();
             type.setID(makeID());
+            bundle.registerType(type.getID(), null, type);
             return type;
         }
     }
@@ -345,6 +386,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
                 FuncSigConstructorContext ctx) {
             FunctionSignature sig = new FunctionSignature();
             sig.setID(makeID());
+            bundle.registerFuncSig(sig.getID(), null, sig);
             return sig;
         }
     }
@@ -503,6 +545,8 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
     private DeepTypeMaker deepTypeMaker = new DeepTypeMaker();
     private DeepFuncSigMaker deepFuncSigMaker = new DeepFuncSigMaker();
 
+    // ///////BEGIN LEGACY CODE////////////
+
     /**
      * Not a visitor method. A shorthand for getting a type from a node.
      * Otherwise functions in nested classes (e.g. FuncBuilder, etc.) will have
@@ -519,41 +563,206 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
         return (Type) visit(ctx);
     }
 
+    @Deprecated
     @Override
     public Type visitReferencedType(ReferencedTypeContext ctx) {
         throw new ASTParsingException("Named type not implemented");
     }
 
+    @Deprecated
     @Override
     public Type visitInLineType(InLineTypeContext ctx) {
         return (Type) visit(ctx.typeConstructor());
     }
 
+    @Deprecated
     @Override
     public Type visitIntType(IntTypeContext ctx) {
         return shallowTypeMaker.visitIntType(ctx);
     }
 
+    @Deprecated
     @Override
     public Type visitFloatType(FloatTypeContext ctx) {
         return shallowTypeMaker.visitFloatType(ctx);
     }
 
+    // ///////END LEGACY CODE////////////
+
     // Constant expression helpers
 
-    @Override
-    public Object visitStructConst(StructConstContext ctx) {
-        throw new ASTParsingException("Struct constant not implemented");
+    // Literals Literals may and may not be Constants.
+    // The int type also takes a literal as a parameter.
+
+    class IntLiteralParser extends uIRBaseVisitor<Long> {
+        @Override
+        public Long visitDecIntLiteral(DecIntLiteralContext ctx) {
+            return Long.parseLong(ctx.getText());
+        }
+
+        @Override
+        public Long visitOctIntLiteral(OctIntLiteralContext ctx) {
+            return Long.parseLong(ctx.getText(), 8);
+        }
+
+        @Override
+        public Long visitHexIntLiteral(HexIntLiteralContext ctx) {
+            String text = ctx.getText();
+            boolean negative = text.charAt(0) == '-';
+            String body = text.substring(text.indexOf('x') + 1);
+            long num = Long.parseLong(body, 16);
+            if (negative) {
+                num = -num;
+            }
+            return num;
+        }
     }
 
-    @Override
-    public Long visitIntImmediate(IntImmediateContext ctx) {
-        return new Long(ctx.getText());
+    private IntLiteralParser intLiteralParser = new IntLiteralParser();
+
+    /**
+     * A convenient method that handles the cast.
+     */
+    private long intLitToLong(IntLiteralContext ctx) {
+        return (long) intLiteralParser.visit(ctx);
     }
 
-    @Override
-    public Double visitFpImmediate(FpImmediateContext ctx) {
-        return new Double(ctx.getText());
+    /**
+     * A convenient method that handles the cast.
+     */
+    private int intLitToInt(IntLiteralContext ctx) {
+        return (int) ((long) intLiteralParser.visit(ctx));
+    }
+
+    private class FPLiteralParser extends uIRBaseVisitor<Double> {
+        @Override
+        public Double visitFpLiteral(FpLiteralContext ctx) {
+            return Double.parseDouble(ctx.getText());
+        }
+    }
+
+    private FPLiteralParser fpLiteralParser = new FPLiteralParser();
+
+    // Constant processors
+
+    /**
+     * A general function to handle ".const" definitions, global or local.
+     */
+    private Constant handleConstDef(ConstDefContext ctx) {
+        String name = ctx.IDENTIFIER().getText();
+        Type type = deepTypeMaker.visit(ctx.type());
+        Constant constant = new ConstExprHandler(type).visit(ctx.constExpr());
+
+        constant.setName(name);
+
+        return constant;
+    }
+
+    public Constant handleGlobalConstDef(ConstDefContext ctx) {
+        Constant constant = handleConstDef(ctx);
+
+        String name = constant.getName();
+        if (!name.startsWith("@")) {
+            throw new ASTParsingException("Local identifier " + name
+                    + " found. Expect Galobal identifier.");
+        }
+
+        bundle.bind(constant.getID(), name);
+
+        return constant;
+    }
+
+    /**
+     * Handles constExpr. Match the literals against the expected type and
+     * recursively construct nested (but not recursive) Constant objects.
+     */
+    private class ConstExprHandler extends uIRBaseVisitor<Constant> {
+        private Type expectedType;
+
+        public ConstExprHandler(Type expectedType) {
+            this.expectedType = expectedType;
+        }
+
+        @Override
+        public Constant visitIntConst(IntConstContext ctx) {
+            if (!(expectedType instanceof Int)) {
+                throw new ASTParsingException("Int literal " + ctx.getText()
+                        + " found. Expect" + expectedType);
+            }
+
+            long value = intLitToLong(ctx.intLiteral());
+            IntConstant constant = new IntConstant(expectedType, value);
+            constant.setID(makeID());
+            bundle.registerConstant(constant.getID(), null, constant);
+            return constant;
+        }
+
+        @Override
+        public Constant visitFPConst(FPConstContext ctx) {
+            if (!(expectedType instanceof FPType)) {
+                throw new ASTParsingException("FP literal " + ctx.getText()
+                        + " found. Expect" + expectedType);
+            }
+
+            double value = fpLiteralParser.visit(ctx.fpLiteral());
+            FPConstant constant = new FPConstant(expectedType, value);
+            constant.setID(makeID());
+            bundle.registerConstant(constant.getID(), null, constant);
+            return constant;
+        }
+
+        @Override
+        public Constant visitStructConst(StructConstContext ctx) {
+            if (!(expectedType instanceof Struct)) {
+                throw new ASTParsingException("Int literal " + ctx.getText()
+                        + " found. Expect" + expectedType);
+            }
+
+            Struct type = (Struct) expectedType;
+
+            int actualFields = ctx.constExpr().size();
+            int expectedFields = type.getFieldTypes().size();
+
+            if (actualFields != expectedFields) {
+                throw new ASTParsingException("Found " + actualFields
+                        + " fields: " + ctx.getText() + " Expect "
+                        + expectedFields + " fields.");
+            }
+
+            StructConstant constant = new StructConstant();
+            constant.setType(type);
+            constant.setID(makeID());
+            bundle.registerConstant(constant.getID(), null, constant);
+
+            for (int i = 0; i < actualFields; i++) {
+                ConstExprContext subExpr = ctx.constExpr(i);
+                Type fieldType = type.getFieldTypes().get(i);
+                Constant subConstant = new ConstExprHandler(fieldType)
+                        .visit(subExpr);
+                constant.getValues().add(subConstant);
+            }
+
+            return constant;
+        }
+
+        @Override
+        public Constant visitNullConst(NullConstContext ctx) {
+            if (!((expectedType instanceof AbstractReferenceType) //
+                    || (expectedType instanceof Func) //
+                    || (expectedType instanceof uvm.type.Thread) //
+            || (expectedType instanceof uvm.type.Stack)//
+            )) {
+                throw new ASTParsingException("NULL literal found. Expect"
+                        + expectedType);
+            }
+
+            NullConstant constant = new NullConstant();
+            constant.setType(expectedType);
+            constant.setID(makeID());
+            bundle.registerConstant(constant.getID(), null, constant);
+
+            return constant;
+        }
     }
 
     // Functions and instructions.
@@ -711,7 +920,7 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
 
             @Override
             public Parameter visitInstParam(InstParamContext ctx) {
-                int index = Integer.parseInt(ctx.intImmediate().getText());
+                int index = intLitToInt(ctx.intLiteral());
                 return new Parameter(func.getSig(), index);
             }
 
@@ -751,16 +960,6 @@ public class RecursiveBundleBuilder extends uIRBaseVisitor<Object> {
          * The second pass populates each concrete instruction and links them.
          */
         class SecondPass extends uIRBaseVisitor<Object> {
-
-            @Override
-            public Long visitIntImmediate(IntImmediateContext ctx) {
-                return new Long(ctx.getText());
-            }
-
-            @Override
-            public Double visitFpImmediate(FpImmediateContext ctx) {
-                return new Double(ctx.getText());
-            }
 
             @Override
             public Object visitReferencedValue(ReferencedValueContext ctx) {

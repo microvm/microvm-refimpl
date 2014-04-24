@@ -66,7 +66,7 @@ public class Bundle {
 
     // Convenient methods for adding objects.
 
-    private void bind(int id, String name) {
+    public void bind(int id, String name) {
         if (name != null) {
             idToName.put(id, name);
             nameToId.put(name, id);

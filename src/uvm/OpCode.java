@@ -129,11 +129,16 @@ public abstract class OpCode {
     
     // non-op terms
     public static final int INT_IMM     = 0xF0;
-    public static final int REG         = 0xF1;
-    public static final int LABEL       = 0xF2;
-    public static final int PARAM       = 0xF3;
+    public static final int FP_IMM      = 0xF1;
+    public static final int STRUCT_IMM  = 0xF2;
+    public static final int NULL_IMM    = 0xF3;
+    
+    public static final int REG         = 0xF8;
+    public static final int LABEL       = 0xF9;
+    public static final int PARAM       = 0xFA;
     
     public static final HashMap<Integer, String> names = new HashMap<Integer, String>();
+
     
     static {
         for (Field f : OpCode.class.getFields()) {

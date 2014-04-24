@@ -1,0 +1,27 @@
+.const @ci8  <int<8>>  = 127
+.const @ci16 <int<16>> = 32767
+.const @ci32 <int<32>> = 2147483647
+.const @ci64 <int<64>> = 9223372036854775807
+
+.const @cio64 <int<64>> = 0777
+
+.const @cix64 <int<64>> = 0x123456789abcdef0
+.const @cixovf <int<64>> = 0xfffffffffffffff
+// NOTE: One extra f will cause NumberFormatException.
+// This should be fixed in µVM.
+
+.const @cf  <float>     = 3.14
+.const @cd  <double>    = 6.28
+
+.const @cs1 <struct<int<64> double>> = {100 200.0}
+.const @cs2 <struct<double struct<float int<64>> int<32>>> = {1.0 {2.0 3} 4}
+
+.typedef @Cons = struct<int<64> ref<@Cons>>
+.const @cons <@Cons> = {42 NULL}
+
+.const @cr  <ref<int<64>>>  = NULL
+.const @cir <iref<float>>   = NULL
+.const @cwr <weakref<@Cons>>= NULL
+.const @cfu <func<void ()>> = NULL
+.const @cth <thread>        = NULL
+.const @cst <stack>         = NULL

@@ -3,16 +3,14 @@ package uvm.ssavalue;
 import uvm.OpCode;
 import uvm.type.Type;
 
-public class IntConstant extends Constant {
+public class NullConstant extends Constant {
     private Type type;
-    private long value;
 
-    public IntConstant() {
+    public NullConstant() {
     }
 
-    public IntConstant(Type type, long value) {
+    public NullConstant(Type type, long value) {
         this.type = type;
-        this.value = value;
     }
 
     @Override
@@ -24,26 +22,18 @@ public class IntConstant extends Constant {
         this.type = type;
     }
 
-    public long getValue() {
-        return value;
-    }
-
-    public void setValue(long value) {
-        this.value = value;
-    }
-
     @Override
     public String toString() {
-        return super.toString() + ": " + type + " = " + value;
+        return super.toString() + ": " + type + " = NULL";
     }
 
     @Override
     public int opcode() {
-        return OpCode.INT_IMM;
+        return OpCode.NULL_IMM;
     }
 
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
-        return visitor.visitIntConstant(this);
+        return visitor.visitNullConstant(this);
     }
 }
