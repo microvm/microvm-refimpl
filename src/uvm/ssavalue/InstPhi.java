@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import uvm.BasicBlock;
-import uvm.Instruction;
 import uvm.OpCode;
 import uvm.type.Type;
 
@@ -69,6 +68,10 @@ public class InstPhi extends Instruction {
         this.valueMap.put(bb, use(v));
     }
 
+    public HashMap<BasicBlock, UseBox> getValueMap() {
+        return valueMap;
+    }
+
     @Override
     public Type getType() {
         return type;
@@ -78,12 +81,11 @@ public class InstPhi extends Instruction {
         this.type = type;
     }
 
-    
     @Override
     public int opcode() {
         return OpCode.PHI;
     }
-    
+
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
         return visitor.visitPhi(this);

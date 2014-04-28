@@ -5,7 +5,6 @@ import java.util.Map.Entry;
 import uvm.BasicBlock;
 import uvm.Function;
 import uvm.IRTreeNode;
-import uvm.Instruction;
 import uvm.Label;
 import uvm.MicroVM;
 import uvm.OpCode;

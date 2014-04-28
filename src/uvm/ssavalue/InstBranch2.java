@@ -2,7 +2,6 @@ package uvm.ssavalue;
 
 import uvm.BasicBlock;
 import uvm.IdentifiedHelper;
-import uvm.Instruction;
 import uvm.OpCode;
 import uvm.type.Type;
 

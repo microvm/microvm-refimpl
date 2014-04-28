@@ -8,9 +8,9 @@ import uvm.BasicBlock;
 import uvm.CompiledFunction;
 import uvm.Function;
 import uvm.IRTreeNode;
-import uvm.Instruction;
 import uvm.MicroVM;
 import uvm.mc.AbstractMachineCode;
+import uvm.ssavalue.Instruction;
 
 public class MachineCodeEmission extends CompilationPhase{
     public MachineCodeEmission(String name) {

@@ -1,23 +1,27 @@
 package uvm.ssavalue;
 
 import uvm.IdentifiedHelper;
-import uvm.type.Int;
 import uvm.type.Type;
 
 /**
- * A binary comparison.
+ * Type conversion. Convert from one type to another.
  */
-public class InstCmp extends Instruction {
+public class InstConversion extends Instruction {
 
     /**
-     * The expected type of the operands.
+     * The type of the operand
      */
-    private Type opndType;
+    private Type fromType;
 
     /**
-     * The comparing operator
+     * The type to convert to
      */
-    private CmpOptr optr;
+    private Type toType;
+
+    /**
+     * The conversion operator
+     */
+    private ConvOptr optr;
     /**
      * The first operand
      */
@@ -27,36 +31,44 @@ public class InstCmp extends Instruction {
      */
     private UseBox op2;
 
-    public InstCmp() {
+    public InstConversion() {
     }
 
-    public InstCmp(Type opndType, CmpOptr optr, Value op1, Value op2) {
-        this.opndType = opndType;
+    public InstConversion(Type fromType, Type toType, ConvOptr optr, Value op1,
+            Value op2) {
+        this.fromType = fromType;
+        this.toType = toType;
         this.optr = optr;
         this.op1 = use(op1);
         this.op2 = use(op2);
     }
 
-    private static Int INT1 = new Int(1);
-    
     @Override
     public Type getType() {
-        return INT1;
+        return toType;
     }
 
-    public Type getOpndType() {
-        return opndType;
+    public Type getFromType() {
+        return fromType;
     }
 
-    public void setOpndType(Type opndType) {
-        this.opndType = opndType;
+    public void setFromType(Type fromType) {
+        this.fromType = fromType;
     }
 
-    public CmpOptr getOptr() {
+    public Type getToType() {
+        return toType;
+    }
+
+    public void setToType(Type toType) {
+        this.toType = toType;
+    }
+
+    public ConvOptr getOptr() {
         return optr;
     }
 
-    public void setOptr(CmpOptr optr) {
+    public void setOptr(ConvOptr optr) {
         this.optr = optr;
     }
 
@@ -90,9 +102,9 @@ public class InstCmp extends Instruction {
                 IdentifiedHelper.repr(getOp1()),
                 IdentifiedHelper.repr(getOp2()));
     }
-    
+
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
-        return visitor.visitCmp(this);
+        return visitor.visitConversion(this);
     }
 }

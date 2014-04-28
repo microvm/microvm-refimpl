@@ -1,6 +1,5 @@
 package uvm.ssavalue;
 
-import uvm.Instruction;
 import uvm.OpCode;
 import uvm.type.Type;
 
@@ -11,7 +10,7 @@ public class InstRet extends Instruction {
     /**
      * The return type
      */
-    private Type type;
+    private Type retType;
 
     /**
      * The return value.
@@ -21,8 +20,8 @@ public class InstRet extends Instruction {
     public InstRet() {
     }
 
-    public InstRet(Type type, Value retVal) {
-        this.type = type;
+    public InstRet(Type retType, Value retVal) {
+        this.retType = retType;
         this.retVal = use(retVal);
     }
 
@@ -35,15 +34,18 @@ public class InstRet extends Instruction {
         this.retVal = use(retVal);
     }
 
+    public Type getRetType() {
+        return this.retType;
+    }
+
+    public void setRetType(Type retType) {
+        this.retType = retType;
+    }
+
     @Override
     public Type getType() {
-        return type;
+        return null;
     }
-
-    public void setType(Type type) {
-        this.type = type;
-    }
-
     
     @Override
     public int opcode() {

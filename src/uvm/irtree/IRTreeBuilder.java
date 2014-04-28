@@ -10,7 +10,6 @@ import java.util.Map;
 import uvm.BasicBlock;
 import uvm.CFG;
 import uvm.IdentifiedHelper;
-import uvm.Instruction;
 import uvm.OpCode;
 import uvm.ssavalue.InstBinOp;
 import uvm.ssavalue.InstBranch;
@@ -19,6 +18,7 @@ import uvm.ssavalue.InstCmp;
 import uvm.ssavalue.InstPhi;
 import uvm.ssavalue.InstRet;
 import uvm.ssavalue.InstRetVoid;
+import uvm.ssavalue.Instruction;
 import uvm.ssavalue.IntConstant;
 import uvm.ssavalue.Value;
 

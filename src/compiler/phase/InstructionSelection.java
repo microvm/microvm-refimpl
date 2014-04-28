@@ -3,8 +3,8 @@ package compiler.phase;
 import uvm.BasicBlock;
 import uvm.Function;
 import uvm.IRTreeNode;
-import uvm.Instruction;
 import uvm.MicroVM;
+import uvm.ssavalue.Instruction;
 import burm.BURM_GENERATED;
 import burm.BurmState;
 

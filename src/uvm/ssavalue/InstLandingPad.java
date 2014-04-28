@@ -1,19 +1,21 @@
 package uvm.ssavalue;
 
 import uvm.OpCode;
+import uvm.type.Ref;
 import uvm.type.Type;
 
 /**
- * The RetVoid instruction returns from the current function of void return
- * type.
+ * Used to receive a thrown exception.
  */
-public class InstRetVoid extends Instruction {
-    public InstRetVoid() {
+public class InstLandingPad extends Instruction {
+    public InstLandingPad() {
     }
+    
+    private static Type REFVOID = new Ref(new uvm.type.Void());
 
     @Override
     public Type getType() {
-        return null;
+        return REFVOID;
     }
 
     @Override
@@ -23,6 +25,6 @@ public class InstRetVoid extends Instruction {
     
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
-        return visitor.visitRetVoid(this);
+        return visitor.visitLandingPad(this);
     }
 }

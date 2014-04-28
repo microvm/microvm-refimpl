@@ -1,7 +1,6 @@
 package uvm.ssavalue;
 
 import uvm.IdentifiedHelper;
-import uvm.Instruction;
 import uvm.type.Type;
 
 /**

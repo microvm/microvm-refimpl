@@ -1,6 +1,5 @@
 package uvm.ssavalue;
 
-import uvm.Instruction;
 
 /**
  * The base class of Ret and RetVoid.

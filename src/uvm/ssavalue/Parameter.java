@@ -1,7 +1,6 @@
 package uvm.ssavalue;
 
 import uvm.FunctionSignature;
-import uvm.Instruction;
 import uvm.OpCode;
 import uvm.type.Type;
 
