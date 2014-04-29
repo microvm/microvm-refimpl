@@ -25,6 +25,14 @@ public class InstRet extends Instruction {
         this.retVal = use(retVal);
     }
 
+    public Type getRetType() {
+        return this.retType;
+    }
+
+    public void setRetType(Type retType) {
+        this.retType = retType;
+    }
+
     public Value getRetVal() {
         return retVal.getDst();
     }
@@ -34,24 +42,16 @@ public class InstRet extends Instruction {
         this.retVal = use(retVal);
     }
 
-    public Type getRetType() {
-        return this.retType;
-    }
-
-    public void setRetType(Type retType) {
-        this.retType = retType;
-    }
-
     @Override
     public Type getType() {
         return null;
     }
-    
+
     @Override
     public int opcode() {
         return OpCode.RET;
     }
-    
+
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
         return visitor.visitRet(this);

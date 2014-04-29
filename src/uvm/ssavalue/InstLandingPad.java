@@ -20,7 +20,7 @@ public class InstLandingPad extends Instruction {
 
     @Override
     public int opcode() {
-        return OpCode.RETVOID;
+        return OpCode.LANDINGPAD;
     }
     
     @Override

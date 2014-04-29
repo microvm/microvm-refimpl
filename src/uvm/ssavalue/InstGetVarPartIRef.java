@@ -14,6 +14,11 @@ public class InstGetVarPartIRef extends Instruction {
     private Hybrid referentType;
 
     /**
+     * The type of this instruction
+     */
+    private Type type;
+
+    /**
      * The operand.
      */
     private UseBox opnd;
@@ -24,6 +29,7 @@ public class InstGetVarPartIRef extends Instruction {
     public InstGetVarPartIRef(Hybrid referentType, Value opnd) {
         super();
         this.referentType = referentType;
+        this.type = referentType.getFixedPart();
         this.opnd = use(opnd);
     }
 
@@ -33,6 +39,7 @@ public class InstGetVarPartIRef extends Instruction {
 
     public void setReferentType(Hybrid referentType) {
         this.referentType = referentType;
+        this.type = referentType.getFixedPart();
     }
 
     public Value getOpnd() {
@@ -46,7 +53,7 @@ public class InstGetVarPartIRef extends Instruction {
 
     @Override
     public Type getType() {
-        return referentType.getVarPart();
+        return type;
     }
 
     @Override

@@ -2,6 +2,7 @@ package uvm.ssavalue;
 
 import uvm.OpCode;
 import uvm.type.Array;
+import uvm.type.IRef;
 import uvm.type.Type;
 
 /**
@@ -14,7 +15,7 @@ public class InstGetElemIRef extends Instruction {
     private Array referentType;
     
     /**
-     * The index of the field.
+     * The index of the element.
      */
     private UseBox index;
 
@@ -23,12 +24,18 @@ public class InstGetElemIRef extends Instruction {
      */
     private UseBox opnd;
 
+    /**
+     * The type of this instruction
+     */
+    private Type type;
+
     public InstGetElemIRef() {
     }
 
     public InstGetElemIRef(Array referentType, Value index, Value opnd) {
         super();
         this.referentType = referentType;
+        this.type = new IRef(referentType.getElemType());
         this.index = use(index);
         this.opnd = use(opnd);
     }
@@ -39,6 +46,7 @@ public class InstGetElemIRef extends Instruction {
 
     public void setReferentType(Array referentType) {
         this.referentType = referentType;
+        this.type = new IRef(referentType.getElemType());
     }
 
     public Value getIndex() {
@@ -61,12 +69,12 @@ public class InstGetElemIRef extends Instruction {
 
     @Override
     public Type getType() {
-        return referentType.getElemType();
+        return type;
     }
 
     @Override
     public int opcode() {
-        return OpCode.GETFIELDIREF;
+        return OpCode.GETELEMIREF;
     }
 
     @Override

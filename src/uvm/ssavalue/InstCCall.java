@@ -4,13 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uvm.FunctionSignature;
+import uvm.OpCode;
 import uvm.type.Type;
 
 /**
- * The parent class of all calls to MicroVM functions. These include CALL,
- * INVOKE and TAILCALL.
+ * Call a C function.
  */
-public abstract class AbstractCall extends Instruction {
+public class InstCCall extends Instruction {
+
+    /**
+     * The calling convention.
+     */
+    private CallConv callConv;
 
     /**
      * The signature of the callee.
@@ -27,16 +32,31 @@ public abstract class AbstractCall extends Instruction {
      */
     private List<UseBox> args = new ArrayList<UseBox>();
 
-    protected AbstractCall() {
+    protected InstCCall() {
     }
 
-    public AbstractCall(FunctionSignature sig, Value func, List<Value> args) {
+    public InstCCall(CallConv callConv, FunctionSignature sig, Value func,
+            List<Value> args) {
         super();
+        this.callConv = callConv;
         this.sig = sig;
         this.func = use(func);
         for (Value arg : args) {
             this.args.add(use(arg));
         }
+    }
+
+    @Override
+    public Type getType() {
+        return this.sig.getReturnType();
+    }
+
+    public CallConv getCallConv() {
+        return callConv;
+    }
+
+    public void setCallConv(CallConv callConv) {
+        this.callConv = callConv;
     }
 
     public FunctionSignature getSig() {
@@ -65,7 +85,12 @@ public abstract class AbstractCall extends Instruction {
     }
 
     @Override
-    public Type getType() {
-        return this.sig.getReturnType();
+    public int opcode() {
+        return OpCode.CCALL;
+    }
+
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.acceptCCall(this);
     }
 }

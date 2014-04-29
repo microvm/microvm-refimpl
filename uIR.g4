@@ -106,12 +106,12 @@ instBody
 
     // Integer/FP Comparison
     |   CMPOPS '<' type '>' value value         # InstCmp
-    
-    // Select
-    |   'SELECT' '<' type '>' value value value     # InstSelect
 
     // Conversions
     |   CONVOPS  '<' type type '>' value            # InstConversion
+    
+    // Select
+    |   'SELECT' '<' type '>' value value value     # InstSelect
 
     // Intra-function Control Flow
     |   'BRANCH' IDENTIFIER                         # InstBranch
@@ -149,14 +149,14 @@ instBody
     |   'GETFIXEDPARTIREF'  '<' type '>' value          # InstGetFixedPartIRef
     |   'GETVARPARTIREF'    '<' type '>' value          # InstGetVarPartIRef
     
-    |   'LOAD' ATOMICDECL? '<' type '>' value           # InstLoad
-    |   'STORE' ATOMICDECL? '<' type '>' value value    # InstStore
-    |   'CMPXCHG' ATOMICDECL ATOMICDECL
+    |   'LOAD' ATOMICORD? '<' type '>' value           # InstLoad
+    |   'STORE' ATOMICORD? '<' type '>' value value    # InstStore
+    |   'CMPXCHG' ATOMICORD ATOMICORD
                     '<' type '>' value value value      # InstCmpXChg
-    |   'ATOMICRMW' ATOMICDECL? ATOMICRMWOP
+    |   'ATOMICRMW' ATOMICORD? ATOMICRMWOP
                 '<' type '>' value value                # InstAtomicRMW
 
-    |   'FENCE' ATOMICDECL                              # InstFence
+    |   'FENCE' ATOMICORD                              # InstFence
 
     // Trap
     |   'TRAP' '<' type '>'
@@ -165,14 +165,14 @@ instBody
             IDENTIFIER IDENTIFIER IDENTIFIER keepAlive  # InstWatchPoint
 
     // Foreign Function Interface
-    |   'CCALL' CALLCONV funcCallBody keepAlive?        # InstCCall
+    |   'CCALL' CALLCONV funcCallBody                   # InstCCall
 
     // Thread and Stack Operations
     |   'NEWSTACK'  funcCallBody                        # InstNewStack
 
     // Intrinsic Functions
-    |   'INTRINSICCALL' IDENTIFIER args keepAlive?      # InstCall
-    |   'INTRINSICINVOKE' IDENTIFIER args
+    |   'ICCALL' IDENTIFIER args keepAlive?      # InstCall
+    |   'IINVOKE' IDENTIFIER args
             IDENTIFIER IDENTIFIER keepAlive?            # InstInvoke
     ;
 
@@ -239,8 +239,8 @@ CONVOPS
     | 'REFCAST' | 'IREFCAST'
     ;
 
-ATOMICDECL
-    : 'NOT_ATOMIC' | 'UNORDERED' | 'MONOTONIC' | 'AQUIRE' | 'RELEASE'
+ATOMICORD
+    : 'NOT_ATOMIC' | 'UNORDERED' | 'MONOTONIC' | 'ACQUIRE' | 'RELEASE'
     | 'ACQ_REL' | 'SQL_CST'
     ;
 

@@ -22,10 +22,12 @@ public class InstConversion extends Instruction {
      * The conversion operator
      */
     private ConvOptr optr;
+    
     /**
      * The first operand
      */
     private UseBox op1;
+    
     /**
      * The second operand
      */
@@ -41,11 +43,6 @@ public class InstConversion extends Instruction {
         this.optr = optr;
         this.op1 = use(op1);
         this.op2 = use(op2);
-    }
-
-    @Override
-    public Type getType() {
-        return toType;
     }
 
     public Type getFromType() {
@@ -88,6 +85,11 @@ public class InstConversion extends Instruction {
     public void setOp2(Value op2) {
         assertNotReset(this.op2);
         this.op2 = use(op2);
+    }
+
+    @Override
+    public Type getType() {
+        return toType;
     }
 
     @Override

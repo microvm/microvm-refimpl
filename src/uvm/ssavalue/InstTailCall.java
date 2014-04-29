@@ -9,15 +9,14 @@ import uvm.type.Type;
 /**
  * A tail call.
  */
-public class InstTailCall extends NonTailCall {
+public class InstTailCall extends AbstractCall {
     public InstTailCall() {
     }
 
-    public InstTailCall(FunctionSignature sig, Value func, List<Value> args,
-            List<Value> keepAlives) {
-        super(sig, func, args, keepAlives);
+    public InstTailCall(FunctionSignature sig, Value func, List<Value> args) {
+        super(sig, func, args);
     }
-    
+
     @Override
     public Type getType() {
         return null;

@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uvm.FunctionSignature;
+import uvm.OpCode;
+import uvm.type.Stack;
 import uvm.type.Type;
 
 /**
- * The parent class of all calls to MicroVM functions. These include CALL,
- * INVOKE and TAILCALL.
+ * Create a new stack with a suspended function activation at the bottom.
  */
-public abstract class AbstractCall extends Instruction {
+public class InstNewStack extends Instruction {
 
     /**
      * The signature of the callee.
@@ -27,10 +28,10 @@ public abstract class AbstractCall extends Instruction {
      */
     private List<UseBox> args = new ArrayList<UseBox>();
 
-    protected AbstractCall() {
+    protected InstNewStack() {
     }
 
-    public AbstractCall(FunctionSignature sig, Value func, List<Value> args) {
+    public InstNewStack(FunctionSignature sig, Value func, List<Value> args) {
         super();
         this.sig = sig;
         this.func = use(func);
@@ -64,8 +65,20 @@ public abstract class AbstractCall extends Instruction {
         this.args.add(use(arg));
     }
 
+    private static Stack STACK_TYPE;
+
     @Override
     public Type getType() {
-        return this.sig.getReturnType();
+        return STACK_TYPE;
+    }
+
+    @Override
+    public int opcode() {
+        return OpCode.NEWSTACK;
+    }
+
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+        return visitor.visitNewStack(this);
     }
 }

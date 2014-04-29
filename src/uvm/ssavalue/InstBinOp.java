@@ -4,29 +4,29 @@ import uvm.IdentifiedHelper;
 import uvm.type.Type;
 
 /**
- * A binary operation.
+ * Binary operation.
  */
 public class InstBinOp extends Instruction {
     /**
-     * The expected type of the operands.
+     * The type of the operands.
      */
     private Type type;
+
     /**
-     * The operator.
+     * The binary operator.
      */
     private BinOptr optr;
+
     /**
      * The first operand.
      */
     private UseBox op1;
+
     /**
      * The second operand.
      */
     private UseBox op2;
 
-    /**
-     * Empty constructor. Conveinent for two-step JavaBean-style constructing.
-     */
     public InstBinOp() {
     }
 

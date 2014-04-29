@@ -3,6 +3,9 @@ package uvm.ssavalue;
 import uvm.OpCode;
 import uvm.type.Type;
 
+/**
+ * Floating point number constant.
+ */
 public class FPConstant extends Constant {
     private Type type;
     private double value;

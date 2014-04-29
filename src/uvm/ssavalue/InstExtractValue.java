@@ -5,7 +5,7 @@ import uvm.type.Struct;
 import uvm.type.Type;
 
 /**
- * Make a new Struct typed SSA Value with only one field different.
+ * Extract a field from a Struct typed SSA Value.
  */
 public class InstExtractValue extends Instruction {
     /**

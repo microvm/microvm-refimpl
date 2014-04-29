@@ -1,6 +1,7 @@
 package uvm.ssavalue;
 
 import uvm.OpCode;
+import uvm.type.IRef;
 import uvm.type.Struct;
 import uvm.type.Type;
 
@@ -12,16 +13,21 @@ public class InstGetFieldIRef extends Instruction {
      * The type the operand referes to.
      */
     private Struct referentType;
-    
+
     /**
      * The index of the field.
      */
-    private int index;
+    private int index = -1;
 
     /**
      * The operand.
      */
     private UseBox opnd;
+
+    /**
+     * The type of this instruction
+     */
+    private Type type;
 
     public InstGetFieldIRef() {
     }
@@ -31,6 +37,17 @@ public class InstGetFieldIRef extends Instruction {
         this.referentType = referentType;
         this.index = index;
         this.opnd = use(opnd);
+        tryInitialiseType();
+    }
+
+    /**
+     * Initialise the type field if both the referent type and the index are
+     * set.
+     */
+    private void tryInitialiseType() {
+        if (this.referentType != null && this.index != -1) {
+            this.type = new IRef(referentType.getFieldTypes().get(index));
+        }
     }
 
     public Struct getReferentType() {
@@ -39,6 +56,7 @@ public class InstGetFieldIRef extends Instruction {
 
     public void setReferentType(Struct referentType) {
         this.referentType = referentType;
+        tryInitialiseType();
     }
 
     public int getIndex() {
@@ -47,6 +65,7 @@ public class InstGetFieldIRef extends Instruction {
 
     public void setIndex(int index) {
         this.index = index;
+        tryInitialiseType();
     }
 
     public Value getOpnd() {
@@ -60,7 +79,7 @@ public class InstGetFieldIRef extends Instruction {
 
     @Override
     public Type getType() {
-        return referentType.getFieldTypes().get(index);
+        return this.type;
     }
 
     @Override

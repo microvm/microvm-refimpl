@@ -1,26 +1,32 @@
 package uvm.ssavalue;
 
 import uvm.OpCode;
-import uvm.type.Type;
+import uvm.type.Int;
 
+/**
+ * Integer constant.
+ */
 public class IntConstant extends Constant {
-    private Type type;
+    /**
+     * The concrete integer type.
+     */
+    private Int type;
     private long value;
 
     public IntConstant() {
     }
 
-    public IntConstant(Type type, long value) {
+    public IntConstant(Int type, long value) {
         this.type = type;
         this.value = value;
     }
 
     @Override
-    public Type getType() {
+    public Int getType() {
         return this.type;
     }
 
-    public void setType(Type type) {
+    public void setType(Int type) {
         this.type = type;
     }
 

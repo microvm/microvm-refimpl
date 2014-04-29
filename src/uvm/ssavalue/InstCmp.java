@@ -5,12 +5,12 @@ import uvm.type.Int;
 import uvm.type.Type;
 
 /**
- * A binary comparison.
+ * Binary comparison.
  */
 public class InstCmp extends Instruction {
 
     /**
-     * The expected type of the operands.
+     * The type of the operands.
      */
     private Type opndType;
 
@@ -18,10 +18,12 @@ public class InstCmp extends Instruction {
      * The comparing operator
      */
     private CmpOptr optr;
+
     /**
      * The first operand
      */
     private UseBox op1;
+
     /**
      * The second operand
      */
@@ -38,11 +40,6 @@ public class InstCmp extends Instruction {
     }
 
     private static Int INT1 = new Int(1);
-    
-    @Override
-    public Type getType() {
-        return INT1;
-    }
 
     public Type getOpndType() {
         return opndType;
@@ -79,6 +76,11 @@ public class InstCmp extends Instruction {
     }
 
     @Override
+    public Type getType() {
+        return INT1;
+    }
+
+    @Override
     public int opcode() {
         return optr.getOpCode();
     }
@@ -90,7 +92,7 @@ public class InstCmp extends Instruction {
                 IdentifiedHelper.repr(getOp1()),
                 IdentifiedHelper.repr(getOp2()));
     }
-    
+
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
         return visitor.visitCmp(this);

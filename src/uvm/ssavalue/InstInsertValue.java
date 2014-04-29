@@ -5,7 +5,7 @@ import uvm.type.Struct;
 import uvm.type.Type;
 
 /**
- * Extract a field from a Struct typed SSA Value.
+ * Make a new Struct typed SSA Value with only one field different.
  */
 public class InstInsertValue extends Instruction {
     /**
@@ -81,7 +81,7 @@ public class InstInsertValue extends Instruction {
 
     @Override
     public Type getType() {
-        return structType.getFieldTypes().get(index);
+        return structType;
     }
 
     @Override

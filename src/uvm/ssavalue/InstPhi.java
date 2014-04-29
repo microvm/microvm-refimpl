@@ -41,6 +41,15 @@ public class InstPhi extends Instruction {
         }
     }
 
+    @Override
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
     /**
      * Get the SSA Value for the control flow from a given basic block.
      * 
@@ -70,15 +79,6 @@ public class InstPhi extends Instruction {
 
     public HashMap<BasicBlock, UseBox> getValueMap() {
         return valueMap;
-    }
-
-    @Override
-    public Type getType() {
-        return type;
-    }
-
-    public void setType(Type type) {
-        this.type = type;
     }
 
     @Override

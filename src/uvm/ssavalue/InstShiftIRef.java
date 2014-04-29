@@ -1,6 +1,7 @@
 package uvm.ssavalue;
 
 import uvm.OpCode;
+import uvm.type.IRef;
 import uvm.type.Type;
 
 /**
@@ -11,7 +12,12 @@ public class InstShiftIRef extends Instruction {
      * The type the operand referes to.
      */
     private Type referentType;
-    
+
+    /**
+     * The type of this instruction
+     */
+    private Type type;
+
     /**
      * The index of the field.
      */
@@ -28,6 +34,7 @@ public class InstShiftIRef extends Instruction {
     public InstShiftIRef(Type referentType, Value index, Value opnd) {
         super();
         this.referentType = referentType;
+        this.type = new IRef(referentType);
         this.offset = use(index);
         this.opnd = use(opnd);
     }
@@ -38,6 +45,7 @@ public class InstShiftIRef extends Instruction {
 
     public void setReferentType(Type referentType) {
         this.referentType = referentType;
+        this.type = new IRef(referentType);
     }
 
     public Value getOffset() {
@@ -60,7 +68,7 @@ public class InstShiftIRef extends Instruction {
 
     @Override
     public Type getType() {
-        return referentType;
+        return type;
     }
 
     @Override

@@ -3,13 +3,16 @@ package uvm.ssavalue;
 import uvm.OpCode;
 import uvm.type.Type;
 
+/**
+ * Null constant. Applicable for ref, iref, weakref, func, thread and stack.
+ */
 public class NullConstant extends Constant {
     private Type type;
 
     public NullConstant() {
     }
 
-    public NullConstant(Type type, long value) {
+    public NullConstant(Type type) {
         this.type = type;
     }
 

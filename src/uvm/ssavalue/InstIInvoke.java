@@ -3,13 +3,13 @@ package uvm.ssavalue;
 import java.util.List;
 
 import uvm.BasicBlock;
-import uvm.FunctionSignature;
 import uvm.OpCode;
+import uvm.intrinsicfunc.IntrinsicFunction;
 
 /**
- * A call anticipating exceptions.
+ * Call an intrinsic function.
  */
-public class InstInvoke extends NonTailCall {
+public class InstIInvoke extends AbstractIntrinsicCall {
 
     /**
      * The normal continuation.
@@ -21,12 +21,12 @@ public class InstInvoke extends NonTailCall {
      */
     private BasicBlock exc;
 
-    public InstInvoke() {
+    public InstIInvoke() {
     }
 
-    public InstInvoke(FunctionSignature sig, Value func, List<Value> args,
-            List<Value> keepAlives, BasicBlock nor, BasicBlock exc) {
-        super(sig, func, args, keepAlives);
+    public InstIInvoke(IntrinsicFunction intrinsicFunction, List<Value> args,
+            BasicBlock nor, BasicBlock exc, List<Value> keepAlives) {
+        super(intrinsicFunction, args, keepAlives);
         this.nor = nor;
         this.exc = exc;
     }
@@ -49,12 +49,11 @@ public class InstInvoke extends NonTailCall {
 
     @Override
     public int opcode() {
-        return OpCode.INVOKE;
+        return OpCode.IINVOKE;
     }
 
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
-        return visitor.visitInvoke(this);
+        return visitor.visitIInvoke(this);
     }
-
 }
