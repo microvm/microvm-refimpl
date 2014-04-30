@@ -18,6 +18,10 @@ public interface ValueVisitor<T> {
 
     T visitNullConstant(NullConstant constant);
 
+    T visitGlobalDataConstant(GlobalDataConstant constant);
+
+    T visitFunctionConstant(FunctionConstant functionConstant);
+
     T visitParameter(Parameter parameter);
 
     T visitBinOp(InstBinOp inst);
@@ -84,11 +88,11 @@ public interface ValueVisitor<T> {
 
     T visitFence(InstFence inst);
 
-    T acceptTrap(InstTrap inst);
+    T visitTrap(InstTrap inst);
 
-    T acceptWatchPoint(InstWatchPoint inst);
+    T visitWatchPoint(InstWatchPoint inst);
 
-    T acceptCCall(InstCCall inst);
+    T visitCCall(InstCCall inst);
 
     T visitNewStack(InstNewStack inst);
 

@@ -12,26 +12,34 @@ import uvm.type.Type;
  */
 public class Bundle {
     /**
-     * All global constants. Local constants are in their respective CFGs (CFG
-     * is inside a defined Function).
+     * All types in this bundle, explicitly or implicitly defined.
      */
-    private Map<Integer, Constant> constants = new HashMap<Integer, Constant>();
+    private Map<Integer, Type> types = new HashMap<Integer, Type>();
     /**
      * All function signatures in this bundle, explicitly or implicitly defined.
      */
     private Map<Integer, FunctionSignature> funcSigs = new HashMap<Integer, FunctionSignature>();
     /**
+     * All constants, global or local. The IDs of functions and global data are
+     * constants of the function IDs and irefs to the global data, respectively.
+     */
+    private Map<Integer, Constant> constants = new HashMap<Integer, Constant>();
+
+    /**
+     * All global data.
+     */
+    private Map<Integer, GlobalData> globalData = new HashMap<Integer, GlobalData>();
+
+    /**
      * All functions in this bundle, declared or defined.
      */
     private Map<Integer, Function> funcs = new HashMap<Integer, Function>();
-    /**
-     * All types in this bundle, explicitly or implicitly defined.
-     */
-    private Map<Integer, Type> types = new HashMap<Integer, Type>();
+
     /**
      * A mapping between numerical IDs and textual names.
      */
     private Map<Integer, String> idToName = new HashMap<Integer, String>();
+
     /**
      * A mapping between textual names and numerical IDs. Not all objects have
      * names.
@@ -40,21 +48,27 @@ public class Bundle {
 
     // Dictionary accessors
 
-    public Map<Integer, Constant> getConstants() {
-        return constants;
+    public Map<Integer, Type> getTypes() {
+        return types;
     }
 
     public Map<Integer, FunctionSignature> getFuncSigs() {
         return funcSigs;
     }
 
+    public Map<Integer, Constant> getConstants() {
+        return constants;
+    }
+
+    public Map<Integer, GlobalData> getGlobalData() {
+        return globalData;
+    }
+
     public Map<Integer, Function> getFuncs() {
         return funcs;
     }
 
-    public Map<Integer, Type> getTypes() {
-        return types;
-    }
+    // ID-name mapping
 
     public Map<Integer, String> getIdToName() {
         return idToName;
@@ -64,8 +78,6 @@ public class Bundle {
         return nameToId;
     }
 
-    // Convenient methods for adding objects.
-
     public void bind(int id, String name) {
         if (name != null) {
             idToName.put(id, name);
@@ -73,10 +85,8 @@ public class Bundle {
         }
     }
 
-    public void registerConstant(int id, String name, Constant constant) {
-        constants.put(id, constant);
-        bind(id, name);
-    }
+    // Convenient methods for adding objects. "name" is nullable. If "name" is
+    // null, the name will not be associated.
 
     public void registerType(int id, String name, Type type) {
         types.put(id, type);
@@ -88,6 +98,16 @@ public class Bundle {
         bind(id, name);
     }
 
+    public void registerConstant(int id, String name, Constant constant) {
+        constants.put(id, constant);
+        bind(id, name);
+    }
+
+    public void registerGlobalData(int id, String name, GlobalData globalData) {
+        this.globalData.put(id, globalData);
+        bind(id, name);
+    }
+
     public void registerFunc(int id, String name, Function func) {
         funcs.put(id, func);
         bind(id, name);
@@ -95,16 +115,20 @@ public class Bundle {
 
     // Convenient methods for getting.
 
-    public Constant getConstantByName(String name) {
-        return constants.get(nameToId.get(name));
-    }
-
     public Type getTypeByName(String name) {
         return types.get(nameToId.get(name));
     }
 
     public FunctionSignature getFuncSigByName(String name) {
         return funcSigs.get(nameToId.get(name));
+    }
+
+    public Constant getConstantByName(String name) {
+        return constants.get(nameToId.get(name));
+    }
+
+    public GlobalData getGlobalDataByName(String name) {
+        return globalData.get(nameToId.get(name));
     }
 
     public Function getFuncByName(String name) {

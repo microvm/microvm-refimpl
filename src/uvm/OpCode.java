@@ -132,12 +132,15 @@ public abstract class OpCode {
     public static final int FP_IMM      = 0xF1;
     public static final int STRUCT_IMM  = 0xF2;
     public static final int NULL_IMM    = 0xF3;
+    public static final int GDATAIREF_IMM = 0xF4;
+    public static final int FUNCID_IMM  = 0xF5;
     
     public static final int REG         = 0xF8;
     public static final int LABEL       = 0xF9;
     public static final int PARAM       = 0xFA;
     
     public static final HashMap<Integer, String> names = new HashMap<Integer, String>();
+
 
     
     static {

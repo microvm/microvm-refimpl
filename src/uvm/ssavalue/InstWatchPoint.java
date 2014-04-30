@@ -54,7 +54,7 @@ public class InstWatchPoint extends AbstractTrap {
 
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
-        return visitor.acceptWatchPoint(this);
+        return visitor.visitWatchPoint(this);
     }
 
 }

@@ -91,6 +91,6 @@ public class InstCCall extends Instruction {
 
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
-        return visitor.acceptCCall(this);
+        return visitor.visitCCall(this);
     }
 }
