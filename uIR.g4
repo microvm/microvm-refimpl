@@ -85,12 +85,19 @@ constExpr
     ;
 
 funcBody
-    :   '{' funcBodyInst+ '}'
+    :   '{' basicBlock+ '}'
     ;
 
-funcBodyInst
-    :   label
-    |   inst
+basicBlock
+    :   entryBlock regularBlock*
+    ;
+
+entryBlock
+    :   label? inst+
+    ;
+
+regularBlock
+    :   label inst+
     ;
 
 label
