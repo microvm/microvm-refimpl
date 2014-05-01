@@ -1,6 +1,5 @@
 package parser;
 
-import parser.uIRParser.ConstExprContext;
 import parser.uIRParser.FPConstContext;
 import parser.uIRParser.IntConstContext;
 import parser.uIRParser.NullConstContext;
@@ -18,28 +17,29 @@ import uvm.type.Struct;
 import uvm.type.Type;
 
 /**
- * Handles constExpr. Match the literals against the expected type and
- * recursively construct nested (but not recursive) Constant objects.
+ * Private for RecursiveBundleBuilder use.
+ * <p>
+ * Handles constExpr. Match constant expressions (literals) against the expected
+ * type, but does not populate nested constants (currently only struct
+ * constants).
  */
-class ConstExprHandler extends uIRBaseVisitor<Constant> {
-    /**
-     * 
-     */
-    private final RecursiveBundleBuilder rbb;
-    private Type expectedType;
+class ShallowConstMaker extends uIRBaseVisitor<Constant> {
+    final RecursiveBundleBuilder rbb;
+    Type expectedType;
 
-    public ConstExprHandler(RecursiveBundleBuilder recursiveBundleBuilder, Type expectedType) {
+    public ShallowConstMaker(RecursiveBundleBuilder recursiveBundleBuilder,
+            Type expectedType) {
         rbb = recursiveBundleBuilder;
         this.expectedType = expectedType;
     }
 
     @Override
-    public Constant visitIntConst(IntConstContext ctx) {
+    public IntConstant visitIntConst(IntConstContext ctx) {
         if (!(expectedType instanceof Int)) {
             throw new ASTParsingException("Int literal " + ctx.getText()
                     + " found. Expect" + expectedType);
         }
-        
+
         Int type = (Int) expectedType;
         long value = rbb.intLitToLong(ctx.intLiteral());
         IntConstant constant = new IntConstant(type, value);
@@ -49,7 +49,7 @@ class ConstExprHandler extends uIRBaseVisitor<Constant> {
     }
 
     @Override
-    public Constant visitFPConst(FPConstContext ctx) {
+    public FPConstant visitFPConst(FPConstContext ctx) {
         if (!(expectedType instanceof FPType)) {
             throw new ASTParsingException("FP literal " + ctx.getText()
                     + " found. Expect" + expectedType);
@@ -63,7 +63,7 @@ class ConstExprHandler extends uIRBaseVisitor<Constant> {
     }
 
     @Override
-    public Constant visitStructConst(StructConstContext ctx) {
+    public StructConstant visitStructConst(StructConstContext ctx) {
         if (!(expectedType instanceof Struct)) {
             throw new ASTParsingException("Int literal " + ctx.getText()
                     + " found. Expect" + expectedType);
@@ -71,13 +71,12 @@ class ConstExprHandler extends uIRBaseVisitor<Constant> {
 
         Struct type = (Struct) expectedType;
 
-        int actualFields = ctx.constExpr().size();
+        int actualFields = ctx.constant().size();
         int expectedFields = type.getFieldTypes().size();
 
         if (actualFields != expectedFields) {
-            throw new ASTParsingException("Found " + actualFields
-                    + " fields: " + ctx.getText() + " Expect "
-                    + expectedFields + " fields.");
+            throw new ASTParsingException("Found " + actualFields + " fields: "
+                    + ctx.getText() + " Expect " + expectedFields + " fields.");
         }
 
         StructConstant constant = new StructConstant();
@@ -85,19 +84,11 @@ class ConstExprHandler extends uIRBaseVisitor<Constant> {
         constant.setID(rbb.makeID());
         rbb.bundle.registerConstant(constant.getID(), null, constant);
 
-        for (int i = 0; i < actualFields; i++) {
-            ConstExprContext subExpr = ctx.constExpr(i);
-            Type fieldType = type.getFieldTypes().get(i);
-            Constant subConstant = new ConstExprHandler(rbb, fieldType)
-                    .visit(subExpr);
-            constant.getValues().add(subConstant);
-        }
-
         return constant;
     }
 
     @Override
-    public Constant visitNullConst(NullConstContext ctx) {
+    public NullConstant visitNullConst(NullConstContext ctx) {
         if (!((expectedType instanceof AbstractReferenceType) //
                 || (expectedType instanceof Func) //
                 || (expectedType instanceof uvm.type.Thread) //

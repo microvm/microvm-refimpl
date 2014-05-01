@@ -1,31 +1,31 @@
 // prime-number
 
 .funcdef @isPrime <int<32> (int<64>)> {
-  .label %entry:
-  %a = PARAM 0
-  %cmp5 = SGT <int<64>> %a 2
-  BRANCH2 %cmp5 %for.body %return1
+    %entry:
+        %a = PARAM 0
+        %cmp5 = SGT <int<64>> %a 2
+        BRANCH2 %cmp5 %for.body %return1
 
-  .label %for.cond:
-  %cmp = SLT <int<64>> %inc %a
-  BRANCH2 %cmp %for.body %return1
+    %for.cond:
+        %cmp = SLT <int<64>> %inc %a
+        BRANCH2 %cmp %for.body %return1
   
-  .label %for.body:
-  %i.06 = PHI <int<64>> {%for.cond:%inc ; %entry: 2;}
-  %rem = SREM <int<64>> %a %i.06
-  %cmp1 = EQ <int<64>> %rem 0
-  %inc = ADD <int<64>> %i.06 1
-  BRANCH2 %cmp1 %return0 %for.cond
+    %for.body:
+        %i.06 = PHI <int<64>> {%for.cond:%inc ; %entry: 2;}
+        %rem = SREM <int<64>> %a %i.06
+        %cmp1 = EQ <int<64>> %rem 0
+        %inc = ADD <int<64>> %i.06 1
+        BRANCH2 %cmp1 %return0 %for.cond
   
-  .label %return1:
-  RET <int<32>> 1
+    %return1:
+        RET <int<32>> 1
   
-  .label %return0:
-  RET <int<32>> 0
+    %return0:
+        RET <int<32>> 0
 }
 
 .funcdef @main <int<32> ()> {
-  .label %entry:
-  // empty so far
-  RET <int<32>> 0
+    %entry:
+        // empty so far
+        RET <int<32>> 0
 }

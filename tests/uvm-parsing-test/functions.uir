@@ -10,11 +10,11 @@
 
 .funcdecl @signal <@sig_t (int<32> @sig_t)>
 
-.funcdef @main <baz> {
-    .const %zero <int<32>> = 0
-    
+.const @zero <int<32>> = 0
+
+.funcdef @main <@baz> {
     %entry:
-        RET <int<32>> %zero
+        RET <int<32>> @zero
 }
 
 

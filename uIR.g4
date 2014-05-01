@@ -9,12 +9,20 @@ ir
     ;
 
 metaData
-    :   constDef
-    |   globalDef
+    :   typeDef
     |   funcSigDef
+    |   constDef
+    |   globalDef
     |   funcDecl
     |   funcDef
-    |   typeDef
+    ;
+
+typeDef
+    :   '.typedef' IDENTIFIER '=' typeConstructor
+    ;
+
+funcSigDef
+    :   '.funcsig' IDENTIFIER '=' funcSigConstructor
     ;
 
 constDef
@@ -25,50 +33,12 @@ globalDef
     :   '.global' IDENTIFIER '<' type '>'
     ;
 
-funcSigDef
-    :   '.funcsig' IDENTIFIER '=' funcSigConstructor
-    ;
-
 funcDecl
     :   '.funcdecl' IDENTIFIER '<' funcSig '>'
     ;
     
 funcDef
     :   '.funcdef' IDENTIFIER '<' funcSig '>' funcBody
-    ;
-
-typeDef
-    :   '.typedef' IDENTIFIER '=' typeConstructor
-    ;
-
-constExpr
-    :   intLiteral          # IntConst
-    |   fpLiteral           # FPConst
-    |   '{' constExpr* '}'  # StructConst
-    |   'NULL'              # NullConst
-    ;
-
-funcSig
-    :   IDENTIFIER          # ReferencedFuncSig
-    |   funcSigConstructor  # InLineFuncSig
-    ;
-
-funcSigConstructor
-    :   type '(' type* ')'
-    ;
-
-funcBody
-    :   '{' funcBodyInst+ '}'
-    ;
-
-funcBodyInst
-    :   constDef
-    |   label
-    |   inst
-    ;
-
-label
-    :   '.label' IDENTIFIER ':'
     ;
 
 type
@@ -91,6 +61,40 @@ typeConstructor
     |   'thread'                            # ThreadType
     |   'stack'                             # StackType
     |   'tagref64'                          # TagRef64Type
+    ;
+
+funcSig
+    :   IDENTIFIER          # ReferencedFuncSig
+    |   funcSigConstructor  # InLineFuncSig
+    ;
+
+funcSigConstructor
+    :   type '(' type* ')'
+    ;
+
+constant
+    :   IDENTIFIER          # ReferencedConst
+    |   constExpr           # InLineConst
+    ;
+
+constExpr
+    :   intLiteral          # IntConst
+    |   fpLiteral           # FPConst
+    |   '{' constant* '}'   # StructConst
+    |   'NULL'              # NullConst
+    ;
+
+funcBody
+    :   '{' funcBodyInst+ '}'
+    ;
+
+funcBodyInst
+    :   label
+    |   inst
+    ;
+
+label
+    :   IDENTIFIER ':'
     ;
 
 inst

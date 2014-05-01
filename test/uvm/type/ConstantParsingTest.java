@@ -1,6 +1,7 @@
 package uvm.type;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.FileInputStream;
@@ -15,8 +16,13 @@ import parser.RecursiveBundleBuilder;
 import parser.uIRLexer;
 import parser.uIRParser;
 import uvm.Bundle;
+import uvm.Function;
+import uvm.FunctionSignature;
+import uvm.GlobalData;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.FPConstant;
+import uvm.ssavalue.FunctionConstant;
+import uvm.ssavalue.GlobalDataConstant;
 import uvm.ssavalue.IntConstant;
 import uvm.ssavalue.NullConstant;
 import uvm.ssavalue.StructConstant;
@@ -46,6 +52,14 @@ public class ConstantParsingTest {
 
     private static Constant constant(String name) {
         return bundle.getConstantByName(name);
+    }
+
+    private static GlobalData globalData(String name) {
+        return bundle.getGlobalDataByName(name);
+    }
+
+    private static Function func(String name) {
+        return bundle.getFuncByName(name);
     }
 
     private static <T> T assertType(Object obj, Class<T> cls) {
@@ -145,6 +159,29 @@ public class ConstantParsingTest {
         assertType(cth.getType(), uvm.type.Thread.class);
         NullConstant cst = assertType(constant("@cst"), NullConstant.class);
         assertType(cst.getType(), uvm.type.Stack.class);
-    }
 
+        GlobalDataConstant gi64 = assertType(constant("@gi64"),
+                GlobalDataConstant.class);
+        IRef gi64_t = assertType(gi64.getType(), IRef.class);
+        assertIntSize(gi64_t.getReferenced(), 64);
+
+        GlobalData gd_gi64 = assertType(globalData("@gi64"), GlobalData.class);
+        assertIntSize(gd_gi64.getType(), 64);
+
+        FunctionConstant fdummy = assertType(constant("@fdummy"),
+                FunctionConstant.class);
+        Func fdummy_type = assertType(fdummy.getType(), Func.class);
+        FunctionSignature fdummy_sig = fdummy_type.getSig();
+        assertType(fdummy_sig.getReturnType(), Void.class);
+        assertTrue(fdummy_sig.getParamTypes().isEmpty());
+
+        Function f_fdummy = assertType(func("@fdummy"), Function.class);
+        FunctionSignature f_fdummy_sig = f_fdummy.getSig();
+        assertType(f_fdummy_sig.getReturnType(), Void.class);
+        assertTrue(f_fdummy_sig.getParamTypes().isEmpty());
+
+        StructConstant sgf = assertType(constant("@sgf"), StructConstant.class);
+        assertType(sgf.getValues().get(0), GlobalDataConstant.class);
+        assertType(sgf.getValues().get(1), FunctionConstant.class);
+    }
 }

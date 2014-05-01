@@ -16,8 +16,8 @@
 .const @cs1 <struct<int<64> double>> = {100 200.0}
 .const @cs2 <struct<double struct<float int<64>> int<32>>> = {1.0 {2.0 3} 4}
 
-.typedef @Cons = struct<int<64> ref<@Cons>>
 .const @cons <@Cons> = {42 NULL}
+.typedef @Cons = struct<int<64> ref<@Cons>>
 
 .const @cr  <ref<int<64>>>  = NULL
 .const @cir <iref<float>>   = NULL
@@ -25,3 +25,10 @@
 .const @cfu <func<void ()>> = NULL
 .const @cth <thread>        = NULL
 .const @cst <stack>         = NULL
+
+
+.const @sgf <struct<iref<int<64>> func<void ()>>> = {@gi64 @fdummy}
+
+.global @gi64 <int<64>>
+
+.funcdecl @fdummy <void ()>
