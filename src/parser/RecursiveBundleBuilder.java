@@ -1,13 +1,12 @@
 package parser;
 
-import org.antlr.v4.runtime.tree.ParseTree;
-
 import parser.uIRParser.ConstDefContext;
 import parser.uIRParser.FuncDeclContext;
 import parser.uIRParser.FuncDefContext;
 import parser.uIRParser.FuncSigDefContext;
 import parser.uIRParser.GlobalDefContext;
 import parser.uIRParser.IntLiteralContext;
+import parser.uIRParser.IrContext;
 import parser.uIRParser.TypeDefContext;
 import uvm.Bundle;
 import uvm.Function;
@@ -46,11 +45,10 @@ public class RecursiveBundleBuilder {
     /**
      * Build the bundle.
      * 
-     * @param pt
-     *            The ParseTree object of the root, i.e. the result of
-     *            parser.ir()
+     * @param ir
+     *            The IrContext object representing the "ir" non-terminal.
      */
-    public void build(ParseTree pt) {
+    public void build(IrContext ir) {
         // Build types in two passes.
 
         // The first pass, create a stub for all .typedef and .funcsig.
@@ -67,7 +65,7 @@ public class RecursiveBundleBuilder {
                 return null;
             }
         };
-        makeDeclaredTypes.visit(pt);
+        makeDeclaredTypes.visit(ir);
 
         // The second pass, populate its dependencies.
         uIRBaseVisitor<Void> populateDeclaredTypes = new uIRBaseVisitor<Void>() {
@@ -84,7 +82,7 @@ public class RecursiveBundleBuilder {
             }
 
         };
-        populateDeclaredTypes.visit(pt);
+        populateDeclaredTypes.visit(ir);
 
         // Visit all global constant definitions, global data definitions,
         // function definitions and function declarations. They all depend on
@@ -114,7 +112,7 @@ public class RecursiveBundleBuilder {
                 return null;
             }
         };
-        otherDefHandler.visit(pt);
+        otherDefHandler.visit(ir);
 
         // Re-visit all global constant definitions to populate nested
         // constants. In this case they are all Struct constants.
@@ -125,7 +123,22 @@ public class RecursiveBundleBuilder {
                 return null;
             }
         };
-        populateConstDef.visit(pt);
+        populateConstDef.visit(ir);
+
+        // Re-visit all function definitions (.funcdef) to make the function
+        // bodys.
+        uIRBaseVisitor<Void> buildFuncBody = new uIRBaseVisitor<Void>() {
+            @Override
+            public Void visitFuncDef(FuncDefContext ctx) {
+                String name = ctx.IDENTIFIER().getText();
+                Function func = bundle.getFuncByName(name);
+                FuncBuilder funcBuilder = new FuncBuilder(
+                        RecursiveBundleBuilder.this, func);
+                funcBuilder.handleFuncDef(ctx);
+                return null;
+            };
+        };
+        buildFuncBody.visit(ir);
     }
 
     // ID facilities

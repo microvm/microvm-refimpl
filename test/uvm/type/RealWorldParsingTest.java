@@ -1,26 +1,17 @@
 package uvm.type;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static uvm.type.TestingHelper.parseUir;
 
-import java.io.FileInputStream;
-
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import parser.RecursiveBundleBuilder;
-import parser.uIRLexer;
-import parser.uIRParser;
 import uvm.Bundle;
 import uvm.Function;
 import uvm.FunctionSignature;
 import uvm.GlobalData;
 import uvm.ssavalue.Constant;
-import uvm.ssavalue.IntConstant;
 
 public class RealWorldParsingTest {
 
@@ -29,17 +20,9 @@ public class RealWorldParsingTest {
     @BeforeClass
     public static void setUpClass() throws Exception {
         String file = "tests/micro-bm/int-prime-number/prime-number.uir";
-        ANTLRInputStream input = new ANTLRInputStream(new FileInputStream(file));
-        uIRLexer lexer = new uIRLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        uIRParser parser = new uIRParser(tokens);
-        ParseTree tree = parser.ir();
-
-        RecursiveBundleBuilder rbb = new RecursiveBundleBuilder();
-        rbb.build(tree);
-
-        bundle = rbb.getBundle();
+        bundle = parseUir(file);
     }
+
 
     private static Type type(String name) {
         return bundle.getTypeByName(name);

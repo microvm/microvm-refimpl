@@ -85,10 +85,10 @@ constExpr
     ;
 
 funcBody
-    :   '{' basicBlock+ '}'
+    :   '{' basicBlocks '}'
     ;
 
-basicBlock
+basicBlocks
     :   entryBlock regularBlock*
     ;
 
@@ -105,8 +105,7 @@ label
     ;
 
 inst
-    :   IDENTIFIER '=' instBody             # NamedInstruction
-    |   instBody                            # AnonymousInstruction
+    :   (IDENTIFIER '=')? instBody
     ;
 
 instBody
@@ -160,14 +159,14 @@ instBody
     |   'GETFIXEDPARTIREF'  '<' type '>' value          # InstGetFixedPartIRef
     |   'GETVARPARTIREF'    '<' type '>' value          # InstGetVarPartIRef
     
-    |   'LOAD' ATOMICORD? '<' type '>' value           # InstLoad
-    |   'STORE' ATOMICORD? '<' type '>' value value    # InstStore
+    |   'LOAD' ATOMICORD? '<' type '>' value            # InstLoad
+    |   'STORE' ATOMICORD? '<' type '>' value value     # InstStore
     |   'CMPXCHG' ATOMICORD ATOMICORD
                     '<' type '>' value value value      # InstCmpXChg
-    |   'ATOMICRMW' ATOMICORD? ATOMICRMWOP
+    |   'ATOMICRMW' ATOMICORD ATOMICRMWOP
                 '<' type '>' value value                # InstAtomicRMW
 
-    |   'FENCE' ATOMICORD                              # InstFence
+    |   'FENCE' ATOMICORD                               # InstFence
 
     // Trap
     |   'TRAP' '<' type '>'
@@ -179,12 +178,12 @@ instBody
     |   'CCALL' CALLCONV funcCallBody                   # InstCCall
 
     // Thread and Stack Operations
-    |   'NEWSTACK'  funcCallBody                        # InstNewStack
+    |   'NEWSTACK' funcCallBody                         # InstNewStack
 
     // Intrinsic Functions
-    |   'ICCALL' IDENTIFIER args keepAlive?      # InstCall
+    |   'ICCALL' IDENTIFIER args keepAlive?             # InstICall
     |   'IINVOKE' IDENTIFIER args
-            IDENTIFIER IDENTIFIER keepAlive?            # InstInvoke
+            IDENTIFIER IDENTIFIER keepAlive?            # InstIInvoke
     ;
 
 funcCallBody

@@ -17,4 +17,7 @@
         RET <int<32>> @zero
 }
 
+.funcdef @implicitentry <@foo> {
+        RET <int<32>> @zero
+}
 

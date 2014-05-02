@@ -32,7 +32,7 @@ public class InstCCall extends Instruction {
      */
     private List<UseBox> args = new ArrayList<UseBox>();
 
-    protected InstCCall() {
+    public InstCCall() {
     }
 
     public InstCCall(CallConv callConv, FunctionSignature sig, Value func,

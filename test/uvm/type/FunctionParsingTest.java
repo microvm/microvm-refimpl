@@ -3,18 +3,11 @@ package uvm.type;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static uvm.type.TestingHelper.parseUir;
 
-import java.io.FileInputStream;
-
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import parser.RecursiveBundleBuilder;
-import parser.uIRLexer;
-import parser.uIRParser;
 import uvm.Bundle;
 import uvm.Function;
 import uvm.FunctionSignature;
@@ -29,16 +22,7 @@ public class FunctionParsingTest {
     @BeforeClass
     public static void setUpClass() throws Exception {
         String file = "tests/uvm-parsing-test/functions.uir";
-        ANTLRInputStream input = new ANTLRInputStream(new FileInputStream(file));
-        uIRLexer lexer = new uIRLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        uIRParser parser = new uIRParser(tokens);
-        ParseTree tree = parser.ir();
-
-        RecursiveBundleBuilder rbb = new RecursiveBundleBuilder();
-        rbb.build(tree);
-
-        bundle = rbb.getBundle();
+        bundle = parseUir(file);
     }
 
     private static Type type(String name) {
@@ -114,7 +98,7 @@ public class FunctionParsingTest {
         assertIsSigT(signal.getSig().getParamTypes().get(1));
         assertIsSigT(sig_t);
 
-        IntConstant zero = assertType(constant("@zero"), IntConstant.class );
+        IntConstant zero = assertType(constant("@zero"), IntConstant.class);
         assertIntSize(zero.getType(), 32);
         assertEquals(zero.getValue(), 0L);
 

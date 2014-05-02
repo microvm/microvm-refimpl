@@ -28,7 +28,7 @@ public class InstNewStack extends Instruction {
      */
     private List<UseBox> args = new ArrayList<UseBox>();
 
-    protected InstNewStack() {
+    public InstNewStack() {
     }
 
     public InstNewStack(FunctionSignature sig, Value func, List<Value> args) {

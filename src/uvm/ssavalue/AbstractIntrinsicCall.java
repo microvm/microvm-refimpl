@@ -39,6 +39,14 @@ public abstract class AbstractIntrinsicCall extends Instruction {
         }
     }
 
+    public IntrinsicFunction getIntrinsicFunction() {
+        return intrinsicFunction;
+    }
+
+    public void setIntrinsicFunction(IntrinsicFunction intrinsicFunction) {
+        this.intrinsicFunction = intrinsicFunction;
+    }
+
     public List<UseBox> getArgs() {
         return args;
     }

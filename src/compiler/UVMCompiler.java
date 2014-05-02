@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import parser.RecursiveBundleBuilder;
 import parser.uIRLexer;
 import parser.uIRParser;
+import parser.uIRParser.IrContext;
 import uvm.BasicBlock;
 import uvm.Bundle;
 import uvm.Function;
@@ -40,7 +41,7 @@ public class UVMCompiler {
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             // create a parser that feeds off the tokens buffer
             uIRParser parser = new uIRParser(tokens);
-            ParseTree tree = parser.ir(); // begin parsing at init rule
+            IrContext tree = parser.ir(); // begin parsing at init rule
 
             System.out.println("Parsing Tree:");
             System.out.println(tree.toStringTree(parser));
