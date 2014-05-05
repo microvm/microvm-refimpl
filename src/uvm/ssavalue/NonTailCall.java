@@ -9,7 +9,7 @@ import uvm.FunctionSignature;
  * The parent class of all non-tail calls to MicroVM functions. These include
  * CALL and INVOKE.
  */
-public abstract class NonTailCall extends AbstractCall {
+public abstract class NonTailCall extends AbstractCall implements HasKeepAlives {
 
     /**
      * Registers to be retained on the stack frame.
@@ -19,13 +19,15 @@ public abstract class NonTailCall extends AbstractCall {
     protected NonTailCall() {
     }
 
-    protected NonTailCall(FunctionSignature sig, Value func, List<Value> args, List<Value> keepAlives) {
+    protected NonTailCall(FunctionSignature sig, Value func, List<Value> args,
+            List<Value> keepAlives) {
         super(sig, func, args);
         for (Value ka : keepAlives) {
             this.keepAlives.add(use(ka));
         }
     }
 
+    @Override
     public List<UseBox> getKeepAlives() {
         return keepAlives;
     }
@@ -33,9 +35,11 @@ public abstract class NonTailCall extends AbstractCall {
     /**
      * Add a new keep-alive register. A UseBox will be created.
      * 
-     * @param ka The register.
+     * @param ka
+     *            The register.
      */
-    public void addKeepAlives(Value ka) {
+    @Override
+    public void addKeepAlive(Value ka) {
         this.keepAlives.add(use(ka));
     }
 }

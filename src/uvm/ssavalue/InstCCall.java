@@ -10,7 +10,7 @@ import uvm.type.Type;
 /**
  * Call a C function.
  */
-public class InstCCall extends Instruction {
+public class InstCCall extends Instruction implements CallLike {
 
     /**
      * The calling convention.
@@ -59,27 +59,33 @@ public class InstCCall extends Instruction {
         this.callConv = callConv;
     }
 
+    @Override
     public FunctionSignature getSig() {
         return sig;
     }
 
+    @Override
     public void setSig(FunctionSignature sig) {
         this.sig = sig;
     }
 
+    @Override
     public Value getFunc() {
         return func.getDst();
     }
 
+    @Override
     public void setFunc(Value func) {
         assertNotReset(this.func);
         this.func = use(func);
     }
 
+    @Override
     public List<UseBox> getArgs() {
         return args;
     }
 
+    @Override
     public void addArg(Value arg) {
         this.args.add(use(arg));
     }

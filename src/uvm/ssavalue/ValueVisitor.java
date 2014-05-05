@@ -98,5 +98,5 @@ public interface ValueVisitor<T> {
 
     T visitICall(InstICall inst);
 
-    T visitIInvoke(InstIInvoke inst);
+    T visitIInvoke(HandlesException inst);
 }

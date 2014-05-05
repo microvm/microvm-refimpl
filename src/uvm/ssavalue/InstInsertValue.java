@@ -22,7 +22,7 @@ public class InstInsertValue extends Instruction {
      * The operand.
      */
     private UseBox opnd;
-    
+
     /**
      * The new value of the field.
      */
@@ -32,7 +32,8 @@ public class InstInsertValue extends Instruction {
         super();
     }
 
-    public InstInsertValue(Struct structType, int index, Value opnd, Value newVal) {
+    public InstInsertValue(Struct structType, int index, Value opnd,
+            Value newVal) {
         super();
         this.structType = structType;
         this.index = index;
@@ -87,6 +88,13 @@ public class InstInsertValue extends Instruction {
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
         return visitor.visitInsertValue(this);
+    }
+
+    /**
+     * @return The type of the inserted field.
+     */
+    public Type getFieldType() {
+        return structType.getFieldTypes().get(index);
     }
 
 }

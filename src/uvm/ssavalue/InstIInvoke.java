@@ -9,7 +9,7 @@ import uvm.intrinsicfunc.IntrinsicFunction;
 /**
  * Call an intrinsic function.
  */
-public class InstIInvoke extends AbstractIntrinsicCall {
+public class InstIInvoke extends AbstractIntrinsicCall implements HandlesException {
 
     /**
      * The normal continuation.
@@ -31,18 +31,22 @@ public class InstIInvoke extends AbstractIntrinsicCall {
         this.exc = exc;
     }
 
+    @Override
     public BasicBlock getNor() {
         return nor;
     }
 
+    @Override
     public void setNor(BasicBlock nor) {
         this.nor = nor;
     }
 
+    @Override
     public BasicBlock getExc() {
         return exc;
     }
 
+    @Override
     public void setExc(BasicBlock exc) {
         this.exc = exc;
     }

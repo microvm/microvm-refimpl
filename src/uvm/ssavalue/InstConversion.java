@@ -22,27 +22,20 @@ public class InstConversion extends Instruction {
      * The conversion operator
      */
     private ConvOptr optr;
-    
+
     /**
-     * The first operand
+     * The operand
      */
-    private UseBox op1;
-    
-    /**
-     * The second operand
-     */
-    private UseBox op2;
+    private UseBox opnd;
 
     public InstConversion() {
     }
 
-    public InstConversion(Type fromType, Type toType, ConvOptr optr, Value op1,
-            Value op2) {
+    public InstConversion(Type fromType, Type toType, ConvOptr optr, Value opnd) {
         this.fromType = fromType;
         this.toType = toType;
         this.optr = optr;
-        this.op1 = use(op1);
-        this.op2 = use(op2);
+        this.opnd = use(opnd);
     }
 
     public Type getFromType() {
@@ -69,22 +62,13 @@ public class InstConversion extends Instruction {
         this.optr = optr;
     }
 
-    public Value getOp1() {
-        return op1.getDst();
+    public Value getOpnd() {
+        return opnd.getDst();
     }
 
-    public void setOp1(Value op1) {
-        assertNotReset(this.op1);
-        this.op1 = use(op1);
-    }
-
-    public Value getOp2() {
-        return op2.getDst();
-    }
-
-    public void setOp2(Value op2) {
-        assertNotReset(this.op2);
-        this.op2 = use(op2);
+    public void setOpnd(Value opnd) {
+        assertNotReset(this.opnd);
+        this.opnd = use(opnd);
     }
 
     @Override
@@ -101,8 +85,7 @@ public class InstConversion extends Instruction {
     public String toString() {
         return String.format("%s%s %s %s %s", getClass().getSimpleName(),
                 IdentifiedHelper.repr(this), optr.toString(),
-                IdentifiedHelper.repr(getOp1()),
-                IdentifiedHelper.repr(getOp2()));
+                IdentifiedHelper.repr(getOpnd()));
     }
 
     @Override

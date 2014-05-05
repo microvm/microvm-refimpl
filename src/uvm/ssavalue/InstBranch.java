@@ -10,21 +10,24 @@ import uvm.type.Type;
  */
 public class InstBranch extends Instruction {
 
-    private BasicBlock target;
+    /**
+     * The destination.
+     */
+    private BasicBlock dest;
 
     public InstBranch() {
     }
 
-    public InstBranch(BasicBlock target) {
-        this.target = target;
+    public InstBranch(BasicBlock dest) {
+        this.dest = dest;
     }
 
-    public BasicBlock getTarget() {
-        return target;
+    public BasicBlock getDest() {
+        return dest;
     }
 
-    public void setTarget(BasicBlock target) {
-        this.target = target;
+    public void setDest(BasicBlock dest) {
+        this.dest = dest;
     }
 
     @Override
@@ -40,11 +43,12 @@ public class InstBranch extends Instruction {
     @Override
     public String toString() {
         return String.format("%s%s %s", getClass().getSimpleName(),
-                IdentifiedHelper.repr(getTarget()));
+                IdentifiedHelper.repr(getDest()));
     }
-    
+
     @Override
     public <T> T accept(ValueVisitor<T> visitor) {
         return visitor.visitBranch(this);
     }
+
 }

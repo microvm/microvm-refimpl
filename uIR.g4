@@ -162,7 +162,7 @@ instBody
     |   'LOAD' ATOMICORD? '<' type '>' value            # InstLoad
     |   'STORE' ATOMICORD? '<' type '>' value value     # InstStore
     |   'CMPXCHG' ATOMICORD ATOMICORD
-                    '<' type '>' value value value      # InstCmpXChg
+                    '<' type '>' value value value      # InstCmpXchg
     |   'ATOMICRMW' ATOMICORD ATOMICRMWOP
                 '<' type '>' value value                # InstAtomicRMW
 

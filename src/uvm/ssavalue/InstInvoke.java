@@ -9,7 +9,7 @@ import uvm.OpCode;
 /**
  * A call anticipating exceptions.
  */
-public class InstInvoke extends NonTailCall {
+public class InstInvoke extends NonTailCall implements HandlesException {
 
     /**
      * The normal continuation.
@@ -31,18 +31,22 @@ public class InstInvoke extends NonTailCall {
         this.exc = exc;
     }
 
+    @Override
     public BasicBlock getNor() {
         return nor;
     }
 
+    @Override
     public void setNor(BasicBlock nor) {
         this.nor = nor;
     }
 
+    @Override
     public BasicBlock getExc() {
         return exc;
     }
 
+    @Override
     public void setExc(BasicBlock exc) {
         this.exc = exc;
     }

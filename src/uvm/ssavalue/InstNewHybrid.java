@@ -15,9 +15,10 @@ public class InstNewHybrid extends Instruction {
     private Hybrid allocType;
 
     /**
-     * The length of the variable part of the Hybrid.
+     * The length of the variable part of the Hybrid. Must be MicroVM.WORD_TYPE
+     * i.e. Int(WORD_SIZE_BITS).
      */
-    private int length;
+    private UseBox length;
 
     /**
      * The type of this instruction.
@@ -28,11 +29,11 @@ public class InstNewHybrid extends Instruction {
         super();
     }
 
-    public InstNewHybrid(Hybrid allocType, int length) {
+    public InstNewHybrid(Hybrid allocType, Value length) {
         super();
         this.allocType = allocType;
         this.type = new Ref(allocType);
-        this.length = length;
+        this.length = use(length);
     }
 
     public Hybrid getAllocType() {
@@ -44,12 +45,13 @@ public class InstNewHybrid extends Instruction {
         this.type = new Ref(allocType);
     }
 
-    public int getLength() {
-        return length;
+    public Value getLength() {
+        return length.getDst();
     }
 
-    public void setLength(int length) {
-        this.length = length;
+    public void setLength(Value length) {
+        assertNotReset(this.length);
+        this.length = use(length);
     }
 
     @Override

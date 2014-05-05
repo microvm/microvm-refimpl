@@ -61,9 +61,9 @@ public class InstSwitch extends Instruction {
         return opnd.getDst();
     }
 
-    public void setOpnd(UseBox opnd) {
+    public void setOpnd(Value opnd) {
         assertNotReset(this.opnd);
-        this.opnd = opnd;
+        this.opnd = use(opnd);
     }
 
     public BasicBlock getDefaultTarget() {
@@ -84,7 +84,7 @@ public class InstSwitch extends Instruction {
      * @param v
      *            The SSA Value corresponding to that basic block.
      */
-    public void setTargetFor(Value theCase, BasicBlock target) {
+    public void setDestFor(Value theCase, BasicBlock target) {
         this.cases.put(use(theCase), target);
     }
 

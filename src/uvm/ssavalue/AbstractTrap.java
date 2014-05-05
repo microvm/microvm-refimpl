@@ -9,7 +9,8 @@ import uvm.type.Type;
 /**
  * The parent class of TRAP and WATCHPOINT.
  */
-public abstract class AbstractTrap extends Instruction {
+public abstract class AbstractTrap extends Instruction implements
+        HasKeepAlives, HandlesException {
 
     /**
      * The type of this instruction when the control is returned from the
@@ -55,33 +56,33 @@ public abstract class AbstractTrap extends Instruction {
         this.type = type;
     }
 
+    @Override
     public BasicBlock getNor() {
         return nor;
     }
 
+    @Override
     public void setNor(BasicBlock nor) {
         this.nor = nor;
     }
 
+    @Override
     public BasicBlock getExc() {
         return exc;
     }
 
+    @Override
     public void setExc(BasicBlock exc) {
         this.exc = exc;
     }
 
+    @Override
     public List<UseBox> getKeepAlives() {
         return keepAlives;
     }
 
-    /**
-     * Add a new keep-alive register. A UseBox will be created.
-     * 
-     * @param ka
-     *            The register.
-     */
-    public void addKeepAlives(Value ka) {
+    @Override
+    public void addKeepAlive(Value ka) {
         this.keepAlives.add(use(ka));
     }
 

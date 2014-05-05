@@ -12,7 +12,7 @@ import parser.uIRParser.InstBranchContext;
 import parser.uIRParser.InstCCallContext;
 import parser.uIRParser.InstCallContext;
 import parser.uIRParser.InstCmpContext;
-import parser.uIRParser.InstCmpXChgContext;
+import parser.uIRParser.InstCmpXchgContext;
 import parser.uIRParser.InstConversionContext;
 import parser.uIRParser.InstExtractValueContext;
 import parser.uIRParser.InstFenceContext;
@@ -334,7 +334,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     }
 
     @Override
-    public InstCmpXchg visitInstCmpXChg(InstCmpXChgContext ctx) {
+    public InstCmpXchg visitInstCmpXchg(InstCmpXchgContext ctx) {
         InstCmpXchg inst = new InstCmpXchg();
         inst.setOrderingSucc(AtomicOrdering.valueOf(ctx.ATOMICORD(0).getText()));
         inst.setOrderingFail(AtomicOrdering.valueOf(ctx.ATOMICORD(1).getText()));

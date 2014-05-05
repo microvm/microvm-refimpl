@@ -11,7 +11,7 @@ import uvm.type.Type;
 /**
  * Create a new stack with a suspended function activation at the bottom.
  */
-public class InstNewStack extends Instruction {
+public class InstNewStack extends Instruction implements CallLike {
 
     /**
      * The signature of the callee.
@@ -40,27 +40,33 @@ public class InstNewStack extends Instruction {
         }
     }
 
+    @Override
     public FunctionSignature getSig() {
         return sig;
     }
 
+    @Override
     public void setSig(FunctionSignature sig) {
         this.sig = sig;
     }
 
+    @Override
     public Value getFunc() {
         return func.getDst();
     }
 
+    @Override
     public void setFunc(Value func) {
         assertNotReset(this.func);
         this.func = use(func);
     }
 
+    @Override
     public List<UseBox> getArgs() {
         return args;
     }
 
+    @Override
     public void addArg(Value arg) {
         this.args.add(use(arg));
     }

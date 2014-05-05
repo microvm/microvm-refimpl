@@ -6,7 +6,8 @@ import java.util.List;
 import uvm.intrinsicfunc.IntrinsicFunction;
 import uvm.type.Type;
 
-public abstract class AbstractIntrinsicCall extends Instruction {
+public abstract class AbstractIntrinsicCall extends Instruction implements
+        HasArgs, HasKeepAlives {
 
     /**
      * The intrinsic function object.
@@ -47,25 +48,23 @@ public abstract class AbstractIntrinsicCall extends Instruction {
         this.intrinsicFunction = intrinsicFunction;
     }
 
+    @Override
     public List<UseBox> getArgs() {
         return args;
     }
 
+    @Override
     public void addArg(Value arg) {
         this.args.add(use(arg));
     }
 
+    @Override
     public List<UseBox> getKeepAlives() {
         return keepAlives;
     }
 
-    /**
-     * Add a new keep-alive register. A UseBox will be created.
-     * 
-     * @param ka
-     *            The register.
-     */
-    public void addKeepAlives(Value ka) {
+    @Override
+    public void addKeepAlive(Value ka) {
         this.keepAlives.add(use(ka));
     }
 
