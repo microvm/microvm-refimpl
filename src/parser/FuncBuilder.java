@@ -43,8 +43,6 @@ class FuncBuilder {
     CFG cfg;
 
     Map<RuleContext, Instruction> ctxToInst = new HashMap<RuleContext, Instruction>();
-    Map<String, Instruction> nameToInst = new HashMap<String, Instruction>();
-    Map<String, BasicBlock> nameToBB = new HashMap<String, BasicBlock>();
 
     FuncBuilder(RecursiveBundleBuilder rbb, Function func) {
         this.rbb = rbb;
@@ -80,7 +78,7 @@ class FuncBuilder {
 
         cfg.setEntry(entry);
         cfg.getBBs().add(entry);
-        nameToBB.put(name, entry);
+        cfg.getNameToBB().put(name, entry);
 
         populateBasicBlock(entry, entryBlock.inst());
     }
@@ -93,7 +91,7 @@ class FuncBuilder {
         bb.setName(name);
 
         cfg.getBBs().add(bb);
-        nameToBB.put(name, bb);
+        cfg.getNameToBB().put(name, bb);
 
         populateBasicBlock(bb, regularBlock.inst());
     }
@@ -106,7 +104,7 @@ class FuncBuilder {
             inst.setID(rbb.makeID());
             inst.setName(name);
             bb.addInstruction(inst);
-            nameToInst.put(name, inst);
+            cfg.getNameToInst().put(name, inst);
             ctxToInst.put(ctx.instBody(), inst);
         }
     }
@@ -169,26 +167,10 @@ class FuncBuilder {
     }
 
     private Value getLocalVal(String name) {
-        Value rv = nameToInst.get(name);
+        Value rv = cfg.getNameToInst().get(name);
         if (rv == null) {
             parseError("Undefined local value " + name);
         }
         return rv;
-    }
-
-    class ValueResolver extends uIRBaseVisitor<Value> {
-        @Override
-        public Value visitReferencedValue(ReferencedValueContext ctx) {
-            String name = ctx.IDENTIFIER().getText();
-            if (name.startsWith("%")) {
-                Value rv = nameToInst.get(name);
-                if (rv == null) {
-                    parseError("Undefined instruction " + name);
-                }
-                return rv;
-            } else {
-                return null;
-            }
-        }
     }
 }

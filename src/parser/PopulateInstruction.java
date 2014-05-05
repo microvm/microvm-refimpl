@@ -17,6 +17,7 @@ import parser.uIRParser.InstCCallContext;
 import parser.uIRParser.InstCallContext;
 import parser.uIRParser.InstCmpContext;
 import parser.uIRParser.InstCmpXchgContext;
+import parser.uIRParser.InstContext;
 import parser.uIRParser.InstConversionContext;
 import parser.uIRParser.InstExtractValueContext;
 import parser.uIRParser.InstFenceContext;
@@ -89,6 +90,7 @@ import uvm.ssavalue.InstWatchPoint;
 import uvm.ssavalue.Value;
 import uvm.type.Int;
 import uvm.type.Type;
+import static parser.ParserHelper.parseError;
 
 /**
  * Private for FuncBuilder use.
@@ -122,9 +124,9 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     }
 
     private BasicBlock bb(String name) {
-        BasicBlock bb = fb.nameToBB.get(name);
+        BasicBlock bb = fb.cfg.getNameToBB().get(name);
         if (bb == null) {
-            throw new ASTParsingException("Undefined label " + name);
+            parseError("Undefined label " + name);
         }
         return bb;
     }
@@ -132,6 +134,18 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     private BasicBlock bb(TerminalNode tn) {
         String name = tn.getText();
         return bb(name);
+    }
+
+    @Override
+    public Void visitInst(InstContext ctx) {
+        try {
+            return visit(ctx.instBody());
+        } catch (ASTParsingException e) {
+            System.out.format("Error: line %d col %d: %s", ctx.getStart()
+                    .getLine(), ctx.getStart().getCharPositionInLine(), e
+                    .getMessage());
+            throw e;
+        }
     }
 
     @Override
@@ -145,8 +159,8 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     @Override
     public Void visitInstCmp(InstCmpContext ctx) {
         InstCmp inst = ctxToInst(ctx);
-        inst.setOp1(value(ctx.value(0), inst.getType()));
-        inst.setOp2(value(ctx.value(1), inst.getType()));
+        inst.setOp1(value(ctx.value(0), inst.getOpndType()));
+        inst.setOp2(value(ctx.value(1), inst.getOpndType()));
         return null;
     }
 

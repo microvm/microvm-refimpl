@@ -1,7 +1,6 @@
 package parser;
 
-import org.antlr.v4.runtime.tree.TerminalNode;
-
+import parser.uIRParser.AtomicordContext;
 import parser.uIRParser.FuncSigContext;
 import parser.uIRParser.InstAllocaContext;
 import parser.uIRParser.InstAllocaHybridContext;
@@ -122,7 +121,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstBinOp visitInstBinOp(InstBinOpContext ctx) {
         InstBinOp inst = new InstBinOp();
-        inst.setOptr(BinOptr.valueOf(ctx.BINOPS().getText()));
+        inst.setOptr(BinOptr.valueOf(ctx.binops().getText()));
         inst.setType(makeType(ctx.type()));
         return inst;
     }
@@ -130,7 +129,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstCmp visitInstCmp(InstCmpContext ctx) {
         InstCmp inst = new InstCmp();
-        inst.setOptr(CmpOptr.valueOf(ctx.CMPOPS().getText()));
+        inst.setOptr(CmpOptr.valueOf(ctx.cmpops().getText()));
         inst.setOpndType(makeType(ctx.type()));
         return inst;
     }
@@ -138,7 +137,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstConversion visitInstConversion(InstConversionContext ctx) {
         InstConversion inst = new InstConversion();
-        inst.setOptr(ConvOptr.valueOf(ctx.CONVOPS().getText()));
+        inst.setOptr(ConvOptr.valueOf(ctx.convops().getText()));
         inst.setFromType(makeType(ctx.type(0)));
         inst.setToType(makeType(ctx.type(1)));
         return inst;
@@ -314,7 +313,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstLoad visitInstLoad(InstLoadContext ctx) {
         InstLoad inst = new InstLoad();
-        TerminalNode atomicord = ctx.ATOMICORD();
+        AtomicordContext atomicord = ctx.atomicord();
         AtomicOrdering ordering = atomicord != null ? AtomicOrdering
                 .valueOf(atomicord.getText()) : AtomicOrdering.NOT_ATOMIC;
         inst.setOrdering(ordering);
@@ -325,7 +324,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstStore visitInstStore(InstStoreContext ctx) {
         InstStore inst = new InstStore();
-        TerminalNode atomicord = ctx.ATOMICORD();
+        AtomicordContext atomicord = ctx.atomicord();
         AtomicOrdering ordering = atomicord != null ? AtomicOrdering
                 .valueOf(atomicord.getText()) : AtomicOrdering.NOT_ATOMIC;
         inst.setOrdering(ordering);
@@ -336,8 +335,8 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstCmpXchg visitInstCmpXchg(InstCmpXchgContext ctx) {
         InstCmpXchg inst = new InstCmpXchg();
-        inst.setOrderingSucc(AtomicOrdering.valueOf(ctx.ATOMICORD(0).getText()));
-        inst.setOrderingFail(AtomicOrdering.valueOf(ctx.ATOMICORD(1).getText()));
+        inst.setOrderingSucc(AtomicOrdering.valueOf(ctx.atomicord(0).getText()));
+        inst.setOrderingFail(AtomicOrdering.valueOf(ctx.atomicord(1).getText()));
         inst.setReferentType(makeType(ctx.type()));
         return inst;
     }
@@ -345,8 +344,8 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstAtomicRMW visitInstAtomicRMW(InstAtomicRMWContext ctx) {
         InstAtomicRMW inst = new InstAtomicRMW();
-        inst.setOrdering(AtomicOrdering.valueOf(ctx.ATOMICORD().getText()));
-        inst.setOptr(AtomicRMWOp.valueOf(ctx.ATOMICRMWOP().getText()));
+        inst.setOrdering(AtomicOrdering.valueOf(ctx.atomicord().getText()));
+        inst.setOptr(AtomicRMWOp.valueOf(ctx.atomicrmwop().getText()));
         inst.setReferentType(makeType(ctx.type()));
         return inst;
     }
@@ -354,7 +353,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstFence visitInstFence(InstFenceContext ctx) {
         InstFence inst = new InstFence();
-        inst.setOrdering(AtomicOrdering.valueOf(ctx.ATOMICORD().getText()));
+        inst.setOrdering(AtomicOrdering.valueOf(ctx.atomicord().getText()));
         return inst;
     }
 
@@ -376,7 +375,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstCCall visitInstCCall(InstCCallContext ctx) {
         InstCCall inst = new InstCCall();
-        inst.setCallConv(CallConv.valueOf(ctx.CALLCONV().getText()));
+        inst.setCallConv(CallConv.valueOf(ctx.callconv().getText()));
         inst.setSig(makeFuncSig(ctx.funcCallBody().funcSig()));
         return inst;
     }

@@ -112,13 +112,13 @@ instBody
     :   'PARAM' intLiteral                      # InstParam
 
     // Integer/FP Arithmetic
-    |   BINOPS '<' type '>' value value         # InstBinOp
+    |   binops '<' type '>' value value         # InstBinOp
 
     // Integer/FP Comparison
-    |   CMPOPS '<' type '>' value value         # InstCmp
+    |   cmpops '<' type '>' value value         # InstCmp
 
     // Conversions
-    |   CONVOPS  '<' type type '>' value            # InstConversion
+    |   convops  '<' type type '>' value            # InstConversion
     
     // Select
     |   'SELECT' '<' type '>' value value value     # InstSelect
@@ -159,14 +159,14 @@ instBody
     |   'GETFIXEDPARTIREF'  '<' type '>' value          # InstGetFixedPartIRef
     |   'GETVARPARTIREF'    '<' type '>' value          # InstGetVarPartIRef
     
-    |   'LOAD' ATOMICORD? '<' type '>' value            # InstLoad
-    |   'STORE' ATOMICORD? '<' type '>' value value     # InstStore
-    |   'CMPXCHG' ATOMICORD ATOMICORD
+    |   'LOAD' atomicord? '<' type '>' value            # InstLoad
+    |   'STORE' atomicord? '<' type '>' value value     # InstStore
+    |   'CMPXCHG' atomicord atomicord
                     '<' type '>' value value value      # InstCmpXchg
-    |   'ATOMICRMW' ATOMICORD ATOMICRMWOP
+    |   'ATOMICRMW' atomicord atomicrmwop
                 '<' type '>' value value                # InstAtomicRMW
 
-    |   'FENCE' ATOMICORD                               # InstFence
+    |   'FENCE' atomicord                               # InstFence
 
     // Trap
     |   'TRAP' '<' type '>'
@@ -175,13 +175,13 @@ instBody
             IDENTIFIER IDENTIFIER IDENTIFIER keepAlive  # InstWatchPoint
 
     // Foreign Function Interface
-    |   'CCALL' CALLCONV funcCallBody                   # InstCCall
+    |   'CCALL' callconv funcCallBody                   # InstCCall
 
     // Thread and Stack Operations
     |   'NEWSTACK' funcCallBody                         # InstNewStack
 
     // Intrinsic Functions
-    |   'ICCALL' IDENTIFIER args keepAlive?             # InstICall
+    |   'ICALL' IDENTIFIER args keepAlive?              # InstICall
     |   'IINVOKE' IDENTIFIER args
             IDENTIFIER IDENTIFIER keepAlive?            # InstIInvoke
     ;
@@ -198,11 +198,11 @@ keepAlive
     :   'KEEPALIVE' '(' value* ')'
     ;
 
-CALLCONV : 'DEFAULT' ;
+callconv : 'DEFAULT' ;
 
-BINOPS : IBINOPS | FBINOPS ;
+binops : ibinops | fbinops ;
 
-IBINOPS
+ibinops
     : 'ADD'
     | 'SUB'
     | 'MUL'
@@ -218,13 +218,13 @@ IBINOPS
     | 'XOR'
     ;
     
-FBINOPS
+fbinops
     : 'FADD' | 'FSUB' | 'FMUL' | 'FDIV' | 'FREM'
     ;
 
-CMPOPS : ICMPOPS | FCMPOPS ;
+cmpops : icmpops | fcmpops ;
 
-ICMPOPS
+icmpops
     : 'EQ'
     | 'NE'
     | 'SGT'
@@ -237,24 +237,24 @@ ICMPOPS
     | 'ULE'
     ;
 
-FCMPOPS
+fcmpops
     : 'FTRUE' | 'FFALSE' 
     | 'FUNO' | 'FUEQ' | 'FUNE' | 'FUGT' | 'FULT' | 'FUGE' | 'FULE'
     | 'FORD' | 'FOEQ' | 'FONE' | 'FOGT' | 'FOLT' | 'FOGE' | 'FOLE'
     ;
     
-CONVOPS
+convops
     : 'TRUNC' | 'ZEXT' | 'SEXT' | 'FPTRUNC' | 'FPEXT'
     | 'FPTOUI' | 'FPTOSI' | 'UITOFP' | 'SITOFP' | 'BITCAST'
     | 'REFCAST' | 'IREFCAST'
     ;
 
-ATOMICORD
+atomicord
     : 'NOT_ATOMIC' | 'UNORDERED' | 'MONOTONIC' | 'ACQUIRE' | 'RELEASE'
-    | 'ACQ_REL' | 'SQL_CST'
+    | 'ACQ_REL' | 'SEQ_CST'
     ;
 
-ATOMICRMWOP
+atomicrmwop
     : 'XCHG' | 'ADD' | 'SUB' | 'AND' | 'NAND' | 'OR' | 'XOR'
     | 'MAX' | 'MIN' | 'UMAX' | 'UMIN'
     ;

@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.junit.Assert;
 
 import parser.RecursiveBundleBuilder;
 import parser.uIRLexer;
@@ -22,6 +23,11 @@ public class TestingHelper {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         uIRParser parser = new uIRParser(tokens);
         IrContext ir = parser.ir();
+
+        if (parser.getNumberOfSyntaxErrors() > 0) {
+            System.err.println("Syntax error");
+            Assert.fail("Syntax error");
+        }
 
         RecursiveBundleBuilder rbb = new RecursiveBundleBuilder();
         rbb.build(ir);

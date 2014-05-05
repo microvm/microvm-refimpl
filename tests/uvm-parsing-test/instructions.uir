@@ -1,0 +1,348 @@
+.funcdef @intBinOpTest <void (int<32> int<32>)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    
+    %add  = ADD  <int<32>> %p0 %p1
+    %sub  = SUB  <int<32>> %p0 %p1
+    %mul  = MUL  <int<32>> %p0 %p1
+    %udiv = UDIV <int<32>> %p0 %p1
+    %sdiv = SDIV <int<32>> %p0 %p1
+    %urem = UREM <int<32>> %p0 %p1
+    %srem = SREM <int<32>> %p0 %p1
+    %shl  = SHL  <int<32>> %p0 %p1
+    %lshr = LSHR <int<32>> %p0 %p1
+    %ashr = ASHR <int<32>> %p0 %p1
+    %and  = AND  <int<32>> %p0 %p1
+    %or   = OR   <int<32>> %p0 %p1
+    %xor  = XOR  <int<32>> %p0 %p1
+    
+    RETVOID
+}
+
+.funcdef @intBinOpTest2 <void (int<8> int<16> int<32> int<64>)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    %p2 = PARAM 2
+    %p3 = PARAM 3
+    
+    %add  = ADD  <int<8>>  %p0 42
+    %sub  = SUB  <int<16>> %p1 42
+    %mul  = MUL  <int<32>> %p2 42
+    %udiv = UDIV <int<64>> %p3 42
+    
+    RETVOID
+}
+
+.funcdef @fpBinOpTest <void (double double)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    
+    %fadd = FADD <double> %p0 %p1
+    %fsub = FSUB <double> %p0 %p1
+    %fmul = FMUL <double> %p0 %p1
+    %fdiv = FDIV <double> %p0 %p1
+    %frem = FREM <double> %p0 %p1
+    
+    RETVOID
+}
+
+.funcdef @fpBinOpTest2 <void (float double)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    
+    %fadd = FADD <float>  %p0 3.14
+    %fsub = FSUB <double> %p1 3.14
+    
+    RETVOID
+}
+
+.funcdef @intCmpTest <void (int<64> int<64>)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    
+    %eq  = EQ  <int<64>> %p0 %p1
+    %ne  = NE  <int<64>> %p0 %p1
+    %ult = ULT <int<64>> %p0 %p1
+    %ule = ULE <int<64>> %p0 %p1
+    %ugt = UGT <int<64>> %p0 %p1
+    %uge = UGE <int<64>> %p0 %p1
+    %slt = SLT <int<64>> %p0 %p1
+    %sle = SLE <int<64>> %p0 %p1
+    %sgt = SGT <int<64>> %p0 %p1
+    %sge = SGE <int<64>> %p0 %p1
+    
+    RETVOID
+}
+
+.funcdef @intCmpTest2 <void (int<64>)> {
+    %p0 = PARAM 0
+    
+    %eq  = EQ  <int<64>> %p0 42
+    
+    RETVOID
+}
+
+.funcdef @fpCmpTest <void (float float)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    
+    %ftrue  = FTRUE  <float> %p0 %p1
+    %ffalse = FFALSE <float> %p0 %p1
+    %ford = FORD <float> %p0 %p1
+    %foeq = FOEQ <float> %p0 %p1
+    %fone = FONE <float> %p0 %p1
+    %folt = FOLT <float> %p0 %p1
+    %fole = FOLE <float> %p0 %p1
+    %fogt = FOGT <float> %p0 %p1
+    %foge = FOGE <float> %p0 %p1
+    %funo = FUNO <float> %p0 %p1
+    %fueq = FUEQ <float> %p0 %p1
+    %fune = FUNE <float> %p0 %p1
+    %fult = FULT <float> %p0 %p1
+    %fule = FULE <float> %p0 %p1
+    %fugt = FUGT <float> %p0 %p1
+    %fuge = FUGE <float> %p0 %p1
+    
+    RETVOID
+}
+
+.funcdef @fpCmpTest2 <void (float)> {
+    %p0 = PARAM 0
+    
+    %foeq = FOEQ <float> %p0 3.14
+    
+    RETVOID
+}
+
+.funcdef @convTest <void (int<32> int<64> float double)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    %p2 = PARAM 2
+    %p3 = PARAM 3
+
+    %trunc  = TRUNC <int<64> int<32>> %p1
+    %zext   = ZEXT  <int<32> int<64>> %p0
+    %sext   = SEXT  <int<32> int<64>> %p0
+
+    %fptrunc = FPTRUNC <double float> %p3
+    %fpext   = FPEXT   <float double> %p2
+
+    %fptoui = FPTOUI <double int<64>> %p3
+    %fptosi = FPTOSI <double int<64>> %p3
+    %uitofp = UITOFP <int<64> double> %p1
+    %sitofp = SITOFP <int<64> double> %p1
+
+    %bitcast0 = BITCAST <int<32> float>  %p0
+    %bitcast1 = BITCAST <int<64> double> %p1
+    %bitcast2 = BITCAST <float int<32>>  %p2
+    %bitcast3 = BITCAST <double int<64>> %p3
+
+    RETVOID
+}
+
+.funcdef @refCastTest <void (ref<void> iref<void>)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    
+    %refcast  = REFCAST  <void int<32>> %p0
+    %irefcast = IREFCAST <void int<64>> %p1
+    
+    RETVOID
+}
+
+.funcdef @ctrlFlow <void (int<32>)> {
+    %entry:
+        %p0 = PARAM 0
+        BRANCH %head
+    
+    %head:
+        %phi  = PHI <int<32>> { %entry: 0; %next: %i2; }
+        %zero = EQ <int<32>> %p0 0
+        BRANCH2 %zero %body %exit
+        
+    %body:
+        SWITCH <int<32>> %phi %other { 1: %one; 2: %two; }
+    %one:
+        BRANCH %next
+    %two:
+        BRANCH %next
+    %other:
+        BRANCH %next
+    %next:
+        %i2 = SUB <int<32>> %phi 1
+        BRANCH %head
+        
+    %exit:
+        RETVOID
+}
+
+.funcsig @iiisig = int<64> (int<64> int<64>)
+
+.funcdecl @callee1 <void ()>
+
+.funcdef @callee2 <@iiisig> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    %rv = ADD <int<64>> %p0 %p1
+    RET <int<64>> %rv
+}
+
+.funcdef @callee3 <@iiisig> {
+    %exc = NEW <double>
+    THROW %exc
+}
+
+.funcdef @caller1 <void ()> {
+        CALL <void ()> @callee1 ()
+        %v2 = CALL <@iiisig> @callee2 (1 2)
+        %v3 = INVOKE <@iiisig> @callee3 (3 4) %cont %catch
+
+    %cont:
+        %v4 = CALL <void ()> @callee1 () KEEPALIVE (%v2 %v3)
+        %v5 = INVOKE <@iiisig> @callee3 (%v3 %v3) %cont2 %catch KEEPALIVE (%v2)
+
+    %cont2:
+        RETVOID
+
+    %catch:
+        %exc = LANDINGPAD
+        RETVOID
+}
+
+.funcdef @caller2 <@iiisig> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    TAILCALL <@iiisig> @callee2 (%p0 %p1)
+}
+
+.typedef @sid = struct <int<64> double>
+.const @sid1 <@sid> = {42 3.14}
+
+.funcdef @aggregate <void ()> {
+    %e0 = EXTRACTVALUE <@sid 0> @sid1
+    %e1 = EXTRACTVALUE <@sid 1> @sid1
+    %i0 = INSERTVALUE <@sid 0> @sid1 40
+    %i1 = INSERTVALUE <@sid 1> @sid1 40.0
+    
+    RETVOID
+}
+
+.typedef @al = array <int<64> 10>
+.typedef @hic = hybrid <int<64> int<8>>
+
+.funcdef @memops <void (int<64> int<64>)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    
+    %new            = NEW <int<64>>
+    %newhybrid      = NEWHYBRID <@hic> %p0
+    %alloca         = ALLOCA <int<64>>
+    %allocahybrid   = ALLOCAHYBRID <@hic> %p0
+    
+    %new2           = NEW <@sid>
+    %alloca2        = ALLOCA <@al>
+    
+    %getiref        = GETIREF <@sid> %new2
+    
+    %getfieldiref   = GETFIELDIREF <@sid 0> %getiref
+    %getelemiref    = GETELEMIREF <@al> %alloca2 %p1
+    
+    %getfixedpartiref   = GETFIXEDPARTIREF <@hic> %allocahybrid
+    %getvarpartiref     = GETVARPARTIREF <@hic> %allocahybrid
+    
+    %shiftiref      = SHIFTIREF <int<8>> %getvarpartiref %p1
+    
+    %load       = LOAD <int<64>> %alloca
+    %store      = STORE <int<64>> %alloca 42
+    %cmpxchg    = CMPXCHG ACQUIRE MONOTONIC <int<64>> %alloca 42 0
+    %atomicrmw  = ATOMICRMW ACQ_REL ADD <int<64>> %alloca 50
+    
+    FENCE MONOTONIC
+    
+    RETVOID
+}
+
+.funcdef @memorder <void (iref<int<64>>)> {
+    %p0 = PARAM 0
+    
+    %l0 = LOAD NOT_ATOMIC   <int<64>> %p0
+    %l1 = LOAD UNORDERED    <int<64>> %p0
+    %l2 = LOAD MONOTONIC    <int<64>> %p0
+    %f3 = FENCE ACQUIRE
+    %f4 = FENCE RELEASE
+    %f5 = FENCE ACQ_REL
+    %l6 = LOAD SEQ_CST      <int<64>> %p0
+
+    RETVOID
+}
+
+.funcdef @atomicrmwops <void (iref<int<64>> int<64>)> {
+    %p0 = PARAM 0
+    %p1 = PARAM 1
+    
+    %old0 = ATOMICRMW ACQ_REL XCHG  <int<64>> %p0 %p1
+    %old1 = ATOMICRMW ACQ_REL ADD   <int<64>> %p0 %p1
+    %old2 = ATOMICRMW ACQ_REL SUB   <int<64>> %p0 %p1
+    %old3 = ATOMICRMW ACQ_REL AND   <int<64>> %p0 %p1
+    %old4 = ATOMICRMW ACQ_REL NAND  <int<64>> %p0 %p1
+    %old5 = ATOMICRMW ACQ_REL OR    <int<64>> %p0 %p1
+    %old6 = ATOMICRMW ACQ_REL XOR   <int<64>> %p0 %p1
+    %old7 = ATOMICRMW ACQ_REL MAX   <int<64>> %p0 %p1
+    %old8 = ATOMICRMW ACQ_REL MIN   <int<64>> %p0 %p1
+    %old9 = ATOMICRMW ACQ_REL UMAX  <int<64>> %p0 %p1
+    %olda = ATOMICRMW ACQ_REL UMIN  <int<64>> %p0 %p1
+
+    RETVOID
+}
+
+.funcdef @traps <void ()> {
+        %a  = ADD <int<64>> 30 40
+        %b  = SUB <int<64>> 30 40
+        %c  = MUL <int<64>> 30 40
+        %wp = WATCHPOINT 1 <int<64>> %body %wpcont %wpexc KEEPALIVE (%a)
+    
+    %body:
+        TRAP <int<32>> %trapcont %trapexc KEEPALIVE (%b %wp)
+    
+    %wpcont:
+        RETVOID
+        
+    %wpexc:
+        %exc = LANDINGPAD
+        THROW %exc
+    
+    %trapcont:
+        RETVOID
+    
+    %trapexc:
+        %exc2 = LANDINGPAD
+        THROW %exc2
+}
+
+.funcdef @ccall <void (int<64>)> {
+    %p0 = PARAM 0
+    
+    %rv = CCALL DEFAULT <void (double)> %p0 (3.14)
+    
+    RETVOID
+}
+
+.global @globalexc <ref<int<64>>>
+
+.funcdef @stack_and_intrinsic <void (int<64>)> {
+        %a  = ADD <int<64>> 30 40
+        %b  = SUB <int<64>> 30 40
+        %c  = MUL <int<64>> 30 40
+        
+        %ns = NEWSTACK <@iiisig> @callee2 (5 6)
+        
+        %i  = ICALL @uvm.swapstack(%ns) KEEPALIVE (%b)
+        
+        %j  = IINVOKE @uvm.killstack(%ns) %nor %exc KEEPALIVE (%b %c)
+        
+    %nor:
+        RETVOID
+    %exc:
+        %the_exc = LOAD <ref<int<64>>> @globalexc
+        THROW %the_exc
+}
