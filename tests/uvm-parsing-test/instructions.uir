@@ -217,7 +217,7 @@
     %cmpxchg    = CMPXCHG ACQUIRE MONOTONIC <int<64>> %alloca 42 0
     %atomicrmw  = ATOMICRMW ACQ_REL ADD <int<64>> %alloca 50
     
-    FENCE MONOTONIC
+    %fence = FENCE MONOTONIC
     
     RETVOID
 }
@@ -262,7 +262,7 @@
         %wp = WATCHPOINT 1 <int<64>> %body %wpcont %wpexc KEEPALIVE (%a)
     
     %body:
-        TRAP <int<32>> %trapcont %trapexc KEEPALIVE (%b %wp)
+        %tp = TRAP <int<32>> %trapcont %trapexc KEEPALIVE (%b %wp)
     
     %wpcont:
         RETVOID
@@ -346,7 +346,7 @@
         %tailcall = TAILCALL <@rainbow_sig> @rainbow (76 77 78 79 80.0 81.0)
     %bb5:
         %extractvalue   = EXTRACTVALUE <@rainbows 0> {82 83 84 85 86.0 87.0}
-        %insertvalue    = INSERTVALUE <@rainbows 0> {88 89 90 01 92.0 93.0} 94
+        %insertvalue    = INSERTVALUE <@rainbows 0> {88 89 90 91 92.0 93.0} 94
         
         %newhybrid      = NEWHYBRID <hybrid<void int<8>>> 95
         %allocahybrid   = ALLOCAHYBRID <hybrid<void int<8>>> 96

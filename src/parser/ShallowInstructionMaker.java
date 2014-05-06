@@ -277,6 +277,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     public InstGetFieldIRef visitInstGetFieldIRef(InstGetFieldIRefContext ctx) {
         InstGetFieldIRef inst = new InstGetFieldIRef();
         inst.setReferentType((Struct) makeType(ctx.type()));
+        inst.setIndex(intLitToInt(ctx.intLiteral()));
         return inst;
     }
 

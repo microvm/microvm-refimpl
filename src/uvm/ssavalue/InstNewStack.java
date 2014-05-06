@@ -71,7 +71,7 @@ public class InstNewStack extends Instruction implements CallLike {
         this.args.add(use(arg));
     }
 
-    private static Stack STACK_TYPE;
+    private static Stack STACK_TYPE = new Stack();
 
     @Override
     public Type getType() {

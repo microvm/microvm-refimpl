@@ -2,6 +2,7 @@ package uvm.ssavalue;
 
 import uvm.OpCode;
 import uvm.type.Hybrid;
+import uvm.type.IRef;
 import uvm.type.Type;
 
 /**
@@ -29,7 +30,7 @@ public class InstGetFixedPartIRef extends Instruction {
     public InstGetFixedPartIRef(Hybrid referentType, Value opnd) {
         super();
         this.referentType = referentType;
-        this.type = referentType.getFixedPart();
+        this.type = new IRef(referentType.getFixedPart());
         this.opnd = use(opnd);
     }
 
@@ -39,7 +40,7 @@ public class InstGetFixedPartIRef extends Instruction {
 
     public void setReferentType(Hybrid referentType) {
         this.referentType = referentType;
-        this.type = referentType.getFixedPart();
+        this.type = new IRef(referentType.getFixedPart());
     }
 
     public Value getOpnd() {
