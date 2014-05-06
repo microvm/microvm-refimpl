@@ -22,9 +22,9 @@ public class InstSwitch extends Instruction {
     private UseBox opnd;
 
     /**
-     * The default target. i.e. The target if no case matches.
+     * The default destination. i.e. The destination if no case matches.
      */
-    private BasicBlock defaultTarget;
+    private BasicBlock defaultDest;
 
     /**
      * A map from basic blocks and use boxes. Each use box contains the value
@@ -43,7 +43,7 @@ public class InstSwitch extends Instruction {
             Map<Value, BasicBlock> cases) {
         this.opndType = opndType;
         this.opnd = use(opnd);
-        this.defaultTarget = defaultTarget;
+        this.defaultDest = defaultTarget;
         for (Map.Entry<Value, BasicBlock> e : cases.entrySet()) {
             this.cases.put(use(e.getKey()), e.getValue());
         }
@@ -66,12 +66,12 @@ public class InstSwitch extends Instruction {
         this.opnd = use(opnd);
     }
 
-    public BasicBlock getDefaultTarget() {
-        return defaultTarget;
+    public BasicBlock getDefaultDest() {
+        return defaultDest;
     }
 
-    public void setDefaultTarget(BasicBlock defaultTarget) {
-        this.defaultTarget = defaultTarget;
+    public void setDefaultDest(BasicBlock defaultDest) {
+        this.defaultDest = defaultDest;
     }
 
     /**
@@ -84,8 +84,8 @@ public class InstSwitch extends Instruction {
      * @param v
      *            The SSA Value corresponding to that basic block.
      */
-    public void setDestFor(Value theCase, BasicBlock target) {
-        this.cases.put(use(theCase), target);
+    public void setDestFor(Value theCase, BasicBlock dest) {
+        this.cases.put(use(theCase), dest);
     }
 
     public HashMap<UseBox, BasicBlock> getCases() {

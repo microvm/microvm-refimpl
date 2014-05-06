@@ -202,7 +202,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     public Void visitInstSwitch(InstSwitchContext ctx) {
         InstSwitch inst = ctxToInst(ctx);
         inst.setOpnd(value(ctx.value(0), inst.getOpndType()));
-        inst.setDefaultTarget(bb(ctx.IDENTIFIER(0)));
+        inst.setDefaultDest(bb(ctx.IDENTIFIER(0)));
 
         for (int i = 1; i < ctx.IDENTIFIER().size(); i++) {
             Value cas = value(ctx.value(i), inst.getOpndType());
@@ -225,7 +225,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     }
 
     private void populateCall(CallLike inst, FuncCallBodyContext ctx) {
-        inst.setFunc(value(ctx.value(), null));
+        inst.setFunc(value(ctx.value()));
         List<ValueContext> valCtxs = ctx.args().value();
         List<Type> hints = inst.getSig().getParamTypes();
         for (int i = 0; i < valCtxs.size(); i++) {

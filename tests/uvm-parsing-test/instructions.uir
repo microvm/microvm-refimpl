@@ -19,20 +19,6 @@
     RETVOID
 }
 
-.funcdef @intBinOpTest2 <void (int<8> int<16> int<32> int<64>)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    %p2 = PARAM 2
-    %p3 = PARAM 3
-    
-    %add  = ADD  <int<8>>  %p0 42
-    %sub  = SUB  <int<16>> %p1 42
-    %mul  = MUL  <int<32>> %p2 42
-    %udiv = UDIV <int<64>> %p3 42
-    
-    RETVOID
-}
-
 .funcdef @fpBinOpTest <void (double double)> {
     %p0 = PARAM 0
     %p1 = PARAM 1
@@ -42,16 +28,6 @@
     %fmul = FMUL <double> %p0 %p1
     %fdiv = FDIV <double> %p0 %p1
     %frem = FREM <double> %p0 %p1
-    
-    RETVOID
-}
-
-.funcdef @fpBinOpTest2 <void (float double)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    
-    %fadd = FADD <float>  %p0 3.14
-    %fsub = FSUB <double> %p1 3.14
     
     RETVOID
 }
@@ -70,14 +46,6 @@
     %sle = SLE <int<64>> %p0 %p1
     %sgt = SGT <int<64>> %p0 %p1
     %sge = SGE <int<64>> %p0 %p1
-    
-    RETVOID
-}
-
-.funcdef @intCmpTest2 <void (int<64>)> {
-    %p0 = PARAM 0
-    
-    %eq  = EQ  <int<64>> %p0 42
     
     RETVOID
 }
@@ -102,14 +70,6 @@
     %fule = FULE <float> %p0 %p1
     %fugt = FUGT <float> %p0 %p1
     %fuge = FUGE <float> %p0 %p1
-    
-    RETVOID
-}
-
-.funcdef @fpCmpTest2 <void (float)> {
-    %p0 = PARAM 0
-    
-    %foeq = FOEQ <float> %p0 3.14
     
     RETVOID
 }
@@ -144,8 +104,8 @@
     %p0 = PARAM 0
     %p1 = PARAM 1
     
-    %refcast  = REFCAST  <void int<32>> %p0
-    %irefcast = IREFCAST <void int<64>> %p1
+    %refcast  = REFCAST  <ref<void> ref<int<32>>> %p0
+    %irefcast = IREFCAST <iref<void> iref<int<64>>> %p1
     
     RETVOID
 }
@@ -153,24 +113,24 @@
 .funcdef @ctrlFlow <void (int<32>)> {
     %entry:
         %p0 = PARAM 0
-        BRANCH %head
+        %br1 = BRANCH %head
     
     %head:
         %phi  = PHI <int<32>> { %entry: 0; %next: %i2; }
         %zero = EQ <int<32>> %p0 0
-        BRANCH2 %zero %body %exit
+        %br2 = BRANCH2 %zero %body %exit
         
     %body:
-        SWITCH <int<32>> %phi %other { 1: %one; 2: %two; }
+        %switch = SWITCH <int<32>> %phi %other { 1: %one; 2: %two; }
     %one:
-        BRANCH %next
+        %br3 = BRANCH %next
     %two:
-        BRANCH %next
+        %br4 = BRANCH %next
     %other:
-        BRANCH %next
+        %br5 = BRANCH %next
     %next:
         %i2 = SUB <int<32>> %phi 1
-        BRANCH %head
+        %br6 = BRANCH %head
         
     %exit:
         RETVOID
@@ -184,16 +144,16 @@
     %p0 = PARAM 0
     %p1 = PARAM 1
     %rv = ADD <int<64>> %p0 %p1
-    RET <int<64>> %rv
+    %ret = RET <int<64>> %rv
 }
 
 .funcdef @callee3 <@iiisig> {
     %exc = NEW <double>
-    THROW %exc
+    %throw = THROW %exc
 }
 
 .funcdef @caller1 <void ()> {
-        CALL <void ()> @callee1 ()
+        %v1 = CALL <void ()> @callee1 ()
         %v2 = CALL <@iiisig> @callee2 (1 2)
         %v3 = INVOKE <@iiisig> @callee3 (3 4) %cont %catch
 
@@ -202,7 +162,7 @@
         %v5 = INVOKE <@iiisig> @callee3 (%v3 %v3) %cont2 %catch KEEPALIVE (%v2)
 
     %cont2:
-        RETVOID
+        %retv = RETVOID
 
     %catch:
         %exc = LANDINGPAD
@@ -212,7 +172,7 @@
 .funcdef @caller2 <@iiisig> {
     %p0 = PARAM 0
     %p1 = PARAM 1
-    TAILCALL <@iiisig> @callee2 (%p0 %p1)
+    %tc = TAILCALL <@iiisig> @callee2 (%p0 %p1)
 }
 
 .typedef @sid = struct <int<64> double>
@@ -336,13 +296,70 @@
         
         %ns = NEWSTACK <@iiisig> @callee2 (5 6)
         
-        %i  = ICALL @uvm.swapstack(%ns) KEEPALIVE (%b)
+        %i  = ICALL @uvm.swap_stack(%ns) KEEPALIVE (%b)
         
-        %j  = IINVOKE @uvm.killstack(%ns) %nor %exc KEEPALIVE (%b %c)
+        %j  = IINVOKE @uvm.kill_stack(%ns) %nor %exc KEEPALIVE (%b %c)
         
     %nor:
         RETVOID
     %exc:
         %the_exc = LOAD <ref<int<64>>> @globalexc
         THROW %the_exc
+}
+
+.funcsig @rainbow_sig = float (int<8> int<16> int<32> int<64> float double)
+.funcdecl @rainbow <@rainbow_sig>
+
+.typedef @rainbows = struct <int<8> int<16> int<32> int<64> float double>
+
+.typedef @garray_t = array<int<32> 200>
+.global @garray <@garray_t>
+
+.const @funcaddr <int<64>> = 0x0000001234567800
+
+.funcdef @inference <float ()> {
+        %add  = ADD  <int<8>>  41 42
+        %sub  = SUB  <int<16>> 43 44
+        %mul  = MUL  <int<32>> 45 46
+        %udiv = UDIV <int<64>> 47 48
+        %fadd = FADD <float>   49.0 50.0
+        %fsub = FSUB <double>  51.0 52.0
+        
+        %eq   = EQ   <int<64>> 53 54
+        %fueq = FUEQ <double>  55.0 56.0
+        
+        %trunc  = TRUNC <int<64> int<32>> 57
+        %fptrunc = FPTRUNC <double float> 58.0
+        
+        %refcast  = REFCAST  <ref<void> ref<int<32>>> NULL
+        %irefcast = IREFCAST <iref<void> iref<int<64>>> NULL
+        
+        %select = SELECT <double> 1 59.0 60.0
+    
+    %bb2:
+        %switch = SWITCH <int<32>> 61 %bb3 { 62:%bb4; }
+    %bb3:
+        %phi    = PHI <int<32>> { %bb2: 63; }
+        %call   = CALL <@rainbow_sig> @rainbow (64 65 66 67 68.0 69.0)
+        %invoke = INVOKE <@rainbow_sig> @rainbow (70 71 72 73 74.0 75.0) %bb4 %bb5
+    %bb4:
+        %tailcall = TAILCALL <@rainbow_sig> @rainbow (76 77 78 79 80.0 81.0)
+    %bb5:
+        %extractvalue   = EXTRACTVALUE <@rainbows 0> {82 83 84 85 86.0 87.0}
+        %insertvalue    = INSERTVALUE <@rainbows 0> {88 89 90 01 92.0 93.0} 94
+        
+        %newhybrid      = NEWHYBRID <hybrid<void int<8>>> 95
+        %allocahybrid   = ALLOCAHYBRID <hybrid<void int<8>>> 96
+        
+        %getelemiref    = GETELEMIREF <@garray_t> @garray 97
+        %shiftiref      = SHIFTIREF <int<32>> %getelemiref 98
+        
+        %store      = STORE <int<32>> %shiftiref 99
+        %cmpxchg    = CMPXCHG ACQ_REL MONOTONIC <int<32>> %shiftiref 100 101
+        %atomicrmw  = ATOMICRMW ACQ_REL ADD <int<32>> %shiftiref 102
+        
+        %ccall      = CCALL DEFAULT <@rainbow_sig> @funcaddr (103 104 105 106 107.0 108.0)
+        %newstack   = NEWSTACK <@rainbow_sig> @rainbow (109 110 111 112 113.0 114.0)
+        
+        RETVOID
 }
