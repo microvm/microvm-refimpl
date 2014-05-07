@@ -32,7 +32,7 @@ class DeepTypeMaker extends ShallowTypeMaker {
 
     @Override
     public Type visitReferencedType(ReferencedTypeContext ctx) {
-        String name = ctx.IDENTIFIER().getText();
+        String name = ctx.GLOBAL_ID().getText();
         Type type = this.rbb.bundle.getTypeByName(name);
 
         if (type == null) {

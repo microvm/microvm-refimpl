@@ -1,6 +1,5 @@
 package parser;
 
-import static parser.RecursiveBundleBuilder.assertGlobal;
 import parser.uIRParser.ReferencedConstContext;
 import parser.uIRParser.StructConstContext;
 import uvm.ssavalue.Constant;
@@ -23,7 +22,7 @@ public class DeepConstMaker extends ShallowConstMaker {
 
     @Override
     public Constant visitReferencedConst(ReferencedConstContext ctx) {
-        String name = assertGlobal(ctx.IDENTIFIER().getText());
+        String name = ctx.GLOBAL_ID().getText();
         return rbb.bundle.getConstantByName(name);
     }
 

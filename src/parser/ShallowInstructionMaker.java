@@ -392,7 +392,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     public InstICall visitInstICall(InstICallContext ctx) {
         InstICall inst = new InstICall();
         inst.setIntrinsicFunction(IntrinsicFunctionFactory
-                .getIntrinsicFunctionByName(ctx.IDENTIFIER().getText()));
+                .getIntrinsicFunctionByName(ctx.GLOBAL_ID().getText()));
         return inst;
     }
 
@@ -400,7 +400,7 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     public InstIInvoke visitInstIInvoke(InstIInvokeContext ctx) {
         InstIInvoke inst = new InstIInvoke();
         inst.setIntrinsicFunction(IntrinsicFunctionFactory
-                .getIntrinsicFunctionByName(ctx.IDENTIFIER(0).getText()));
+                .getIntrinsicFunctionByName(ctx.GLOBAL_ID().getText()));
         return inst;
     }
 

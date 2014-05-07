@@ -130,7 +130,7 @@ public class RecursiveBundleBuilder {
         uIRBaseVisitor<Void> buildFuncBody = new uIRBaseVisitor<Void>() {
             @Override
             public Void visitFuncDef(FuncDefContext ctx) {
-                String name = ctx.IDENTIFIER().getText();
+                String name = ctx.GLOBAL_ID().getText();
                 Function func = bundle.getFuncByName(name);
                 FuncBuilder funcBuilder = new FuncBuilder(
                         RecursiveBundleBuilder.this, func);
@@ -162,7 +162,7 @@ public class RecursiveBundleBuilder {
 
     private void handleTypeDef(TypeDefContext ctx) {
         Type type = shallowTypeMaker.visit(ctx.typeConstructor());
-        String name = ctx.IDENTIFIER().getText();
+        String name = ctx.GLOBAL_ID().getText();
         type.setName(name);
         bundle.bind(type.getID(), name);
     }
@@ -170,13 +170,13 @@ public class RecursiveBundleBuilder {
     private void handleFuncSigDef(FuncSigDefContext ctx) {
         FunctionSignature sig = shallowFuncSigMaker.visit(ctx
                 .funcSigConstructor());
-        String name = ctx.IDENTIFIER().getText();
+        String name = ctx.GLOBAL_ID().getText();
         sig.setName(name);
         bundle.bind(sig.getID(), name);
     }
 
     private void populateTypeDef(TypeDefContext ctx) {
-        String name = ctx.IDENTIFIER().getText();
+        String name = ctx.GLOBAL_ID().getText();
         final Type oldType = bundle.getTypeByName(name);
 
         new PopulateDeclaredTypeAndSig(RecursiveBundleBuilder.this, oldType)
@@ -184,7 +184,7 @@ public class RecursiveBundleBuilder {
     }
 
     private void populateFuncSigDef(FuncSigDefContext ctx) {
-        String name = ctx.IDENTIFIER().getText();
+        String name = ctx.GLOBAL_ID().getText();
         FunctionSignature sig = bundle.getFuncSigByName(name);
 
         typeAndSigPopulator.visitFuncSigConstructor(sig,
@@ -229,7 +229,7 @@ public class RecursiveBundleBuilder {
      * A general function to handle ".const" definitions, global or local.
      */
     private Constant handleConstDefShallow(ConstDefContext ctx) {
-        String name = ctx.IDENTIFIER().getText();
+        String name = ctx.GLOBAL_ID().getText();
         if (!name.startsWith("@")) {
             throw new ASTParsingException("Local identifier " + name
                     + " found. Expect Galobal identifier.");
@@ -247,7 +247,7 @@ public class RecursiveBundleBuilder {
     }
 
     private void populateConstDef(ConstDefContext ctx) {
-        String name = ctx.IDENTIFIER().getText();
+        String name = ctx.GLOBAL_ID().getText();
         Constant constant = bundle.getConstantByName(name);
         new PopulateDeclaredConst(this, constant).visit(ctx);
     }
@@ -261,7 +261,7 @@ public class RecursiveBundleBuilder {
         GlobalData globalData = new GlobalData();
         int id = makeID();
         globalData.setID(id);
-        String name = assertGlobal(ctx.IDENTIFIER().getText());
+        String name = ctx.GLOBAL_ID().getText();
         globalData.setName(name);
 
         Type type = deepTypeMaker.visit(ctx.type());
@@ -326,7 +326,7 @@ public class RecursiveBundleBuilder {
         // definitions of the same function with different signatures. We do not
         // check this error.
 
-        String name = assertGlobal(ctx.IDENTIFIER().getText());
+        String name = ctx.GLOBAL_ID().getText();
 
         // If already declared, do not declare again.
         // Potential error: an erroneous µVM-IR program may contain multiple
@@ -344,7 +344,7 @@ public class RecursiveBundleBuilder {
     }
 
     private void handleFuncDecl(FuncDeclContext ctx) {
-        String name = assertGlobal(ctx.IDENTIFIER().getText());
+        String name = ctx.GLOBAL_ID().getText();
 
         // It does not make sense to declare a function multiple times.
 

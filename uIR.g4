@@ -18,31 +18,31 @@ metaData
     ;
 
 typeDef
-    :   '.typedef' IDENTIFIER '=' typeConstructor
+    :   '.typedef' GLOBAL_ID '=' typeConstructor
     ;
 
 funcSigDef
-    :   '.funcsig' IDENTIFIER '=' funcSigConstructor
+    :   '.funcsig' GLOBAL_ID '=' funcSigConstructor
     ;
 
 constDef
-    :   '.const' IDENTIFIER '<' type '>' '=' constExpr
+    :   '.const' GLOBAL_ID '<' type '>' '=' constExpr
     ;
     
 globalDef
-    :   '.global' IDENTIFIER '<' type '>'
+    :   '.global' GLOBAL_ID '<' type '>'
     ;
 
 funcDecl
-    :   '.funcdecl' IDENTIFIER '<' funcSig '>'
+    :   '.funcdecl' GLOBAL_ID '<' funcSig '>'
     ;
     
 funcDef
-    :   '.funcdef' IDENTIFIER '<' funcSig '>' funcBody
+    :   '.funcdef' GLOBAL_ID '<' funcSig '>' funcBody
     ;
 
 type
-    :   IDENTIFIER          # ReferencedType
+    :   GLOBAL_ID           # ReferencedType
     |   typeConstructor     # InLineType
     ;
 
@@ -64,7 +64,7 @@ typeConstructor
     ;
 
 funcSig
-    :   IDENTIFIER          # ReferencedFuncSig
+    :   GLOBAL_ID           # ReferencedFuncSig
     |   funcSigConstructor  # InLineFuncSig
     ;
 
@@ -73,7 +73,7 @@ funcSigConstructor
     ;
 
 constant
-    :   IDENTIFIER          # ReferencedConst
+    :   GLOBAL_ID           # ReferencedConst
     |   constExpr           # InLineConst
     ;
 
@@ -101,11 +101,11 @@ regularBlock
     ;
 
 label
-    :   IDENTIFIER ':'
+    :   LOCAL_ID ':'
     ;
 
 inst
-    :   (IDENTIFIER '=')? instBody
+    :   (LOCAL_ID '=')? instBody
     ;
 
 instBody
@@ -124,16 +124,16 @@ instBody
     |   'SELECT' '<' type '>' value value value     # InstSelect
 
     // Intra-function Control Flow
-    |   'BRANCH' IDENTIFIER                         # InstBranch
-    |   'BRANCH2' value IDENTIFIER IDENTIFIER       # InstBranch2
-    |   'SWITCH' '<' type '>' value IDENTIFIER '{'
-            (value ':' IDENTIFIER ';')* '}'         # InstSwitch
+    |   'BRANCH' LOCAL_ID                           # InstBranch
+    |   'BRANCH2' value LOCAL_ID LOCAL_ID           # InstBranch2
+    |   'SWITCH' '<' type '>' value LOCAL_ID '{'
+            (value ':' LOCAL_ID ';')* '}'           # InstSwitch
     |   'PHI' '<' type '>' '{'
-            (IDENTIFIER ':' value ';')* '}'         # InstPhi
+            (LOCAL_ID ':' value ';')* '}'           # InstPhi
 
     // Inter-function Control Flow
     |   'CALL' funcCallBody keepAlive?              # InstCall
-    |   'INVOKE' funcCallBody IDENTIFIER IDENTIFIER keepAlive? # InstInvoke
+    |   'INVOKE' funcCallBody LOCAL_ID LOCAL_ID keepAlive? # InstInvoke
     |   'TAILCALL' funcCallBody                     # InstTailCall
 
     |   'RET' '<' type '>' value                    # InstRet
@@ -170,9 +170,9 @@ instBody
 
     // Trap
     |   'TRAP' '<' type '>'
-            IDENTIFIER IDENTIFIER keepAlive             # InstTrap
+            LOCAL_ID LOCAL_ID keepAlive                 # InstTrap
     |   'WATCHPOINT' intLiteral '<' type '>'
-            IDENTIFIER IDENTIFIER IDENTIFIER keepAlive  # InstWatchPoint
+            LOCAL_ID LOCAL_ID LOCAL_ID keepAlive        # InstWatchPoint
 
     // Foreign Function Interface
     |   'CCALL' callconv funcCallBody                   # InstCCall
@@ -181,9 +181,9 @@ instBody
     |   'NEWSTACK' funcCallBody                         # InstNewStack
 
     // Intrinsic Functions
-    |   'ICALL' IDENTIFIER args keepAlive?              # InstICall
-    |   'IINVOKE' IDENTIFIER args
-            IDENTIFIER IDENTIFIER keepAlive?            # InstIInvoke
+    |   'ICALL' GLOBAL_ID args keepAlive?               # InstICall
+    |   'IINVOKE' GLOBAL_ID args
+            LOCAL_ID LOCAL_ID keepAlive?                # InstIInvoke
     ;
 
 funcCallBody
@@ -259,7 +259,7 @@ atomicrmwop
     | 'MAX' | 'MIN' | 'UMAX' | 'UMIN'
     ;
 value
-    :   IDENTIFIER      # ReferencedValue
+    :   identifier      # ReferencedValue
     |   constExpr       # InlineConstValue
     ;
 
@@ -271,6 +271,11 @@ intLiteral
 
 fpLiteral
     :   FP_NUM
+    ;
+
+identifier
+    :   GLOBAL_ID
+    |   LOCAL_ID
     ;
 
 // LEXER
@@ -291,9 +296,12 @@ FP_NUM
     :   ('+'|'-')? DIGIT+ '.' DIGIT+ ('e' ('+'|'-')? DIGIT+)?
     ;
 
-IDENTIFIER
+GLOBAL_ID
     :   GLOBAL_ID_PREFIX IDCHAR+
-    |   LOCAL_ID_PREFIX IDCHAR+
+    ;
+
+LOCAL_ID
+    :   LOCAL_ID_PREFIX IDCHAR+
     ;
 
 fragment

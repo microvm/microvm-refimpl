@@ -73,7 +73,7 @@ class FuncBuilder {
         BasicBlock entry = new BasicBlock(cfg);
         entry.setID(rbb.makeID());
         LabelContext label = entryBlock.label();
-        String name = label != null ? label.IDENTIFIER().getText() : "(entry)";
+        String name = label != null ? label.LOCAL_ID().getText() : "(entry)";
         entry.setName(name);
 
         cfg.setEntry(entry);
@@ -87,7 +87,7 @@ class FuncBuilder {
         BasicBlock bb = new BasicBlock(cfg);
         bb.setID(rbb.makeID());
         LabelContext label = regularBlock.label();
-        String name = label.IDENTIFIER().getText();
+        String name = label.LOCAL_ID().getText();
         bb.setName(name);
 
         cfg.getBBs().add(bb);
@@ -98,7 +98,7 @@ class FuncBuilder {
 
     private void populateBasicBlock(BasicBlock bb, List<InstContext> instCtxs) {
         for (InstContext ctx : instCtxs) {
-            TerminalNode nameToken = ctx.IDENTIFIER();
+            TerminalNode nameToken = ctx.LOCAL_ID();
             String name = nameToken != null ? nameToken.getText() : null;
             Instruction inst = shallowInstructionMaker.visit(ctx.instBody());
             inst.setID(rbb.makeID());
@@ -126,7 +126,7 @@ class FuncBuilder {
     Value value(ValueContext ctx, Type hint) {
         if (ctx instanceof ReferencedValueContext) {
             ReferencedValueContext rCtx = (ReferencedValueContext) ctx;
-            String name = rCtx.IDENTIFIER().getText();
+            String name = rCtx.identifier().getText();
             if (name.startsWith("@")) {
                 return getGlobalVal(name);
             } else {

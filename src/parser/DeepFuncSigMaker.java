@@ -18,7 +18,7 @@ class DeepFuncSigMaker extends ShallowFuncSigMaker {
     @Override
     public FunctionSignature visitReferencedFuncSig(
             ReferencedFuncSigContext ctx) {
-        String name = ctx.IDENTIFIER().getText();
+        String name = ctx.GLOBAL_ID().getText();
         FunctionSignature sig = rbb.bundle.getFuncSigByName(name);
 
         if (sig == null) {

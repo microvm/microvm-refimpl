@@ -185,7 +185,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     @Override
     public Void visitInstBranch(InstBranchContext ctx) {
         InstBranch inst = ctxToInst(ctx);
-        inst.setDest(bb(ctx.IDENTIFIER()));
+        inst.setDest(bb(ctx.LOCAL_ID()));
         return null;
     }
 
@@ -193,8 +193,8 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     public Void visitInstBranch2(InstBranch2Context ctx) {
         InstBranch2 inst = ctxToInst(ctx);
         inst.setCond(value(ctx.value(), INT1));
-        inst.setIfTrue(bb(ctx.IDENTIFIER(0)));
-        inst.setIfFalse(bb(ctx.IDENTIFIER(1)));
+        inst.setIfTrue(bb(ctx.LOCAL_ID(0)));
+        inst.setIfFalse(bb(ctx.LOCAL_ID(1)));
         return null;
     }
 
@@ -202,11 +202,11 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     public Void visitInstSwitch(InstSwitchContext ctx) {
         InstSwitch inst = ctxToInst(ctx);
         inst.setOpnd(value(ctx.value(0), inst.getOpndType()));
-        inst.setDefaultDest(bb(ctx.IDENTIFIER(0)));
+        inst.setDefaultDest(bb(ctx.LOCAL_ID(0)));
 
-        for (int i = 1; i < ctx.IDENTIFIER().size(); i++) {
+        for (int i = 1; i < ctx.LOCAL_ID().size(); i++) {
             Value cas = value(ctx.value(i), inst.getOpndType());
-            BasicBlock dst = bb(ctx.IDENTIFIER(i));
+            BasicBlock dst = bb(ctx.LOCAL_ID(i));
             inst.setDestFor(cas, dst);
         }
         return null;
@@ -216,8 +216,8 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     public Void visitInstPhi(InstPhiContext ctx) {
         InstPhi inst = ctxToInst(ctx);
 
-        for (int i = 0; i < ctx.IDENTIFIER().size(); i++) {
-            BasicBlock src = bb(ctx.IDENTIFIER(i));
+        for (int i = 0; i < ctx.LOCAL_ID().size(); i++) {
+            BasicBlock src = bb(ctx.LOCAL_ID(i));
             Value val = value(ctx.value(i), inst.getType());
             inst.setValueFrom(src, val);
         }
@@ -264,7 +264,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     public Void visitInstInvoke(InstInvokeContext ctx) {
         InstInvoke inst = ctxToInst(ctx);
         populateCall(inst, ctx.funcCallBody());
-        populateNorExc(inst, ctx.IDENTIFIER(0), ctx.IDENTIFIER(1));
+        populateNorExc(inst, ctx.LOCAL_ID(0), ctx.LOCAL_ID(1));
         populateMaybeKeepAlives(inst, ctx.keepAlive());
         return null;
     }
@@ -428,7 +428,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     @Override
     public Void visitInstTrap(InstTrapContext ctx) {
         InstTrap inst = ctxToInst(ctx);
-        populateNorExc(inst, ctx.IDENTIFIER(0), ctx.IDENTIFIER(1));
+        populateNorExc(inst, ctx.LOCAL_ID(0), ctx.LOCAL_ID(1));
         populateMaybeKeepAlives(inst, ctx.keepAlive());
         return null;
     }
@@ -436,8 +436,8 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     @Override
     public Void visitInstWatchPoint(InstWatchPointContext ctx) {
         InstWatchPoint inst = ctxToInst(ctx);
-        inst.setDisabled(bb(ctx.IDENTIFIER(0)));
-        populateNorExc(inst, ctx.IDENTIFIER(1), ctx.IDENTIFIER(2));
+        inst.setDisabled(bb(ctx.LOCAL_ID(0)));
+        populateNorExc(inst, ctx.LOCAL_ID(1), ctx.LOCAL_ID(2));
         populateMaybeKeepAlives(inst, ctx.keepAlive());
         return null;
     }
@@ -481,7 +481,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     public Void visitInstIInvoke(InstIInvokeContext ctx) {
         InstIInvoke inst = ctxToInst(ctx);
         populateArgs(inst, ctx.args());
-        populateNorExc(inst, ctx.IDENTIFIER(1), ctx.IDENTIFIER(2));
+        populateNorExc(inst, ctx.LOCAL_ID(0), ctx.LOCAL_ID(1));
         populateMaybeKeepAlives(inst, ctx.keepAlive());
         return null;
     }
