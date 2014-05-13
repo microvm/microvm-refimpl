@@ -6,7 +6,6 @@ import java.io.IOException;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 
 import parser.RecursiveBundleBuilder;
 import parser.uIRLexer;
@@ -20,6 +19,7 @@ import uvm.irtree.IRTreeBuilder;
 import uvm.irtree.IRTreeNode;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.Instruction;
+
 import compiler.phase.DefUseGeneration;
 import compiler.phase.IRTreeGeneration;
 import compiler.phase.InstructionSelection;

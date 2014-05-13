@@ -2,170 +2,172 @@ package uvm.type;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static uvm.type.TestingHelper.parseUir;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import uvm.Bundle;
 import uvm.Function;
 import uvm.FunctionSignature;
 import uvm.GlobalData;
-import uvm.ssavalue.Constant;
-import uvm.ssavalue.FPConstant;
+import uvm.ssavalue.DoubleConstant;
+import uvm.ssavalue.FloatConstant;
 import uvm.ssavalue.FunctionConstant;
 import uvm.ssavalue.GlobalDataConstant;
 import uvm.ssavalue.IntConstant;
 import uvm.ssavalue.NullConstant;
 import uvm.ssavalue.StructConstant;
 
-public class ConstantParsingTest {
-
-    private static Bundle bundle;
-
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        String file = "tests/uvm-parsing-test/constants.uir";
-        bundle = parseUir(file);
-    }
-
-    private static Type type(String name) {
-        return bundle.getTypeByName(name);
-    }
-
-    private static Constant constant(String name) {
-        return bundle.getConstantByName(name);
-    }
-
-    private static GlobalData globalData(String name) {
-        return bundle.getGlobalDataByName(name);
-    }
-
-    private static Function func(String name) {
-        return bundle.getFuncByName(name);
-    }
-
-    private static <T> T assertType(Object obj, Class<T> cls) {
-        if (!cls.isAssignableFrom(obj.getClass())) {
-            fail("Found " + obj.getClass().getName() + ", expect "
-                    + cls.getName());
-        }
-        return cls.cast(obj);
-    }
-
-    private void assertIntSize(Type type, int size) {
-        if (!(type instanceof Int)) {
-            fail("Found " + type.getClass().getName() + ", expect Int");
-        }
-        assertEquals(((Int) type).getSize(), size);
+public class ConstantParsingTest extends BundleTester {
+    @Override
+    protected String bundleName() {
+        return "tests/uvm-parsing-test/constants.uir";
     }
 
     @Test
     public void testParsing() {
-        IntConstant ci8 = assertType(constant("@ci8"), IntConstant.class);
-        assertIntSize(ci8.getType(), 8);
-        assertEquals(ci8.getValue(), 127L);
-        IntConstant ci16 = assertType(constant("@ci16"), IntConstant.class);
-        assertIntSize(ci16.getType(), 16);
-        assertEquals(ci16.getValue(), 32767L);
-        IntConstant ci32 = assertType(constant("@ci32"), IntConstant.class);
-        assertIntSize(ci32.getType(), 32);
-        assertEquals(ci32.getValue(), 2147483647L);
-        IntConstant ci64 = assertType(constant("@ci64"), IntConstant.class);
-        assertIntSize(ci64.getType(), 64);
-        assertEquals(ci64.getValue(), 9223372036854775807L);
+        IntConstant ci8 = assertType(IntConstant.class, constant("@ci8"));
+        assertIntSize(8, ci8.getType());
+        assertEquals(127L, ci8.getValue());
+        IntConstant ci16 = assertType(IntConstant.class, constant("@ci16"));
+        assertIntSize(16, ci16.getType());
+        assertEquals(32767L, ci16.getValue());
+        IntConstant ci32 = assertType(IntConstant.class, constant("@ci32"));
+        assertIntSize(32, ci32.getType());
+        assertEquals(2147483647L, ci32.getValue());
+        IntConstant ci64 = assertType(IntConstant.class, constant("@ci64"));
+        assertIntSize(64, ci64.getType());
+        assertEquals(9223372036854775807L, ci64.getValue());
 
-        IntConstant cio64 = assertType(constant("@cio64"), IntConstant.class);
-        assertEquals(cio64.getValue(), 0777L);
+        IntConstant cio64 = assertType(IntConstant.class, constant("@cio64"));
+        assertEquals(0777L, cio64.getValue());
 
-        IntConstant cix64 = assertType(constant("@cix64"), IntConstant.class);
-        assertEquals(cix64.getValue(), 0x123456789abcdef0L);
+        IntConstant cix64 = assertType(IntConstant.class, constant("@cix64"));
+        assertEquals(0x123456789abcdef0L, cix64.getValue());
 
-        IntConstant cixovf = assertType(constant("@cixovf"), IntConstant.class);
-        assertEquals(cixovf.getValue(), 0xfffffffffffffffL);
+        IntConstant cixovf = assertType(IntConstant.class, constant("@cixovf"));
+        assertEquals(0xffffffffffffffffL, cixovf.getValue());
 
-        FPConstant cf = assertType(constant("@cf"), FPConstant.class);
-        assertType(cf.getType(), uvm.type.Float.class);
-        assertEquals(cf.getValue(), 3.14, 0.001);
+        IntConstant cixovf2 = assertType(IntConstant.class,
+                constant("@cixovf2"));
+        assertEquals(0x8000000000000000L, cixovf2.getValue());
 
-        FPConstant cd = assertType(constant("@cd"), FPConstant.class);
-        assertType(cd.getType(), uvm.type.Double.class);
-        assertEquals(cd.getValue(), 6.28, 0.001);
+        FloatConstant cf = assertType(FloatConstant.class, constant("@cf"));
+        assertType(uvm.type.Float.class, cf.getType());
+        assertEquals(3.14f, cf.getValue(), 0.001f);
 
-        StructConstant cs1 = assertType(constant("@cs1"), StructConstant.class);
-        Struct cs1t = assertType(cs1.getType(), Struct.class);
-        assertIntSize(cs1t.getFieldTypes().get(0), 64);
-        assertType(cs1t.getFieldTypes().get(1), uvm.type.Double.class);
-        IntConstant cs10 = assertType(cs1.getValues().get(0), IntConstant.class);
-        assertEquals(cs10.getValue(), 100L);
-        FPConstant cs11 = assertType(cs1.getValues().get(1), FPConstant.class);
-        assertEquals(cs11.getValue(), 200.0, 0.01);
+        FloatConstant cfnan = assertType(FloatConstant.class,
+                constant("@cfnan"));
+        assertTrue(java.lang.Float.isNaN(cfnan.getValue()));
 
-        StructConstant cs2 = assertType(constant("@cs2"), StructConstant.class);
-        Struct cs2t = assertType(cs2.getType(), Struct.class);
-        assertType(cs2t.getFieldTypes().get(0), uvm.type.Double.class);
-        Struct cs2t1 = assertType(cs2t.getFieldTypes().get(1), Struct.class);
-        assertType(cs2t1.getFieldTypes().get(0), uvm.type.Float.class);
-        assertIntSize(cs2t1.getFieldTypes().get(1), 64);
-        assertIntSize(cs2t.getFieldTypes().get(2), 32);
-        FPConstant cs20 = assertType(cs2.getValues().get(0), FPConstant.class);
-        assertEquals(cs20.getValue(), 1.0, 0.01);
-        StructConstant cs21 = assertType(cs2.getValues().get(1),
-                StructConstant.class);
-        FPConstant cs210 = assertType(cs21.getValues().get(0), FPConstant.class);
-        assertEquals(cs210.getValue(), 2.0, 0.01);
-        IntConstant cs211 = assertType(cs21.getValues().get(1),
-                IntConstant.class);
-        assertEquals(cs211.getValue(), 3);
-        IntConstant cs22 = assertType(cs2.getValues().get(2), IntConstant.class);
-        assertEquals(cs22.getValue(), 4);
+        FloatConstant cfninf = assertType(FloatConstant.class,
+                constant("@cfninf"));
+        assertTrue(java.lang.Float.isInfinite(cfninf.getValue())
+                && cfninf.getValue() < 0.0f);
 
-        StructConstant cons = assertType(constant("@cons"),
-                StructConstant.class);
-        Struct cons_t = assertType(cons.getType(), Struct.class);
-        assertIntSize(cons_t.getFieldTypes().get(0), 64);
-        assertType(cons_t.getFieldTypes().get(1), Ref.class);
-        IntConstant cons0 = assertType(cons.getValues().get(0),
-                IntConstant.class);
-        assertEquals(cons0.getValue(), 42);
-        assertType(cons.getValues().get(1), NullConstant.class);
+        FloatConstant cfpinf = assertType(FloatConstant.class,
+                constant("@cfpinf"));
+        assertTrue(java.lang.Float.isInfinite(cfpinf.getValue())
+                && cfpinf.getValue() > 0.0f);
 
-        NullConstant cr = assertType(constant("@cr"), NullConstant.class);
-        assertType(cr.getType(), Ref.class);
-        NullConstant cir = assertType(constant("@cir"), NullConstant.class);
-        assertType(cir.getType(), IRef.class);
-        NullConstant cwr = assertType(constant("@cwr"), NullConstant.class);
-        assertType(cwr.getType(), WeakRef.class);
-        NullConstant cfu = assertType(constant("@cfu"), NullConstant.class);
-        assertType(cfu.getType(), Func.class);
-        NullConstant cth = assertType(constant("@cth"), NullConstant.class);
-        assertType(cth.getType(), uvm.type.Thread.class);
-        NullConstant cst = assertType(constant("@cst"), NullConstant.class);
-        assertType(cst.getType(), uvm.type.Stack.class);
+        FloatConstant cfbits = assertType(FloatConstant.class,
+                constant("@cfbits"));
+        assertEquals(0x12345678,
+                java.lang.Float.floatToRawIntBits(cfbits.getValue()));
 
-        GlobalDataConstant gi64 = assertType(constant("@gi64"),
-                GlobalDataConstant.class);
-        IRef gi64_t = assertType(gi64.getType(), IRef.class);
-        assertIntSize(gi64_t.getReferenced(), 64);
+        DoubleConstant cd = assertType(DoubleConstant.class, constant("@cd"));
+        assertType(uvm.type.Double.class, cd.getType());
+        assertEquals(6.28d, cd.getValue(), 0.001d);
 
-        GlobalData gd_gi64 = assertType(globalData("@gi64"), GlobalData.class);
-        assertIntSize(gd_gi64.getType(), 64);
+        DoubleConstant cdninf = assertType(DoubleConstant.class,
+                constant("@cdninf"));
+        assertTrue(java.lang.Double.isInfinite(cdninf.getValue())
+                && cdninf.getValue() < 0.0d);
 
-        FunctionConstant fdummy = assertType(constant("@fdummy"),
-                FunctionConstant.class);
-        Func fdummy_type = assertType(fdummy.getType(), Func.class);
+        DoubleConstant cdpinf = assertType(DoubleConstant.class,
+                constant("@cdpinf"));
+        assertTrue(java.lang.Double.isInfinite(cdpinf.getValue())
+                && cdpinf.getValue() > 0.0d);
+
+        DoubleConstant cdbits = assertType(DoubleConstant.class,
+                constant("@cdbits"));
+        assertEquals(0xfedcba9876543210L,
+                java.lang.Double.doubleToRawLongBits(cdbits.getValue()));
+
+        StructConstant cs1 = assertType(StructConstant.class, constant("@cs1"));
+        Struct cs1t = assertType(Struct.class, cs1.getType());
+        assertIntSize(64, cs1t.getFieldTypes().get(0));
+        assertType(uvm.type.Double.class, cs1t.getFieldTypes().get(1));
+        IntConstant cs10 = assertType(IntConstant.class, cs1.getValues().get(0));
+        assertEquals(100L, cs10.getValue());
+        DoubleConstant cs11 = assertType(DoubleConstant.class, cs1.getValues()
+                .get(1));
+        assertEquals(200.0d, cs11.getValue(), 0.01d);
+
+        StructConstant cs2 = assertType(StructConstant.class, constant("@cs2"));
+        Struct cs2t = assertType(Struct.class, cs2.getType());
+        assertType(uvm.type.Double.class, cs2t.getFieldTypes().get(0));
+        Struct cs2t1 = assertType(Struct.class, cs2t.getFieldTypes().get(1));
+        assertType(uvm.type.Float.class, cs2t1.getFieldTypes().get(0));
+        assertIntSize(64, cs2t1.getFieldTypes().get(1));
+        assertIntSize(32, cs2t.getFieldTypes().get(2));
+        DoubleConstant cs20 = assertType(DoubleConstant.class, cs2.getValues()
+                .get(0));
+        assertEquals(1.0d, cs20.getValue(), 0.01d);
+        StructConstant cs21 = assertType(StructConstant.class, cs2.getValues()
+                .get(1));
+        FloatConstant cs210 = assertType(FloatConstant.class, cs21.getValues()
+                .get(0));
+        assertEquals(2.0f, cs210.getValue(), 0.01f);
+        IntConstant cs211 = assertType(IntConstant.class,
+                cs21.getValues().get(1));
+        assertEquals(3, cs211.getValue());
+        IntConstant cs22 = assertType(IntConstant.class, cs2.getValues().get(2));
+        assertEquals(4, cs22.getValue());
+
+        StructConstant cons = assertType(StructConstant.class,
+                constant("@cons"));
+        Struct cons_t = assertType(Struct.class, cons.getType());
+        assertIntSize(64, cons_t.getFieldTypes().get(0));
+        assertType(Ref.class, cons_t.getFieldTypes().get(1));
+        IntConstant cons0 = assertType(IntConstant.class,
+                cons.getValues().get(0));
+        assertEquals(42, cons0.getValue());
+        assertType(NullConstant.class, cons.getValues().get(1));
+
+        NullConstant cr = assertType(NullConstant.class, constant("@cr"));
+        assertType(Ref.class, cr.getType());
+        NullConstant cir = assertType(NullConstant.class, constant("@cir"));
+        assertType(IRef.class, cir.getType());
+        NullConstant cwr = assertType(NullConstant.class, constant("@cwr"));
+        assertType(WeakRef.class, cwr.getType());
+        NullConstant cfu = assertType(NullConstant.class, constant("@cfu"));
+        assertType(Func.class, cfu.getType());
+        NullConstant cth = assertType(NullConstant.class, constant("@cth"));
+        assertType(uvm.type.Thread.class, cth.getType());
+        NullConstant cst = assertType(NullConstant.class, constant("@cst"));
+        assertType(uvm.type.Stack.class, cst.getType());
+
+        GlobalDataConstant gi64 = assertType(GlobalDataConstant.class,
+                constant("@gi64"));
+        IRef gi64_t = assertType(IRef.class, gi64.getType());
+        assertIntSize(64, gi64_t.getReferenced());
+
+        GlobalData gd_gi64 = assertType(GlobalData.class, globalData("@gi64"));
+        assertIntSize(64, gd_gi64.getType());
+
+        FunctionConstant fdummy = assertType(FunctionConstant.class,
+                constant("@fdummy"));
+        Func fdummy_type = assertType(Func.class, fdummy.getType());
         FunctionSignature fdummy_sig = fdummy_type.getSig();
-        assertType(fdummy_sig.getReturnType(), Void.class);
+        assertType(Void.class, fdummy_sig.getReturnType());
         assertTrue(fdummy_sig.getParamTypes().isEmpty());
 
-        Function f_fdummy = assertType(func("@fdummy"), Function.class);
+        Function f_fdummy = assertType(Function.class, func("@fdummy"));
         FunctionSignature f_fdummy_sig = f_fdummy.getSig();
-        assertType(f_fdummy_sig.getReturnType(), Void.class);
+        assertType(Void.class, f_fdummy_sig.getReturnType());
         assertTrue(f_fdummy_sig.getParamTypes().isEmpty());
 
-        StructConstant sgf = assertType(constant("@sgf"), StructConstant.class);
-        assertType(sgf.getValues().get(0), GlobalDataConstant.class);
-        assertType(sgf.getValues().get(1), FunctionConstant.class);
+        StructConstant sgf = assertType(StructConstant.class, constant("@sgf"));
+        assertType(GlobalDataConstant.class, sgf.getValues().get(0));
+        assertType(FunctionConstant.class, sgf.getValues().get(1));
     }
 }

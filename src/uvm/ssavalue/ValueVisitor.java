@@ -12,7 +12,9 @@ package uvm.ssavalue;
 public interface ValueVisitor<T> {
     T visitIntConstant(IntConstant constant);
 
-    T visitFPConstant(FPConstant constant);
+    T visitFloatConstant(FloatConstant floatConstant);
+
+    T visitDoubleConstant(DoubleConstant doubleConstant);
 
     T visitStructConstant(StructConstant constant);
 

@@ -5,7 +5,15 @@ import java.util.List;
 
 import org.antlr.v4.runtime.misc.NotNull;
 
-import burg.Burg.*;
+import burg.Burg.CCTOperand;
+import burg.Burg.MCOp;
+import burg.Burg.MCRule;
+import burg.Burg.NonTerminal;
+import burg.Burg.OpdIntImmediate;
+import burg.Burg.OpdRegister;
+import burg.Burg.Rule;
+import burg.Burg.Terminal;
+import burg.Burg.TreeNode;
 import burg.burgParser.McOperandContext;
 import burg.burgParser.NodeContext;
 

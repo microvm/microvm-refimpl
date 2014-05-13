@@ -129,11 +129,12 @@ public abstract class OpCode {
     
     // non-op terms
     public static final int INT_IMM     = 0xF0;
-    public static final int FP_IMM      = 0xF1;
-    public static final int STRUCT_IMM  = 0xF2;
-    public static final int NULL_IMM    = 0xF3;
-    public static final int GDATAIREF_IMM = 0xF4;
-    public static final int FUNCID_IMM  = 0xF5;
+    public static final int STRUCT_IMM  = 0xF1;
+    public static final int NULL_IMM    = 0xF2;
+    public static final int GDATAIREF_IMM = 0xF3;
+    public static final int FUNCID_IMM  = 0xF4;
+    public static final int FLOAT_IMM   = 0xF5;
+    public static final int DOUBLE_IMM  = 0xF6;
     
     public static final int REG         = 0xF8;
     public static final int LABEL       = 0xF9;

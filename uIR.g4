@@ -38,7 +38,7 @@ funcDecl
     ;
     
 funcDef
-    :   '.funcdef' GLOBAL_ID '<' funcSig '>' funcBody
+    :   '.funcdef' GLOBAL_ID '<' funcSig '>' paramList funcBody
     ;
 
 type
@@ -79,9 +79,14 @@ constant
 
 constExpr
     :   intLiteral          # IntConst
-    |   fpLiteral           # FPConst
+    |   floatLiteral        # FloatConst
+    |   doubleLiteral       # DoubleConst
     |   '{' constant* '}'   # StructConst
     |   'NULL'              # NullConst
+    ;
+
+paramList
+    :   '(' LOCAL_ID* ')'
     ;
 
 funcBody
@@ -109,10 +114,8 @@ inst
     ;
 
 instBody
-    :   'PARAM' intLiteral                      # InstParam
-
     // Integer/FP Arithmetic
-    |   binops '<' type '>' value value         # InstBinOp
+    :   binops '<' type '>' value value         # InstBinOp
 
     // Integer/FP Comparison
     |   cmpops '<' type '>' value value         # InstCmp
@@ -269,8 +272,17 @@ intLiteral
     |   INT_HEX     # HexIntLiteral
     ;
 
-fpLiteral
-    :   FP_NUM
+floatLiteral
+    :   FP_NUM 'f'  # FloatNumber
+    |   INF 'f'     # FloatInf
+    |   NAN 'f'     # FloatNan
+    |   'bitsf' '(' intLiteral ')'   # FloatBits
+    ;
+doubleLiteral
+    :   FP_NUM 'd'  # DoubleNumber
+    |   INF 'd'     # DoubleInf
+    |   NAN 'd'     # DoubleNan
+    |   'bitsd' '(' intLiteral ')'   # DoubleBits
     ;
 
 identifier
@@ -294,6 +306,14 @@ INT_HEX
     
 FP_NUM
     :   ('+'|'-')? DIGIT+ '.' DIGIT+ ('e' ('+'|'-')? DIGIT+)?
+    ;
+
+INF
+    :   ('+'|'-') 'inf'
+    ;
+    
+NAN
+    :   'nan'
     ;
 
 GLOBAL_ID

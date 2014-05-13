@@ -1,8 +1,7 @@
 // prime-number
 
-.funcdef @isPrime <int<32> (int<64>)> {
+.funcdef @isPrime <int<32> (int<64>)> (%a) {
     %entry:
-        %a = PARAM 0
         %cmp5 = SGT <int<64>> %a 2
         BRANCH2 %cmp5 %for.body %return1
 
@@ -24,7 +23,7 @@
         RET <int<32>> 0
 }
 
-.funcdef @main <int<32> ()> {
+.funcdef @main <int<32> ()> () {
     %entry:
         // empty so far
         RET <int<32>> 0

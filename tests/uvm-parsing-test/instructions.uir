@@ -1,7 +1,4 @@
-.funcdef @intBinOpTest <void (int<32> int<32>)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    
+.funcdef @intBinOpTest <void (int<32> int<32>)> (%p0 %p1) {
     %add  = ADD  <int<32>> %p0 %p1
     %sub  = SUB  <int<32>> %p0 %p1
     %mul  = MUL  <int<32>> %p0 %p1
@@ -19,10 +16,7 @@
     RETVOID
 }
 
-.funcdef @fpBinOpTest <void (double double)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    
+.funcdef @fpBinOpTest <void (double double)> (%p0 %p1) {
     %fadd = FADD <double> %p0 %p1
     %fsub = FSUB <double> %p0 %p1
     %fmul = FMUL <double> %p0 %p1
@@ -32,10 +26,7 @@
     RETVOID
 }
 
-.funcdef @intCmpTest <void (int<64> int<64>)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    
+.funcdef @intCmpTest <void (int<64> int<64>)> (%p0 %p1) {
     %eq  = EQ  <int<64>> %p0 %p1
     %ne  = NE  <int<64>> %p0 %p1
     %ult = ULT <int<64>> %p0 %p1
@@ -50,10 +41,7 @@
     RETVOID
 }
 
-.funcdef @fpCmpTest <void (float float)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    
+.funcdef @fpCmpTest <void (float float)> (%p0 %p1) {
     %ftrue  = FTRUE  <float> %p0 %p1
     %ffalse = FFALSE <float> %p0 %p1
     %ford = FORD <float> %p0 %p1
@@ -74,12 +62,7 @@
     RETVOID
 }
 
-.funcdef @convTest <void (int<32> int<64> float double)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    %p2 = PARAM 2
-    %p3 = PARAM 3
-
+.funcdef @convTest <void (int<32> int<64> float double)> (%p0 %p1 %p2 %p3) {
     %trunc  = TRUNC <int<64> int<32>> %p1
     %zext   = ZEXT  <int<32> int<64>> %p0
     %sext   = SEXT  <int<32> int<64>> %p0
@@ -100,19 +83,15 @@
     RETVOID
 }
 
-.funcdef @refCastTest <void (ref<void> iref<void>)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    
+.funcdef @refCastTest <void (ref<void> iref<void>)> (%p0 %p1) {
     %refcast  = REFCAST  <ref<void> ref<int<32>>> %p0
     %irefcast = IREFCAST <iref<void> iref<int<64>>> %p1
     
     RETVOID
 }
 
-.funcdef @ctrlFlow <void (int<32>)> {
+.funcdef @ctrlFlow <void (int<32>)> (%p0) {
     %entry:
-        %p0 = PARAM 0
         %br1 = BRANCH %head
     
     %head:
@@ -140,19 +119,17 @@
 
 .funcdecl @callee1 <void ()>
 
-.funcdef @callee2 <@iiisig> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
+.funcdef @callee2 <@iiisig> (%p0 %p1) {
     %rv = ADD <int<64>> %p0 %p1
     %ret = RET <int<64>> %rv
 }
 
-.funcdef @callee3 <@iiisig> {
+.funcdef @callee3 <@iiisig> (%p0 %p1) {
     %exc = NEW <double>
     %throw = THROW %exc
 }
 
-.funcdef @caller1 <void ()> {
+.funcdef @caller1 <void ()> () {
         %v1 = CALL <void ()> @callee1 ()
         %v2 = CALL <@iiisig> @callee2 (1 2)
         %v3 = INVOKE <@iiisig> @callee3 (3 4) %cont %catch
@@ -169,20 +146,18 @@
         RETVOID
 }
 
-.funcdef @caller2 <@iiisig> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
+.funcdef @caller2 <@iiisig> (%p0 %p1) {
     %tc = TAILCALL <@iiisig> @callee2 (%p0 %p1)
 }
 
 .typedef @sid = struct <int<64> double>
-.const @sid1 <@sid> = {42 3.14}
+.const @sid1 <@sid> = {42 3.14d}
 
-.funcdef @aggregate <void ()> {
+.funcdef @aggregate <void ()> () {
     %e0 = EXTRACTVALUE <@sid 0> @sid1
     %e1 = EXTRACTVALUE <@sid 1> @sid1
     %i0 = INSERTVALUE <@sid 0> @sid1 40
-    %i1 = INSERTVALUE <@sid 1> @sid1 40.0
+    %i1 = INSERTVALUE <@sid 1> @sid1 40.0d
     
     RETVOID
 }
@@ -190,10 +165,7 @@
 .typedef @al = array <int<64> 10>
 .typedef @hic = hybrid <int<64> int<8>>
 
-.funcdef @memops <void (int<64> int<64>)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    
+.funcdef @memops <void (int<64> int<64>)> (%p0 %p1) {
     %new            = NEW <int<64>>
     %newhybrid      = NEWHYBRID <@hic> %p0
     %alloca         = ALLOCA <int<64>>
@@ -222,9 +194,7 @@
     RETVOID
 }
 
-.funcdef @memorder <void (iref<int<64>>)> {
-    %p0 = PARAM 0
-    
+.funcdef @memorder <void (iref<int<64>>)> (%p0) {
     %l0 = LOAD NOT_ATOMIC   <int<64>> %p0
     %l1 = LOAD UNORDERED    <int<64>> %p0
     %l2 = LOAD MONOTONIC    <int<64>> %p0
@@ -236,10 +206,7 @@
     RETVOID
 }
 
-.funcdef @atomicrmwops <void (iref<int<64>> int<64>)> {
-    %p0 = PARAM 0
-    %p1 = PARAM 1
-    
+.funcdef @atomicrmwops <void (iref<int<64>> int<64>)> (%p0 %p1) {
     %old0 = ATOMICRMW ACQ_REL XCHG  <int<64>> %p0 %p1
     %old1 = ATOMICRMW ACQ_REL ADD   <int<64>> %p0 %p1
     %old2 = ATOMICRMW ACQ_REL SUB   <int<64>> %p0 %p1
@@ -255,7 +222,7 @@
     RETVOID
 }
 
-.funcdef @traps <void ()> {
+.funcdef @traps <void ()> () {
         %a  = ADD <int<64>> 30 40
         %b  = SUB <int<64>> 30 40
         %c  = MUL <int<64>> 30 40
@@ -279,17 +246,15 @@
         THROW %exc2
 }
 
-.funcdef @ccall <void (int<64>)> {
-    %p0 = PARAM 0
-    
-    %rv = CCALL DEFAULT <void (double)> %p0 (3.14)
+.funcdef @ccall <void (int<64>)> (%p0) {
+    %rv = CCALL DEFAULT <void (double)> %p0 (3.14d)
     
     RETVOID
 }
 
 .global @globalexc <ref<int<64>>>
 
-.funcdef @stack_and_intrinsic <void (int<64>)> {
+.funcdef @stack_and_intrinsic <void (int<64>)> (%p0) {
         %a  = ADD <int<64>> 30 40
         %b  = SUB <int<64>> 30 40
         %c  = MUL <int<64>> 30 40
@@ -317,36 +282,36 @@
 
 .const @funcaddr <int<64>> = 0x0000001234567800
 
-.funcdef @inference <float ()> {
+.funcdef @inference <float ()> () {
         %add  = ADD  <int<8>>  41 42
         %sub  = SUB  <int<16>> 43 44
         %mul  = MUL  <int<32>> 45 46
         %udiv = UDIV <int<64>> 47 48
-        %fadd = FADD <float>   49.0 50.0
-        %fsub = FSUB <double>  51.0 52.0
+        %fadd = FADD <float>   49.0f 50.0f
+        %fsub = FSUB <double>  51.0d 52.0d
         
         %eq   = EQ   <int<64>> 53 54
-        %fueq = FUEQ <double>  55.0 56.0
+        %fueq = FUEQ <double>  55.0d 56.0d
         
         %trunc  = TRUNC <int<64> int<32>> 57
-        %fptrunc = FPTRUNC <double float> 58.0
+        %fptrunc = FPTRUNC <double float> 58.0d
         
         %refcast  = REFCAST  <ref<void> ref<int<32>>> NULL
         %irefcast = IREFCAST <iref<void> iref<int<64>>> NULL
         
-        %select = SELECT <double> 1 59.0 60.0
+        %select = SELECT <double> 1 59.0d 60.0d
     
     %bb2:
         %switch = SWITCH <int<32>> 61 %bb3 { 62:%bb4; }
     %bb3:
         %phi    = PHI <int<32>> { %bb2: 63; }
-        %call   = CALL <@rainbow_sig> @rainbow (64 65 66 67 68.0 69.0)
-        %invoke = INVOKE <@rainbow_sig> @rainbow (70 71 72 73 74.0 75.0) %bb4 %bb5
+        %call   = CALL <@rainbow_sig> @rainbow (64 65 66 67 68.0f 69.0d)
+        %invoke = INVOKE <@rainbow_sig> @rainbow (70 71 72 73 74.0f 75.0d) %bb4 %bb5
     %bb4:
-        %tailcall = TAILCALL <@rainbow_sig> @rainbow (76 77 78 79 80.0 81.0)
+        %tailcall = TAILCALL <@rainbow_sig> @rainbow (76 77 78 79 80.0f 81.0d)
     %bb5:
-        %extractvalue   = EXTRACTVALUE <@rainbows 0> {82 83 84 85 86.0 87.0}
-        %insertvalue    = INSERTVALUE <@rainbows 0> {88 89 90 91 92.0 93.0} 94
+        %extractvalue   = EXTRACTVALUE <@rainbows 0> {82 83 84 85 86.0f 87.0d}
+        %insertvalue    = INSERTVALUE <@rainbows 0> {88 89 90 91 92.0f 93.0d} 94
         
         %newhybrid      = NEWHYBRID <hybrid<void int<8>>> 95
         %allocahybrid   = ALLOCAHYBRID <hybrid<void int<8>>> 96
@@ -358,8 +323,8 @@
         %cmpxchg    = CMPXCHG ACQ_REL MONOTONIC <int<32>> %shiftiref 100 101
         %atomicrmw  = ATOMICRMW ACQ_REL ADD <int<32>> %shiftiref 102
         
-        %ccall      = CCALL DEFAULT <@rainbow_sig> @funcaddr (103 104 105 106 107.0 108.0)
-        %newstack   = NEWSTACK <@rainbow_sig> @rainbow (109 110 111 112 113.0 114.0)
+        %ccall      = CCALL DEFAULT <@rainbow_sig> @funcaddr (103 104 105 106 107.0f 108.0d)
+        %newstack   = NEWSTACK <@rainbow_sig> @rainbow (109 110 111 112 113.0f 114.0d)
         
         RETVOID
 }

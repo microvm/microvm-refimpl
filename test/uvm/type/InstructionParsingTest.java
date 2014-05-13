@@ -4,21 +4,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static uvm.type.TestingHelper.parseUir;
 
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import uvm.BasicBlock;
-import uvm.Bundle;
 import uvm.CFG;
 import uvm.Function;
 import uvm.FunctionSignature;
-import uvm.GlobalData;
 import uvm.intrinsicfunc.IntrinsicFunction;
 import uvm.intrinsicfunc.IntrinsicFunctionFactory;
 import uvm.ssavalue.AtomicOrdering;
@@ -26,9 +22,9 @@ import uvm.ssavalue.AtomicRMWOp;
 import uvm.ssavalue.BinOptr;
 import uvm.ssavalue.CallConv;
 import uvm.ssavalue.CmpOptr;
-import uvm.ssavalue.Constant;
 import uvm.ssavalue.ConvOptr;
-import uvm.ssavalue.FPConstant;
+import uvm.ssavalue.DoubleConstant;
+import uvm.ssavalue.FloatConstant;
 import uvm.ssavalue.HasArgs;
 import uvm.ssavalue.InstAlloca;
 import uvm.ssavalue.InstAllocaHybrid;
@@ -75,54 +71,11 @@ import uvm.ssavalue.StructConstant;
 import uvm.ssavalue.UseBox;
 import uvm.ssavalue.Value;
 
-public class InstructionParsingTest {
+public class InstructionParsingTest extends BundleTester {
 
-    private static Bundle bundle;
-
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        String file = "tests/uvm-parsing-test/instructions.uir";
-        bundle = parseUir(file);
-    }
-
-    private static Type type(String name) {
-        Type type = bundle.getTypeByName(name);
-        if (type == null) {
-            fail("No such type " + name);
-        }
-        return type;
-    }
-
-    private static Constant constant(String name) {
-        Constant constant = bundle.getConstantByName(name);
-        if (constant == null) {
-            fail("No such constant " + name);
-        }
-        return constant;
-    }
-
-    private static GlobalData globalData(String name) {
-        GlobalData global = bundle.getGlobalDataByName(name);
-        if (global == null) {
-            fail("No such global " + name);
-        }
-        return global;
-    }
-
-    private static Function func(String name) {
-        Function func = bundle.getFuncByName(name);
-        if (func == null) {
-            fail("No such func " + name);
-        }
-        return func;
-    }
-
-    private static FunctionSignature funcSig(String name) {
-        FunctionSignature sig = bundle.getFuncSigByName(name);
-        if (sig == null) {
-            fail("No such sig " + name);
-        }
-        return sig;
+    @Override
+    protected String bundleName() {
+        return "tests/uvm-parsing-test/instructions.uir";
     }
 
     private static <T> T assertType(Object obj, Class<T> cls) {
@@ -144,7 +97,7 @@ public class InstructionParsingTest {
     private CFG curCFG;
 
     private BasicBlock bb(String name) {
-        BasicBlock bb = curCFG.getNameToBB().get(name);
+        BasicBlock bb = curCFG.getBBNs().getByName(name);
         if (bb == null) {
             fail("No such bb " + name);
         }
@@ -152,7 +105,7 @@ public class InstructionParsingTest {
     }
 
     private Instruction inst(String name) {
-        Instruction inst = curCFG.getNameToInst().get(name);
+        Instruction inst = curCFG.getInstNs().getByName(name);
         if (inst == null) {
             fail("No such inst " + name);
         }
@@ -165,7 +118,8 @@ public class InstructionParsingTest {
     }
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         curFunc = null;
         curCFG = null;
     }
@@ -514,9 +468,15 @@ public class InstructionParsingTest {
         assertNull(tc.getType());
     }
 
-    private FPConstant assertFPConstant(Value val, double value) {
-        FPConstant c = assertType(val, FPConstant.class);
-        assertEquals(value, c.getValue(), 0.001);
+    private FloatConstant assertFloatConstant(Value val, float value) {
+        FloatConstant c = assertType(val, FloatConstant.class);
+        assertEquals(value, c.getValue(), 0.001f);
+        return c;
+    }
+
+    private DoubleConstant assertDoubleConstant(Value val, double value) {
+        DoubleConstant c = assertType(val, DoubleConstant.class);
+        assertEquals(value, c.getValue(), 0.001d);
         return c;
     }
 
@@ -546,7 +506,7 @@ public class InstructionParsingTest {
         assertEquals(type("@sid"), i1.getStructType());
         assertEquals(1, i1.getIndex());
         assertEquals(constant("@sid1"), i1.getOpnd());
-        assertFPConstant(i1.getNewVal(), 40.0);
+        assertDoubleConstant(i1.getNewVal(), 40.0d);
         assertType(i1.getType(), Struct.class);
     }
 
@@ -732,7 +692,7 @@ public class InstructionParsingTest {
         assertType(ccall.getSig().getReturnType(), uvm.type.Void.class);
         assertType(ccall.getSig().getParamTypes().get(0), uvm.type.Double.class);
         assertEquals(inst("%p0"), ccall.getFunc());
-        assertFPConstant(ccall.getArgs().get(0).getDst(), 3.14);
+        assertDoubleConstant(ccall.getArgs().get(0).getDst(), 3.14);
         assertType(ccall.getType(), uvm.type.Void.class);
     }
 
@@ -774,19 +734,19 @@ public class InstructionParsingTest {
     }
 
     public void assertFloatConstOf(Value val, double value) {
-        FPConstant c = assertType(val, FPConstant.class);
+        FloatConstant c = assertType(val, FloatConstant.class);
         assertType(c.getType(), uvm.type.Float.class);
-        assertEquals(value, c.getValue(), 0.001);
+        assertEquals(value, c.getValue(), 0.001f);
     }
 
     public void assertDoubleConstOf(Value val, double value) {
-        FPConstant c = assertType(val, FPConstant.class);
+        DoubleConstant c = assertType(val, DoubleConstant.class);
         assertType(c.getType(), uvm.type.Double.class);
-        assertEquals(value, c.getValue(), 0.001);
+        assertEquals(value, c.getValue(), 0.001d);
     }
 
     public void assertRainbow(List<UseBox> args, long v0, long v1, long v2,
-            long v3, double v4, double v5) {
+            long v3, float v4, double v5) {
         assertIntConstOf(args.get(0).getDst(), 8, v0);
         assertIntConstOf(args.get(1).getDst(), 16, v1);
         assertIntConstOf(args.get(2).getDst(), 32, v2);
@@ -796,7 +756,7 @@ public class InstructionParsingTest {
     }
 
     public void assertRainbows(Value val, long v0, long v1, long v2, long v3,
-            double v4, double v5) {
+            float v4, double v5) {
         StructConstant sc = assertType(val, StructConstant.class);
         assertIntConstOf(sc.getValues().get(0), 8, v0);
         assertIntConstOf(sc.getValues().get(1), 16, v1);
@@ -818,19 +778,19 @@ public class InstructionParsingTest {
         assertIntConstOf(((InstBinOp) inst("%mul")).getOp2(), 32, 46);
         assertIntConstOf(((InstBinOp) inst("%udiv")).getOp1(), 64, 47);
         assertIntConstOf(((InstBinOp) inst("%udiv")).getOp2(), 64, 48);
-        assertFloatConstOf(((InstBinOp) inst("%fadd")).getOp1(), 49.0);
-        assertFloatConstOf(((InstBinOp) inst("%fadd")).getOp2(), 50.0);
-        assertDoubleConstOf(((InstBinOp) inst("%fsub")).getOp1(), 51.0);
-        assertDoubleConstOf(((InstBinOp) inst("%fsub")).getOp2(), 52.0);
+        assertFloatConstOf(((InstBinOp) inst("%fadd")).getOp1(), 49.0f);
+        assertFloatConstOf(((InstBinOp) inst("%fadd")).getOp2(), 50.0f);
+        assertDoubleConstOf(((InstBinOp) inst("%fsub")).getOp1(), 51.0d);
+        assertDoubleConstOf(((InstBinOp) inst("%fsub")).getOp2(), 52.0d);
 
         assertIntConstOf(((InstCmp) inst("%eq")).getOp1(), 64, 53);
         assertIntConstOf(((InstCmp) inst("%eq")).getOp2(), 64, 54);
 
-        assertDoubleConstOf(((InstCmp) inst("%fueq")).getOp1(), 55.0);
-        assertDoubleConstOf(((InstCmp) inst("%fueq")).getOp2(), 56.0);
+        assertDoubleConstOf(((InstCmp) inst("%fueq")).getOp1(), 55.0d);
+        assertDoubleConstOf(((InstCmp) inst("%fueq")).getOp2(), 56.0d);
 
         assertIntConstOf(((InstConversion) inst("%trunc")).getOpnd(), 64, 57);
-        assertDoubleConstOf(((InstConversion) inst("%fptrunc")).getOpnd(), 58.0);
+        assertDoubleConstOf(((InstConversion) inst("%fptrunc")).getOpnd(), 58.0d);
 
         NullConstant refcastc = assertType(
                 ((InstConversion) inst("%refcast")).getOpnd(),
@@ -844,8 +804,8 @@ public class InstructionParsingTest {
                 uvm.type.Void.class);
 
         assertIntConstOf(((InstSelect) inst("%select")).getCond(), 1, 1);
-        assertDoubleConstOf(((InstSelect) inst("%select")).getIfTrue(), 59.0);
-        assertDoubleConstOf(((InstSelect) inst("%select")).getIfFalse(), 60.0);
+        assertDoubleConstOf(((InstSelect) inst("%select")).getIfTrue(), 59.0d);
+        assertDoubleConstOf(((InstSelect) inst("%select")).getIfFalse(), 60.0d);
 
         assertIntConstOf(((InstSwitch) inst("%switch")).getOpnd(), 32, 61);
         for (UseBox ub : ((InstSwitch) inst("%switch")).getCases().keySet()) {
@@ -857,16 +817,16 @@ public class InstructionParsingTest {
         }
 
         assertRainbow(((HasArgs) inst("%call")).getArgs(), 64, 65, 66, 67,
-                68.0, 69.0);
+                68.0f, 69.0d);
         assertRainbow(((HasArgs) inst("%invoke")).getArgs(), 70, 71, 72, 73,
-                74.0, 75.0);
+                74.0f, 75.0d);
         assertRainbow(((HasArgs) inst("%tailcall")).getArgs(), 76, 77, 78, 79,
-                80.0, 81.0);
+                80.0f, 81.0d);
 
         assertRainbows(((InstExtractValue) inst("%extractvalue")).getOpnd(),
-                82, 83, 84, 85, 86.0, 87.0);
+                82, 83, 84, 85, 86.0f, 87.0d);
         assertRainbows(((InstInsertValue) inst("%insertvalue")).getOpnd(), 88,
-                89, 90, 91, 92.0, 93.0);
+                89, 90, 91, 92.0f, 93.0d);
         assertIntConstOf(((InstInsertValue) inst("%insertvalue")).getNewVal(),
                 8, 94);
 
@@ -887,9 +847,9 @@ public class InstructionParsingTest {
                 102);
 
         assertRainbow(((HasArgs) inst("%ccall")).getArgs(), 103, 104, 105, 106,
-                107.0, 108.0);
+                107.0f, 108.0d);
         assertRainbow(((HasArgs) inst("%newstack")).getArgs(), 109, 110, 111,
-                112, 113.0, 114.0);
+                112, 113.0f, 114.0d);
 
     }
 }

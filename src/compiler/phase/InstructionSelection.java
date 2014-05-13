@@ -2,10 +2,9 @@ package compiler.phase;
 
 import uvm.BasicBlock;
 import uvm.Function;
-import uvm.IRTreeNode;
 import uvm.MicroVM;
+import uvm.irtree.IRTreeNode;
 import uvm.ssavalue.Instruction;
-import burm.BURM_GENERATED;
 import burm.BurmState;
 
 public class InstructionSelection extends CompilationPhase{

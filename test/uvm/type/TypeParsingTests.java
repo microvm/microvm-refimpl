@@ -2,134 +2,106 @@ package uvm.type;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static uvm.type.TestingHelper.parseUir;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import uvm.Bundle;
+public class TypeParsingTests extends BundleTester {
 
-public class TypeParsingTests {
-
-    private static Bundle bundle;
-
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        String file = "tests/uvm-parsing-test/types.uir";
-        bundle = parseUir(file);
-    }
-
-    private static Type type(String name) {
-        return bundle.getTypeByName(name);
-    }
-
-    private static <T> T assertType(Type type, Class<T> cls) {
-        if (!cls.isAssignableFrom(type.getClass())) {
-            fail("Found " + type.getClass().getName() + ", expect "
-                    + cls.getName());
-        }
-        return cls.cast(type);
-    }
-
-    private void assertIntSize(Type type, int size) {
-        if (!(type instanceof Int)) {
-            fail("Found " + type.getClass().getName() + ", expect Int");
-        }
-        assertEquals(((Int) type).getSize(), size);
+    @Override
+    protected String bundleName() {
+        return "tests/uvm-parsing-test/types.uir";
     }
 
     @Test
     public void testParsing() {
+        assertIntSize(1, type("@i1"));
+        assertIntSize(8, type("@i8"));
+        assertIntSize(16, type("@i16"));
+        assertIntSize(32, type("@i32"));
+        assertIntSize(64, type("@i64"));
 
-        assertIntSize(type("@i1"), 1);
-        assertIntSize(type("@i8"), 8);
-        assertIntSize(type("@i16"), 16);
-        assertIntSize(type("@i32"), 32);
-        assertIntSize(type("@i64"), 64);
+        assertType(Float.class, type("@f"));
+        assertType(Double.class, type("@d"));
 
-        assertType(type("@f"), Float.class);
-        assertType(type("@d"), Double.class);
+        assertType(Ref.class, type("@rv"));
+        assertType(IRef.class, type("@irv"));
+        assertType(WeakRef.class, type("@wrv"));
 
-        assertType(type("@rv"), Ref.class);
-        assertType(type("@irv"), IRef.class);
-        assertType(type("@wrv"), WeakRef.class);
+        AbstractReferenceType ri16 = assertType(Ref.class, type("@ri16"));
+        assertIntSize(16, ri16.getReferenced());
 
-        AbstractReferenceType ri16 = assertType(type("@ri16"), Ref.class);
-        assertIntSize(ri16.getReferenced(), 16);
+        AbstractReferenceType ri16_2 = assertType(Ref.class, type("@ri16"));
+        assertIntSize(16, ri16_2.getReferenced());
 
-        AbstractReferenceType ri16_2 = assertType(type("@ri16"), Ref.class);
-        assertIntSize(ri16_2.getReferenced(), 16);
+        assertType(Struct.class, type("@s0"));
 
-        assertType(type("@s0"), Struct.class);
+        Struct s1 = assertType(Struct.class, type("@s1"));
+        assertIntSize(8, s1.getFieldTypes().get(0));
+        assertIntSize(16, s1.getFieldTypes().get(1));
+        assertIntSize(32, s1.getFieldTypes().get(2));
+        assertIntSize(64, s1.getFieldTypes().get(3));
+        assertType(Float.class, s1.getFieldTypes().get(4));
+        assertType(Double.class, s1.getFieldTypes().get(5));
+        Ref s1_6 = assertType(Ref.class, s1.getFieldTypes().get(6));
+        assertType(Void.class, s1_6.getReferenced());
+        IRef s1_7 = assertType(IRef.class, s1.getFieldTypes().get(7));
+        assertType(Void.class, s1_7.getReferenced());
+        WeakRef s1_8 = assertType(WeakRef.class, s1.getFieldTypes().get(8));
+        assertType(Void.class, s1_8.getReferenced());
+        Ref s1_9 = assertType(Ref.class, s1.getFieldTypes().get(9));
+        assertIntSize(16, s1_9.getReferenced());
+        Ref s1_10 = assertType(Ref.class, s1.getFieldTypes().get(10));
+        assertIntSize(16, s1_10.getReferenced());
 
-        Struct s1 = assertType(type("@s1"), Struct.class);
-        assertIntSize(s1.getFieldTypes().get(0), 8);
-        assertIntSize(s1.getFieldTypes().get(1), 16);
-        assertIntSize(s1.getFieldTypes().get(2), 32);
-        assertIntSize(s1.getFieldTypes().get(3), 64);
-        assertType(s1.getFieldTypes().get(4), Float.class);
-        assertType(s1.getFieldTypes().get(5), Double.class);
-        Ref s1_6 = assertType(s1.getFieldTypes().get(6), Ref.class);
-        assertType(s1_6.getReferenced(), Void.class);
-        IRef s1_7 = assertType(s1.getFieldTypes().get(7), IRef.class);
-        assertType(s1_7.getReferenced(), Void.class);
-        WeakRef s1_8 = assertType(s1.getFieldTypes().get(8), WeakRef.class);
-        assertType(s1_8.getReferenced(), Void.class);
-        Ref s1_9 = assertType(s1.getFieldTypes().get(9), Ref.class);
-        assertIntSize(s1_9.getReferenced(), 16);
-        Ref s1_10 = assertType(s1.getFieldTypes().get(10), Ref.class);
-        assertIntSize(s1_10.getReferenced(), 16);
-
-        Struct cons = assertType(type("@cons"), Struct.class);
+        Struct cons = assertType(Struct.class, type("@cons"));
 
         Struct curCons = cons;
         for (int n = 0; n < 10; n++) { // Only check for 10 iterations.
-            assertIntSize(curCons.getFieldTypes().get(0), 64);
-            Ref cons_1 = assertType(curCons.getFieldTypes().get(1), Ref.class);
-            Struct consBack = assertType(cons_1.getReferenced(), Struct.class);
+            assertIntSize(64, curCons.getFieldTypes().get(0));
+            Ref cons_1 = assertType(Ref.class, curCons.getFieldTypes().get(1));
+            Struct consBack = assertType(Struct.class, cons_1.getReferenced());
             curCons = consBack;
         }
 
-        Array a0 = assertType(type("@a0"), Array.class);
-        assertIntSize(a0.getElemType(), 8);
-        assertEquals(a0.getLength(), 100);
+        Array a0 = assertType(Array.class, type("@a0"));
+        assertIntSize(8, a0.getElemType());
+        assertEquals(100, a0.getLength());
 
-        Array a1 = assertType(type("@a1"), Array.class);
-        Struct a1_0 = assertType(a1.getElemType(), Struct.class);
-        assertType(a1_0.getFieldTypes().get(0), Double.class);
-        assertIntSize(a1_0.getFieldTypes().get(1), 64);
-        assertEquals(a1.getLength(), 10);
+        Array a1 = assertType(Array.class, type("@a1"));
+        Struct a1_0 = assertType(Struct.class, a1.getElemType());
+        assertType(Double.class, a1_0.getFieldTypes().get(0));
+        assertIntSize(64, a1_0.getFieldTypes().get(1));
+        assertEquals(10, a1.getLength());
 
-        Array a2 = assertType(type("@a2"), Array.class);
-        Array a2_0 = assertType(a2.getElemType(), Array.class);
-        assertType(a2_0.getElemType(), Struct.class);
+        Array a2 = assertType(Array.class, type("@a2"));
+        Array a2_0 = assertType(Array.class, a2.getElemType());
+        assertType(Struct.class, a2_0.getElemType());
         assertEquals(a2.getLength(), 10);
 
-        Hybrid h0 = assertType(type("@h0"), Hybrid.class);
-        assertType(h0.getFixedPart(), Void.class);
-        assertIntSize(h0.getVarPart(), 8);
+        Hybrid h0 = assertType(Hybrid.class, type("@h0"));
+        assertType(Void.class, h0.getFixedPart());
+        assertIntSize(8, h0.getVarPart());
 
-        Hybrid h1 = assertType(type("@h1"), Hybrid.class);
-        assertType(h1.getFixedPart(), Struct.class);
-        assertIntSize(h1.getVarPart(), 64);
+        Hybrid h1 = assertType(Hybrid.class, type("@h1"));
+        assertType(Struct.class, h1.getFixedPart());
+        assertIntSize(64, h1.getVarPart());
 
-        assertType(type("@v"), Void.class);
+        assertType(Void.class, type("@v"));
 
-        Func f0 = assertType(type("@f0"), Func.class);
-        assertType(f0.getSig().getReturnType(), Void.class);
+        Func f0 = assertType(Func.class, type("@f0"));
+        assertType(Void.class, f0.getSig().getReturnType());
         assertTrue(f0.getSig().getParamTypes().isEmpty());
 
-        Func f1 = assertType(type("@f1"), Func.class);
-        assertIntSize(f1.getSig().getReturnType(), 32);
-        assertIntSize(f1.getSig().getParamTypes().get(0), 32);
-        IRef argv = assertType(f1.getSig().getParamTypes().get(1), IRef.class);
-        IRef argvs = assertType(argv.getReferenced(), IRef.class);
-        assertIntSize(argvs.getReferenced(), 8);
+        Func f1 = assertType(Func.class, type("@f1"));
+        assertIntSize(32, f1.getSig().getReturnType());
+        assertIntSize(32, f1.getSig().getParamTypes().get(0));
+        IRef argv = assertType(IRef.class, f1.getSig().getParamTypes().get(1));
+        IRef argvs = assertType(IRef.class, argv.getReferenced());
+        assertIntSize(8, argvs.getReferenced());
 
-        assertType(type("@th"), Thread.class);
-        assertType(type("@st"), Stack.class);
-        assertType(type("@tr64"), TagRef64.class);
+        assertType(Thread.class, type("@th"));
+        assertType(Stack.class, type("@st"));
+        assertType(TagRef64.class, type("@tr64"));
 
     }
 

@@ -4,12 +4,13 @@ import java.util.Map.Entry;
 
 import uvm.BasicBlock;
 import uvm.Function;
-import uvm.IRTreeNode;
-import uvm.Label;
 import uvm.MicroVM;
-import uvm.OpCode;
-import uvm.Register;
-import uvm.ssavalue.*;
+import uvm.irtree.IRTreeNode;
+import uvm.ssavalue.InstBranch;
+import uvm.ssavalue.InstBranch2;
+import uvm.ssavalue.InstPhi;
+import uvm.ssavalue.Instruction;
+import uvm.ssavalue.Value;
 
 public class IRTreeGeneration extends CompilationPhase{
     public IRTreeGeneration(String name) {

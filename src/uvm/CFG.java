@@ -1,23 +1,45 @@
 package uvm;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import uvm.ssavalue.Instruction;
+import uvm.ssavalue.Parameter;
 
 /**
  * A CFG (Control Flow Graph) is the body of a Function. It has many basic
  * blocks which then contains many instructions.
  */
 public class CFG {
+    /**
+     * The associated Function object.
+     */
     private Function func;
+
+    /**
+     * The formal parameter list.
+     */
+    private List<Parameter> params = new ArrayList<Parameter>();
+
+    /**
+     * A list of all basic blocks.
+     */
     private List<BasicBlock> bbs = new ArrayList<BasicBlock>();
+
+    /**
+     * The entry block.
+     */
     private BasicBlock entry;
 
-    private Map<String, BasicBlock> nameToBB = new HashMap<String, BasicBlock>();
-    private Map<String, Instruction> nameToInst = new HashMap<String, Instruction>();
+    /**
+     * Basic block namespace.
+     */
+    private Namespace<BasicBlock> bbNs = new SimpleNamespace<BasicBlock>();
+
+    /**
+     * Instruction (local SSA Value) namespace.
+     */
+    private Namespace<Instruction> instNs = new SimpleNamespace<Instruction>();
 
     public Function getFunc() {
         return func;
@@ -29,6 +51,10 @@ public class CFG {
 
     public FunctionSignature getSig() {
         return func.getSig();
+    }
+
+    public List<Parameter> getParams() {
+        return params;
     }
 
     public List<BasicBlock> getBBs() {
@@ -43,11 +69,11 @@ public class CFG {
         this.entry = entry;
     }
 
-    public Map<String, Instruction> getNameToInst() {
-        return nameToInst;
+    public Namespace<BasicBlock> getBBNs() {
+        return bbNs;
     }
 
-    public Map<String, BasicBlock> getNameToBB() {
-        return nameToBB;
+    public Namespace<Instruction> getInstNs() {
+        return instNs;
     }
 }

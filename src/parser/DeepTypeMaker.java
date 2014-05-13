@@ -33,7 +33,7 @@ class DeepTypeMaker extends ShallowTypeMaker {
     @Override
     public Type visitReferencedType(ReferencedTypeContext ctx) {
         String name = ctx.GLOBAL_ID().getText();
-        Type type = this.rbb.bundle.getTypeByName(name);
+        Type type = this.rbb.bundle.getTypeNs().getByName(name);
 
         if (type == null) {
             throw new ASTParsingException("Undefined type " + name);

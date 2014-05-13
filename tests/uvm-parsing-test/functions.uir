@@ -12,12 +12,12 @@
 
 .const @zero <int<32>> = 0
 
-.funcdef @main <@baz> {
+.funcdef @main <@baz> (%argc %argv) {
     %entry:
         RET <int<32>> @zero
 }
 
-.funcdef @implicitentry <@foo> {
+.funcdef @implicitentry <@foo> () {
         RET <int<32>> @zero
 }
 

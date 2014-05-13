@@ -2,15 +2,15 @@ package compiler.phase;
 
 import java.util.List;
 
-import compiler.UVMCompiler;
-import burm.BURM_GENERATED;
 import uvm.BasicBlock;
 import uvm.CompiledFunction;
 import uvm.Function;
-import uvm.IRTreeNode;
 import uvm.MicroVM;
+import uvm.irtree.IRTreeNode;
 import uvm.mc.AbstractMachineCode;
 import uvm.ssavalue.Instruction;
+
+import compiler.UVMCompiler;
 
 public class MachineCodeEmission extends CompilationPhase{
     public MachineCodeEmission(String name) {

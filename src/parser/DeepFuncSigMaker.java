@@ -19,7 +19,7 @@ class DeepFuncSigMaker extends ShallowFuncSigMaker {
     public FunctionSignature visitReferencedFuncSig(
             ReferencedFuncSigContext ctx) {
         String name = ctx.GLOBAL_ID().getText();
-        FunctionSignature sig = rbb.bundle.getFuncSigByName(name);
+        FunctionSignature sig = rbb.bundle.getFuncSigNs().getByName(name);
 
         if (sig == null) {
             throw new ASTParsingException("Undefined sig " + name);

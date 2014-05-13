@@ -1,16 +1,17 @@
 package parser;
 
-import parser.uIRParser.FPConstContext;
+import parser.uIRParser.DoubleConstContext;
+import parser.uIRParser.FloatConstContext;
 import parser.uIRParser.IntConstContext;
 import parser.uIRParser.NullConstContext;
 import parser.uIRParser.StructConstContext;
 import uvm.ssavalue.Constant;
-import uvm.ssavalue.FPConstant;
+import uvm.ssavalue.DoubleConstant;
+import uvm.ssavalue.FloatConstant;
 import uvm.ssavalue.IntConstant;
 import uvm.ssavalue.NullConstant;
 import uvm.ssavalue.StructConstant;
 import uvm.type.AbstractReferenceType;
-import uvm.type.FPType;
 import uvm.type.Func;
 import uvm.type.Int;
 import uvm.type.Struct;
@@ -43,29 +44,40 @@ class ShallowConstMaker extends uIRBaseVisitor<Constant> {
         Int type = (Int) expectedType;
         long value = rbb.intLitToLong(ctx.intLiteral());
         IntConstant constant = new IntConstant(type, value);
-        constant.setID(rbb.makeID());
-        rbb.bundle.registerConstant(constant.getID(), null, constant);
+        makeIDAndRegister(constant);
         return constant;
     }
 
     @Override
-    public FPConstant visitFPConst(FPConstContext ctx) {
-        if (!(expectedType instanceof FPType)) {
-            throw new ASTParsingException("FP literal " + ctx.getText()
+    public FloatConstant visitFloatConst(FloatConstContext ctx) {
+        if (!(expectedType instanceof uvm.type.Float)) {
+            throw new ASTParsingException("Float literal " + ctx.getText()
                     + " found. Expect" + expectedType);
         }
 
-        double value = rbb.fpLiteralParser.visit(ctx.fpLiteral());
-        FPConstant constant = new FPConstant(expectedType, value);
-        constant.setID(rbb.makeID());
-        rbb.bundle.registerConstant(constant.getID(), null, constant);
+        float value = rbb.floatLiteralParser.visit(ctx.floatLiteral());
+        FloatConstant constant = new FloatConstant(expectedType, value);
+        makeIDAndRegister(constant);
+        return constant;
+    }
+
+    @Override
+    public DoubleConstant visitDoubleConst(DoubleConstContext ctx) {
+        if (!(expectedType instanceof uvm.type.Double)) {
+            throw new ASTParsingException("Double literal " + ctx.getText()
+                    + " found. Expect" + expectedType);
+        }
+
+        double value = rbb.doubleLiteralParser.visit(ctx.doubleLiteral());
+        DoubleConstant constant = new DoubleConstant(expectedType, value);
+        makeIDAndRegister(constant);
         return constant;
     }
 
     @Override
     public StructConstant visitStructConst(StructConstContext ctx) {
         if (!(expectedType instanceof Struct)) {
-            throw new ASTParsingException("Int literal " + ctx.getText()
+            throw new ASTParsingException("Struct literal " + ctx.getText()
                     + " found. Expect" + expectedType);
         }
 
@@ -81,8 +93,7 @@ class ShallowConstMaker extends uIRBaseVisitor<Constant> {
 
         StructConstant constant = new StructConstant();
         constant.setType(type);
-        constant.setID(rbb.makeID());
-        rbb.bundle.registerConstant(constant.getID(), null, constant);
+        makeIDAndRegister(constant);
 
         return constant;
     }
@@ -100,9 +111,15 @@ class ShallowConstMaker extends uIRBaseVisitor<Constant> {
 
         NullConstant constant = new NullConstant();
         constant.setType(expectedType);
-        constant.setID(rbb.makeID());
-        rbb.bundle.registerConstant(constant.getID(), null, constant);
+        makeIDAndRegister(constant);
 
         return constant;
+    }
+
+    private void makeIDAndRegister(Constant constant) {
+        int id = rbb.makeID();
+        constant.setID(id);
+        rbb.bundle.getGlobalValueNs().put(id, null, constant);
+        rbb.bundle.getDeclaredConstNs().put(id, null, constant);
     }
 }

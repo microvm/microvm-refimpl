@@ -12,23 +12,27 @@ import parser.uIRParser.OctIntLiteralContext;
 class IntLiteralParser extends uIRBaseVisitor<Long> {
     @Override
     public Long visitDecIntLiteral(DecIntLiteralContext ctx) {
-        return Long.parseLong(ctx.getText());
+        return parseText(ctx.getText(), 10L);
     }
 
     @Override
     public Long visitOctIntLiteral(OctIntLiteralContext ctx) {
-        return Long.parseLong(ctx.getText(), 8);
+        return parseText(ctx.getText(), 8L);
     }
 
     @Override
     public Long visitHexIntLiteral(HexIntLiteralContext ctx) {
-        String text = ctx.getText();
+        return parseText(ctx.getText(), 16L);
+    }
+
+    private long parseText(String text, long base) {
         boolean negative = text.charAt(0) == '-';
         String body = text.substring(text.indexOf('x') + 1);
-        long num = Long.parseLong(body, 16);
+        long num = IntParsingUtils.manualParse(body, base);
         if (negative) {
             num = -num;
         }
         return num;
     }
+
 }

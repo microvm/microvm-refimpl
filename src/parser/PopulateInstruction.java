@@ -1,5 +1,7 @@
 package parser;
 
+import static parser.ParserHelper.parseError;
+
 import java.util.List;
 
 import org.antlr.v4.runtime.RuleContext;
@@ -90,7 +92,6 @@ import uvm.ssavalue.InstWatchPoint;
 import uvm.ssavalue.Value;
 import uvm.type.Int;
 import uvm.type.Type;
-import static parser.ParserHelper.parseError;
 
 /**
  * Private for FuncBuilder use.
@@ -124,7 +125,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     }
 
     private BasicBlock bb(String name) {
-        BasicBlock bb = fb.cfg.getNameToBB().get(name);
+        BasicBlock bb = fb.cfg.getBBNs().getByName(name);
         if (bb == null) {
             parseError("Undefined label " + name);
         }

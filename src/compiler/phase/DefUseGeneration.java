@@ -2,9 +2,7 @@ package compiler.phase;
 
 import uvm.BasicBlock;
 import uvm.Function;
-import uvm.IRTreeNode;
-import uvm.MicroVM;
-import uvm.Register;
+import uvm.irtree.IRTreeNode;
 import uvm.ssavalue.Instruction;
 import uvm.ssavalue.Value;
 

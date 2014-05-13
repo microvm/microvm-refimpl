@@ -19,8 +19,13 @@ class ShallowFuncSigMaker extends uIRBaseVisitor<FunctionSignature> {
     public FunctionSignature visitFuncSigConstructor(
             FuncSigConstructorContext ctx) {
         FunctionSignature sig = new FunctionSignature();
-        sig.setID(rbb.makeID());
-        rbb.bundle.registerFuncSig(sig.getID(), null, sig);
+        makeIDAndRegister(sig);
         return sig;
+    }
+
+    private void makeIDAndRegister(FunctionSignature sig) {
+        int id = rbb.makeID();
+        sig.setID(id);
+        rbb.bundle.getFuncSigNs().put(id, null, sig);
     }
 }

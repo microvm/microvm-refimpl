@@ -2,116 +2,81 @@ package uvm.type;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static uvm.type.TestingHelper.parseUir;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import uvm.Bundle;
 import uvm.Function;
 import uvm.FunctionSignature;
-import uvm.GlobalData;
-import uvm.ssavalue.Constant;
 import uvm.ssavalue.IntConstant;
+import uvm.ssavalue.Parameter;
 
-public class FunctionParsingTest {
-
-    private static Bundle bundle;
-
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        String file = "tests/uvm-parsing-test/functions.uir";
-        bundle = parseUir(file);
-    }
-
-    private static Type type(String name) {
-        return bundle.getTypeByName(name);
-    }
-
-    private static Constant constant(String name) {
-        return bundle.getConstantByName(name);
-    }
-
-    private static GlobalData globalData(String name) {
-        return bundle.getGlobalDataByName(name);
-    }
-
-    private static Function func(String name) {
-        return bundle.getFuncByName(name);
-    }
-
-    private static FunctionSignature funcSig(String name) {
-        return bundle.getFuncSigByName(name);
-    }
-
-    private static <T> T assertType(Object obj, Class<T> cls) {
-        if (!cls.isAssignableFrom(obj.getClass())) {
-            fail("Found " + obj.getClass().getName() + ", expect "
-                    + cls.getName());
-        }
-        return cls.cast(obj);
-    }
-
-    private void assertIntSize(Type type, int size) {
-        if (!(type instanceof Int)) {
-            fail("Found " + type.getClass().getName() + ", expect Int");
-        }
-        assertEquals(((Int) type).getSize(), size);
+public class FunctionParsingTest extends BundleTester {
+    @Override
+    protected String bundleName() {
+        return "tests/uvm-parsing-test/functions.uir";
     }
 
     public void assertIsSigT(Type type) {
-        Func sig_t = assertType(type, Func.class);
+        Func sig_t = assertType(Func.class, type);
         FunctionSignature sig_fs = sig_t.getSig();
-        assertType(sig_fs.getReturnType(), Void.class);
-        assertIntSize(sig_fs.getParamTypes().get(0), 32);
+        assertType(Void.class, sig_fs.getReturnType());
+        assertIntSize(32, sig_fs.getParamTypes().get(0));
     }
 
     @Test
     public void testParsing() {
-        FunctionSignature foo = assertType(funcSig("@foo"),
-                FunctionSignature.class);
-        assertType(foo.getReturnType(), Void.class);
+        FunctionSignature foo = assertType(FunctionSignature.class,
+                funcSig("@foo"));
+        assertType(Void.class, foo.getReturnType());
         assertTrue(foo.getParamTypes().isEmpty());
 
-        FunctionSignature bar = assertType(funcSig("@bar"),
-                FunctionSignature.class);
-        assertIntSize(bar.getReturnType(), 64);
-        assertIntSize(bar.getParamTypes().get(0), 32);
-        assertIntSize(bar.getParamTypes().get(1), 16);
+        FunctionSignature bar = assertType(FunctionSignature.class,
+                funcSig("@bar"));
+        assertIntSize(64, bar.getReturnType());
+        assertIntSize(32, bar.getParamTypes().get(0));
+        assertIntSize(16, bar.getParamTypes().get(1));
 
-        FunctionSignature baz = assertType(funcSig("@baz"),
-                FunctionSignature.class);
+        FunctionSignature baz = assertType(FunctionSignature.class,
+                funcSig("@baz"));
         assertIsBaz(baz);
 
-        FunctionSignature sig_fs = assertType(funcSig("@sig_fs"),
-                FunctionSignature.class);
-        assertType(sig_fs.getReturnType(), Void.class);
-        assertIntSize(sig_fs.getParamTypes().get(0), 32);
+        FunctionSignature sig_fs = assertType(FunctionSignature.class,
+                funcSig("@sig_fs"));
+        assertType(Void.class, sig_fs.getReturnType());
+        assertIntSize(32, sig_fs.getParamTypes().get(0));
 
-        Func sig_t = assertType(type("@sig_t"), Func.class);
+        Func sig_t = assertType(Func.class, type("@sig_t"));
 
-        Function signal = assertType(func("@signal"), Function.class);
+        Function signal = assertType(Function.class, func("@signal"));
 
         assertIsSigT(signal.getSig().getReturnType());
-        assertIntSize(signal.getSig().getParamTypes().get(0), 32);
+        assertIntSize(32, signal.getSig().getParamTypes().get(0));
         assertIsSigT(signal.getSig().getParamTypes().get(1));
         assertIsSigT(sig_t);
 
-        IntConstant zero = assertType(constant("@zero"), IntConstant.class);
-        assertIntSize(zero.getType(), 32);
-        assertEquals(zero.getValue(), 0L);
+        IntConstant zero = assertType(IntConstant.class, constant("@zero"));
+        assertIntSize(32, zero.getType());
+        assertEquals(0L, zero.getValue());
 
-        Function main = assertType(func("@main"), Function.class);
+        Function main = assertType(Function.class, func("@main"));
         FunctionSignature main_sig = main.getSig();
         assertIsBaz(main_sig);
+
+        Parameter argc = assertType(Parameter.class, main.getCFG().getInstNs()
+                .getByName("%argc"));
+        assertEquals(main.getCFG().getParams().get(0), argc);
+        
+        Parameter argv = assertType(Parameter.class, main.getCFG().getInstNs()
+                .getByName("%argv"));
+        assertEquals(main.getCFG().getParams().get(1), argv);
+
     }
 
     private void assertIsBaz(FunctionSignature baz) {
-        assertIntSize(baz.getReturnType(), 32);
-        assertIntSize(baz.getParamTypes().get(0), 32);
-        IRef baz_1 = assertType(baz.getParamTypes().get(1), IRef.class);
-        IRef baz_1r = assertType(baz_1.getReferenced(), IRef.class);
-        assertIntSize(baz_1r.getReferenced(), 8);
+        assertIntSize(32, baz.getReturnType());
+        assertIntSize(32, baz.getParamTypes().get(0));
+        IRef baz_1 = assertType(IRef.class, baz.getParamTypes().get(1));
+        IRef baz_1r = assertType(IRef.class, baz_1.getReferenced());
+        assertIntSize(8, baz_1r.getReferenced());
     }
 }

@@ -131,7 +131,7 @@ public class RecursiveBundleBuilder {
             @Override
             public Void visitFuncDef(FuncDefContext ctx) {
                 String name = ctx.GLOBAL_ID().getText();
-                Function func = bundle.getFuncByName(name);
+                Function func = bundle.getFuncNs().getByName(name);
                 FuncBuilder funcBuilder = new FuncBuilder(
                         RecursiveBundleBuilder.this, func);
                 funcBuilder.handleFuncDef(ctx);
@@ -164,7 +164,7 @@ public class RecursiveBundleBuilder {
         Type type = shallowTypeMaker.visit(ctx.typeConstructor());
         String name = ctx.GLOBAL_ID().getText();
         type.setName(name);
-        bundle.bind(type.getID(), name);
+        bundle.getTypeNs().bind(type.getID(), name);
     }
 
     private void handleFuncSigDef(FuncSigDefContext ctx) {
@@ -172,12 +172,12 @@ public class RecursiveBundleBuilder {
                 .funcSigConstructor());
         String name = ctx.GLOBAL_ID().getText();
         sig.setName(name);
-        bundle.bind(sig.getID(), name);
+        bundle.getFuncSigNs().bind(sig.getID(), name);
     }
 
     private void populateTypeDef(TypeDefContext ctx) {
         String name = ctx.GLOBAL_ID().getText();
-        final Type oldType = bundle.getTypeByName(name);
+        final Type oldType = bundle.getTypeNs().getByName(name);
 
         new PopulateDeclaredTypeAndSig(RecursiveBundleBuilder.this, oldType)
                 .visit(ctx.typeConstructor());
@@ -185,7 +185,7 @@ public class RecursiveBundleBuilder {
 
     private void populateFuncSigDef(FuncSigDefContext ctx) {
         String name = ctx.GLOBAL_ID().getText();
-        FunctionSignature sig = bundle.getFuncSigByName(name);
+        FunctionSignature sig = bundle.getFuncSigNs().getByName(name);
 
         typeAndSigPopulator.visitFuncSigConstructor(sig,
                 ctx.funcSigConstructor());
@@ -207,7 +207,8 @@ public class RecursiveBundleBuilder {
     // The int type also takes a literal as a parameter.
 
     IntLiteralParser intLiteralParser = new IntLiteralParser();
-    FPLiteralParser fpLiteralParser = new FPLiteralParser();
+    FloatLiteralParser floatLiteralParser = new FloatLiteralParser();
+    DoubleLiteralParser doubleLiteralParser = new DoubleLiteralParser();
 
     /**
      * A convenient method that handles the cast.
@@ -230,10 +231,6 @@ public class RecursiveBundleBuilder {
      */
     private Constant handleConstDefShallow(ConstDefContext ctx) {
         String name = ctx.GLOBAL_ID().getText();
-        if (!name.startsWith("@")) {
-            throw new ASTParsingException("Local identifier " + name
-                    + " found. Expect Galobal identifier.");
-        }
 
         Type type = deepTypeMaker.visit(ctx.type());
         Constant constant = new ShallowConstMaker(this, type).visit(ctx
@@ -241,14 +238,15 @@ public class RecursiveBundleBuilder {
 
         constant.setName(name);
 
-        bundle.bind(constant.getID(), name);
+        bundle.getGlobalValueNs().bind(constant.getID(), name);
+        bundle.getDeclaredConstNs().bind(constant.getID(), name);
 
         return constant;
     }
 
     private void populateConstDef(ConstDefContext ctx) {
         String name = ctx.GLOBAL_ID().getText();
-        Constant constant = bundle.getConstantByName(name);
+        Constant constant = bundle.getDeclaredConstNs().getByName(name);
         new PopulateDeclaredConst(this, constant).visit(ctx);
     }
 
@@ -267,7 +265,7 @@ public class RecursiveBundleBuilder {
         Type type = deepTypeMaker.visit(ctx.type());
         globalData.setType(type);
 
-        bundle.registerGlobalData(id, name, globalData);
+        bundle.getGlobalDataNs().put(id, name, globalData);
         return globalData;
     }
 
@@ -277,9 +275,8 @@ public class RecursiveBundleBuilder {
         constant.setName(globalData.getName());
         constant.setGlobalData(globalData);
 
-        // Since the GlobalData and the GlobalDataConstant always have the same
-        // ID and name, there is no need to re-bind the ID to the name.
-        bundle.registerConstant(constant.getID(), null, constant);
+        bundle.getGlobalValueNs().put(constant.getID(), constant.getName(),
+                constant);
 
         return constant;
     }
@@ -298,7 +295,7 @@ public class RecursiveBundleBuilder {
         function.setName(name);
         function.setSig(sig);
 
-        bundle.registerFunc(id, name, function);
+        bundle.getFuncNs().put(id, name, function);
 
         return function;
     }
@@ -309,9 +306,8 @@ public class RecursiveBundleBuilder {
         constant.setName(function.getName());
         constant.setFunction(function);
 
-        // Since the GlobalData and the GlobalDataConstant always have the same
-        // ID and name, there is no need to re-bind the ID to the name.
-        bundle.registerConstant(constant.getID(), null, constant);
+        bundle.getGlobalValueNs().put(constant.getID(), constant.getName(),
+                constant);
 
         return constant;
     }
@@ -333,7 +329,7 @@ public class RecursiveBundleBuilder {
         // definitions of the same function with different signatures. We do not
         // check this error.
 
-        if (bundle.getFuncByName(name) != null) {
+        if (bundle.getFuncNs().getByName(name) != null) {
             return;
         }
 
@@ -348,7 +344,7 @@ public class RecursiveBundleBuilder {
 
         // It does not make sense to declare a function multiple times.
 
-        if (bundle.getFuncByName(name) != null) {
+        if (bundle.getFuncNs().getByName(name) != null) {
             throw new ASTParsingException("Function " + name
                     + " declared multiple times.");
         }

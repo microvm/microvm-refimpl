@@ -1,6 +1,6 @@
 package burm;
 
-import uvm.IRTreeNode;
+import uvm.irtree.IRTreeNode;
 
 public class BurmState {
     IRTreeNode node;

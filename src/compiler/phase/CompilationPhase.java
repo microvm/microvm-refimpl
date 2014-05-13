@@ -2,8 +2,8 @@ package compiler.phase;
 
 import uvm.BasicBlock;
 import uvm.Function;
-import uvm.IRTreeNode;
 import uvm.MicroVM;
+import uvm.irtree.IRTreeNode;
 import uvm.ssavalue.Instruction;
 
 public abstract class CompilationPhase {

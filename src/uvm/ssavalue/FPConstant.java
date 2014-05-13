@@ -1,21 +1,19 @@
 package uvm.ssavalue;
 
-import uvm.OpCode;
 import uvm.type.Type;
 
 /**
- * Floating point number constant.
+ * Super class of floating point number constant, i.e. FloatConstant and
+ * DoubleConstant.
  */
-public class FPConstant extends Constant {
+public abstract class FPConstant extends Constant {
     private Type type;
-    private double value;
 
     public FPConstant() {
     }
 
-    public FPConstant(Type type, double value) {
+    public FPConstant(Type type) {
         this.type = type;
-        this.value = value;
     }
 
     @Override
@@ -27,26 +25,4 @@ public class FPConstant extends Constant {
         this.type = type;
     }
 
-    public double getValue() {
-        return value;
-    }
-
-    public void setValue(double value) {
-        this.value = value;
-    }
-
-    @Override
-    public String toString() {
-        return super.toString() + ": " + type + " = " + value;
-    }
-
-    @Override
-    public int opcode() {
-        return OpCode.FP_IMM;
-    }
-
-    @Override
-    public <T> T accept(ValueVisitor<T> visitor) {
-        return visitor.visitFPConstant(this);
-    }
 }

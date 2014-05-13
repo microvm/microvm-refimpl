@@ -1,5 +1,7 @@
 package parser;
 
+import static parser.ParserHelper.parseError;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,9 +20,9 @@ import uvm.BasicBlock;
 import uvm.CFG;
 import uvm.Function;
 import uvm.ssavalue.Instruction;
+import uvm.ssavalue.Parameter;
 import uvm.ssavalue.Value;
 import uvm.type.Type;
-import static parser.ParserHelper.parseError;
 
 /**
  * Private for RecursiveBundleBuilder use.
@@ -55,6 +57,16 @@ class FuncBuilder {
     }
 
     public void handleFuncDef(FuncDefContext ctx) {
+        for (int i = 0; i < ctx.paramList().LOCAL_ID().size(); i++) {
+            String name = ctx.paramList().LOCAL_ID(i).getText();
+            Parameter param = new Parameter(func.getSig(), i);
+            int id = rbb.makeID();
+            param.setID(id);
+            param.setName(name);
+            cfg.getParams().add(param);
+            cfg.getInstNs().put(id, name, param);
+        }
+
         // The shallow-deep pattern:
         // First make all instructions, but does not resolve named values
         // or labels.
@@ -71,27 +83,29 @@ class FuncBuilder {
 
     private void handleEntryBlock(EntryBlockContext entryBlock) {
         BasicBlock entry = new BasicBlock(cfg);
-        entry.setID(rbb.makeID());
+        int id = rbb.makeID();
+        entry.setID(id);
         LabelContext label = entryBlock.label();
         String name = label != null ? label.LOCAL_ID().getText() : "(entry)";
         entry.setName(name);
 
         cfg.setEntry(entry);
         cfg.getBBs().add(entry);
-        cfg.getNameToBB().put(name, entry);
+        cfg.getBBNs().put(id, name, entry);
 
         populateBasicBlock(entry, entryBlock.inst());
     }
 
     private void handleRegularBlock(RegularBlockContext regularBlock) {
         BasicBlock bb = new BasicBlock(cfg);
-        bb.setID(rbb.makeID());
+        int id = rbb.makeID();
+        bb.setID(id);
         LabelContext label = regularBlock.label();
         String name = label.LOCAL_ID().getText();
         bb.setName(name);
 
         cfg.getBBs().add(bb);
-        cfg.getNameToBB().put(name, bb);
+        cfg.getBBNs().put(id, name, bb);
 
         populateBasicBlock(bb, regularBlock.inst());
     }
@@ -101,10 +115,11 @@ class FuncBuilder {
             TerminalNode nameToken = ctx.LOCAL_ID();
             String name = nameToken != null ? nameToken.getText() : null;
             Instruction inst = shallowInstructionMaker.visit(ctx.instBody());
-            inst.setID(rbb.makeID());
+            int id = rbb.makeID();
+            inst.setID(id);
             inst.setName(name);
             bb.addInstruction(inst);
-            cfg.getNameToInst().put(name, inst);
+            cfg.getInstNs().put(id, name, inst);
             ctxToInst.put(ctx.instBody(), inst);
         }
     }
@@ -159,7 +174,7 @@ class FuncBuilder {
     }
 
     private Value getGlobalVal(String name) {
-        Value rv = rbb.bundle.getConstantByName(name);
+        Value rv = rbb.bundle.getGlobalValueNs().getByName(name);
         if (rv == null) {
             parseError("Undefined global value " + name);
         }
@@ -167,7 +182,7 @@ class FuncBuilder {
     }
 
     private Value getLocalVal(String name) {
-        Value rv = cfg.getNameToInst().get(name);
+        Value rv = cfg.getInstNs().getByName(name);
         if (rv == null) {
             parseError("Undefined local value " + name);
         }

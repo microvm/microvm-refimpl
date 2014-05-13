@@ -29,7 +29,6 @@ import parser.uIRParser.InstLoadContext;
 import parser.uIRParser.InstNewContext;
 import parser.uIRParser.InstNewHybridContext;
 import parser.uIRParser.InstNewStackContext;
-import parser.uIRParser.InstParamContext;
 import parser.uIRParser.InstPhiContext;
 import parser.uIRParser.InstRetContext;
 import parser.uIRParser.InstRetVoidContext;
@@ -90,7 +89,6 @@ import uvm.ssavalue.InstThrow;
 import uvm.ssavalue.InstTrap;
 import uvm.ssavalue.InstWatchPoint;
 import uvm.ssavalue.Instruction;
-import uvm.ssavalue.Parameter;
 import uvm.type.Array;
 import uvm.type.Hybrid;
 import uvm.type.Struct;
@@ -110,13 +108,6 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     }
 
     // Visitor methods.
-
-    @Override
-    public Parameter visitInstParam(InstParamContext ctx) {
-        Parameter inst = new Parameter();
-        inst.setParamIndex(intLitToInt(ctx.intLiteral()));
-        return inst;
-    }
 
     @Override
     public InstBinOp visitInstBinOp(InstBinOpContext ctx) {

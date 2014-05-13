@@ -23,7 +23,7 @@ public class DeepConstMaker extends ShallowConstMaker {
     @Override
     public Constant visitReferencedConst(ReferencedConstContext ctx) {
         String name = ctx.GLOBAL_ID().getText();
-        return rbb.bundle.getConstantByName(name);
+        return rbb.bundle.getGlobalValueNs().getByName(name);
     }
 
     @Override
