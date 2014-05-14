@@ -1,7 +1,7 @@
 package uvm.type;
 
 import static org.junit.Assert.assertEquals;
-import static parser.IntParsingUtils.manualParse;
+import static uvm.ir.textinput.IntParsingUtils.manualParse;
 
 import org.junit.Test;
 

@@ -1,5 +1,6 @@
-package parser;
+package uvm.ir.textinput;
 
+import parser.uIRBaseVisitor;
 import parser.uIRParser.FloatBitsContext;
 import parser.uIRParser.FloatInfContext;
 import parser.uIRParser.FloatNanContext;

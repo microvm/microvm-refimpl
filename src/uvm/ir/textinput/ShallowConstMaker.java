@@ -1,5 +1,6 @@
-package parser;
+package uvm.ir.textinput;
 
+import parser.uIRBaseVisitor;
 import parser.uIRParser.DoubleConstContext;
 import parser.uIRParser.FloatConstContext;
 import parser.uIRParser.IntConstContext;

@@ -1,4 +1,4 @@
-package parser;
+package uvm.ir.textinput;
 
 import parser.uIRParser.FuncSigConstructorContext;
 import parser.uIRParser.ReferencedFuncSigContext;

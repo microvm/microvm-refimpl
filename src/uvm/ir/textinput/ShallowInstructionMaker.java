@@ -1,5 +1,6 @@
-package parser;
+package uvm.ir.textinput;
 
+import parser.uIRBaseVisitor;
 import parser.uIRParser.AtomicordContext;
 import parser.uIRParser.FuncSigContext;
 import parser.uIRParser.InstAllocaContext;

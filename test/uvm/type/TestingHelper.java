@@ -8,11 +8,11 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.junit.Assert;
 
-import parser.RecursiveBundleBuilder;
 import parser.uIRLexer;
 import parser.uIRParser;
 import parser.uIRParser.IrContext;
 import uvm.Bundle;
+import uvm.ir.textinput.RecursiveBundleBuilder;
 
 public class TestingHelper {
 

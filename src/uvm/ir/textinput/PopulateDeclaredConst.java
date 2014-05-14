@@ -1,5 +1,6 @@
-package parser;
+package uvm.ir.textinput;
 
+import parser.uIRBaseVisitor;
 import parser.uIRParser.StructConstContext;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.StructConstant;

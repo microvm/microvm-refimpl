@@ -1,4 +1,4 @@
-package parser;
+package uvm.ir.textinput;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package parser;
+package uvm.ir.textinput;
 
 /**
  * Some helper functions for int parsing.

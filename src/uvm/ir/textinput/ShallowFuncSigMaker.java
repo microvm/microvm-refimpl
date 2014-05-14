@@ -1,5 +1,6 @@
-package parser;
+package uvm.ir.textinput;
 
+import parser.uIRBaseVisitor;
 import parser.uIRParser.FuncSigConstructorContext;
 import uvm.FunctionSignature;
 

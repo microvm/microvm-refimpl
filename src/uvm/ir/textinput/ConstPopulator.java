@@ -1,4 +1,4 @@
-package parser;
+package uvm.ir.textinput;
 
 import parser.uIRParser.ConstantContext;
 import parser.uIRParser.StructConstContext;

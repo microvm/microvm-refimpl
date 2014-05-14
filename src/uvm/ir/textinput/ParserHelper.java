@@ -1,4 +1,4 @@
-package parser;
+package uvm.ir.textinput;
 
 public class ParserHelper {
     public static void parseError(String msg) {

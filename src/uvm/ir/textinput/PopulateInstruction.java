@@ -1,12 +1,13 @@
-package parser;
+package uvm.ir.textinput;
 
-import static parser.ParserHelper.parseError;
+import static uvm.ir.textinput.ParserHelper.parseError;
 
 import java.util.List;
 
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import parser.uIRBaseVisitor;
 import parser.uIRParser.ArgsContext;
 import parser.uIRParser.FuncCallBodyContext;
 import parser.uIRParser.InstAllocaContext;

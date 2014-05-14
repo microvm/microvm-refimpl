@@ -1,6 +1,6 @@
-package parser;
+package uvm.ir.textinput;
 
-import static parser.ParserHelper.parseError;
+import static uvm.ir.textinput.ParserHelper.parseError;
 
 import java.util.HashMap;
 import java.util.List;

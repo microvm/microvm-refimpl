@@ -7,7 +7,6 @@ import java.io.IOException;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 
-import parser.RecursiveBundleBuilder;
 import parser.uIRLexer;
 import parser.uIRParser;
 import parser.uIRParser.IrContext;
@@ -15,11 +14,11 @@ import uvm.BasicBlock;
 import uvm.Bundle;
 import uvm.Function;
 import uvm.IdentifiedHelper;
+import uvm.ir.textinput.RecursiveBundleBuilder;
 import uvm.irtree.IRTreeBuilder;
 import uvm.irtree.IRTreeNode;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.Instruction;
-
 import compiler.phase.DefUseGeneration;
 import compiler.phase.IRTreeGeneration;
 import compiler.phase.InstructionSelection;
