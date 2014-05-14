@@ -1,4 +1,4 @@
-package uvm.type;
+package uvm.ir.textinput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -15,8 +15,8 @@ import uvm.BasicBlock;
 import uvm.CFG;
 import uvm.Function;
 import uvm.FunctionSignature;
-import uvm.intrinsicfunc.IntrinsicFunction;
-import uvm.intrinsicfunc.IntrinsicFunctionFactory;
+import uvm.ifunc.IFunc;
+import uvm.ifunc.IFuncFactory;
 import uvm.ssavalue.AtomicOrdering;
 import uvm.ssavalue.AtomicRMWOp;
 import uvm.ssavalue.BinOptr;
@@ -70,6 +70,12 @@ import uvm.ssavalue.Parameter;
 import uvm.ssavalue.StructConstant;
 import uvm.ssavalue.UseBox;
 import uvm.ssavalue.Value;
+import uvm.type.IRef;
+import uvm.type.Int;
+import uvm.type.Ref;
+import uvm.type.Stack;
+import uvm.type.Struct;
+import uvm.type.Type;
 
 public class InstructionParsingTest extends BundleTester {
 
@@ -707,20 +713,20 @@ public class InstructionParsingTest extends BundleTester {
         assertIntConstant(ns.getArgs().get(1).getDst(), 6);
         assertType(ns.getType(), Stack.class);
 
-        IntrinsicFunction uvmSwapStack = IntrinsicFunctionFactory
-                .getIntrinsicFunctionByName("@uvm.swap_stack");
+        IFunc uvmSwapStack = IFuncFactory
+                .getIFuncByName("@uvm.swap_stack");
 
         InstICall icall = assertType(inst("%i"), InstICall.class);
-        assertEquals(uvmSwapStack, icall.getIntrinsicFunction());
+        assertEquals(uvmSwapStack, icall.getIFunc());
         assertEquals(inst("%ns"), icall.getArgs().get(0).getDst());
         assertEquals(inst("%b"), icall.getKeepAlives().get(0).getDst());
         assertEquals(uvmSwapStack.getType(), icall.getType());
 
-        IntrinsicFunction uvmKillStack = IntrinsicFunctionFactory
-                .getIntrinsicFunctionByName("@uvm.kill_stack");
+        IFunc uvmKillStack = IFuncFactory
+                .getIFuncByName("@uvm.kill_stack");
 
         InstIInvoke iinvoke = assertType(inst("%j"), InstIInvoke.class);
-        assertEquals(uvmSwapStack, iinvoke.getIntrinsicFunction());
+        assertEquals(uvmSwapStack, iinvoke.getIFunc());
         assertEquals(inst("%ns"), iinvoke.getArgs().get(0).getDst());
         assertEquals(inst("%b"), iinvoke.getKeepAlives().get(0).getDst());
         assertEquals(inst("%c"), iinvoke.getKeepAlives().get(1).getDst());

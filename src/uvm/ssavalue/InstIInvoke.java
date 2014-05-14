@@ -4,7 +4,7 @@ import java.util.List;
 
 import uvm.BasicBlock;
 import uvm.OpCode;
-import uvm.intrinsicfunc.IntrinsicFunction;
+import uvm.ifunc.IFunc;
 
 /**
  * Call an intrinsic function.
@@ -24,7 +24,7 @@ public class InstIInvoke extends AbstractIntrinsicCall implements HandlesExcepti
     public InstIInvoke() {
     }
 
-    public InstIInvoke(IntrinsicFunction intrinsicFunction, List<Value> args,
+    public InstIInvoke(IFunc intrinsicFunction, List<Value> args,
             BasicBlock nor, BasicBlock exc, List<Value> keepAlives) {
         super(intrinsicFunction, args, keepAlives);
         this.nor = nor;

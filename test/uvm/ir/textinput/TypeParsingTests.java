@@ -1,9 +1,24 @@
-package uvm.type;
+package uvm.ir.textinput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+
+import uvm.type.AbstractReferenceType;
+import uvm.type.Array;
+import uvm.type.Double;
+import uvm.type.Float;
+import uvm.type.Func;
+import uvm.type.Hybrid;
+import uvm.type.IRef;
+import uvm.type.Ref;
+import uvm.type.Stack;
+import uvm.type.Struct;
+import uvm.type.TagRef64;
+import uvm.type.Thread;
+import uvm.type.Void;
+import uvm.type.WeakRef;
 
 public class TypeParsingTests extends BundleTester {
 

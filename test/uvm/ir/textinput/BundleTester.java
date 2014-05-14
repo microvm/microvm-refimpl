@@ -1,8 +1,8 @@
-package uvm.type;
+package uvm.ir.textinput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static uvm.type.TestingHelper.parseUir;
+import static uvm.ir.textinput.TestingHelper.parseUir;
 
 import org.junit.Before;
 
@@ -11,6 +11,8 @@ import uvm.Function;
 import uvm.FunctionSignature;
 import uvm.GlobalData;
 import uvm.ssavalue.Constant;
+import uvm.type.Int;
+import uvm.type.Type;
 
 public abstract class BundleTester {
     @Before

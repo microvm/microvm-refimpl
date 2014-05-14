@@ -1,4 +1,4 @@
-package uvm.type;
+package uvm.ir.textinput;
 
 import org.junit.Test;
 

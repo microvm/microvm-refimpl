@@ -12,9 +12,9 @@ package uvm.ssavalue;
 public interface ValueVisitor<T> {
     T visitIntConstant(IntConstant constant);
 
-    T visitFloatConstant(FloatConstant floatConstant);
+    T visitFloatConstant(FloatConstant constant);
 
-    T visitDoubleConstant(DoubleConstant doubleConstant);
+    T visitDoubleConstant(DoubleConstant constant);
 
     T visitStructConstant(StructConstant constant);
 
@@ -22,7 +22,7 @@ public interface ValueVisitor<T> {
 
     T visitGlobalDataConstant(GlobalDataConstant constant);
 
-    T visitFunctionConstant(FunctionConstant functionConstant);
+    T visitFunctionConstant(FunctionConstant constant);
 
     T visitParameter(Parameter parameter);
 
@@ -100,5 +100,5 @@ public interface ValueVisitor<T> {
 
     T visitICall(InstICall inst);
 
-    T visitIInvoke(HandlesException inst);
+    T visitIInvoke(InstIInvoke inst);
 }

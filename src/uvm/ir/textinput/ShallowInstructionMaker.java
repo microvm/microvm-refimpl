@@ -44,7 +44,7 @@ import parser.uIRParser.InstWatchPointContext;
 import parser.uIRParser.IntLiteralContext;
 import parser.uIRParser.TypeContext;
 import uvm.FunctionSignature;
-import uvm.intrinsicfunc.IntrinsicFunctionFactory;
+import uvm.ifunc.IFuncFactory;
 import uvm.ssavalue.AtomicOrdering;
 import uvm.ssavalue.AtomicRMWOp;
 import uvm.ssavalue.BinOptr;
@@ -383,16 +383,16 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstICall visitInstICall(InstICallContext ctx) {
         InstICall inst = new InstICall();
-        inst.setIntrinsicFunction(IntrinsicFunctionFactory
-                .getIntrinsicFunctionByName(ctx.GLOBAL_ID().getText()));
+        inst.setIFunc(IFuncFactory
+                .getIFuncByName(ctx.GLOBAL_ID().getText()));
         return inst;
     }
 
     @Override
     public InstIInvoke visitInstIInvoke(InstIInvokeContext ctx) {
         InstIInvoke inst = new InstIInvoke();
-        inst.setIntrinsicFunction(IntrinsicFunctionFactory
-                .getIntrinsicFunctionByName(ctx.GLOBAL_ID().getText()));
+        inst.setIFunc(IFuncFactory
+                .getIFuncByName(ctx.GLOBAL_ID().getText()));
         return inst;
     }
 

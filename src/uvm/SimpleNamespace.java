@@ -1,17 +1,19 @@
 package uvm;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * A simple flat (non-nested) implementation of a namespace.
- * @param <T> The object stored.
+ * 
+ * @param <T>
+ *            The object stored.
  */
 public class SimpleNamespace<T extends Identified> implements Namespace<T> {
-    private Map<Integer, T> fromID = new HashMap<Integer, T>();
-    private Map<String, Integer> nameToID = new HashMap<String, Integer>();
+    private Map<Integer, T> fromID = new LinkedHashMap<Integer, T>();
+    private Map<String, Integer> nameToID = new LinkedHashMap<String, Integer>();
 
     @Override
     public T getByID(int id) {

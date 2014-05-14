@@ -1,4 +1,4 @@
-package uvm.type;
+package uvm.ir.textinput;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

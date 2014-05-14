@@ -1,4 +1,4 @@
-package uvm.type;
+package uvm.ir.textinput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -9,6 +9,10 @@ import uvm.Function;
 import uvm.FunctionSignature;
 import uvm.ssavalue.IntConstant;
 import uvm.ssavalue.Parameter;
+import uvm.type.Func;
+import uvm.type.IRef;
+import uvm.type.Type;
+import uvm.type.Void;
 
 public class FunctionParsingTest extends BundleTester {
     @Override

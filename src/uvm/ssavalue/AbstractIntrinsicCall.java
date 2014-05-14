@@ -3,7 +3,7 @@ package uvm.ssavalue;
 import java.util.ArrayList;
 import java.util.List;
 
-import uvm.intrinsicfunc.IntrinsicFunction;
+import uvm.ifunc.IFunc;
 import uvm.type.Type;
 
 public abstract class AbstractIntrinsicCall extends Instruction implements
@@ -12,7 +12,7 @@ public abstract class AbstractIntrinsicCall extends Instruction implements
     /**
      * The intrinsic function object.
      */
-    protected IntrinsicFunction intrinsicFunction;
+    protected IFunc iFunc;
 
     /**
      * Arguments
@@ -28,10 +28,10 @@ public abstract class AbstractIntrinsicCall extends Instruction implements
         super();
     }
 
-    protected AbstractIntrinsicCall(IntrinsicFunction intrinsicFunction,
+    protected AbstractIntrinsicCall(IFunc intrinsicFunction,
             List<Value> args, List<Value> keepAlives) {
         super();
-        this.intrinsicFunction = intrinsicFunction;
+        this.iFunc = intrinsicFunction;
         for (Value arg : args) {
             this.args.add(use(arg));
         }
@@ -40,12 +40,12 @@ public abstract class AbstractIntrinsicCall extends Instruction implements
         }
     }
 
-    public IntrinsicFunction getIntrinsicFunction() {
-        return intrinsicFunction;
+    public IFunc getIFunc() {
+        return iFunc;
     }
 
-    public void setIntrinsicFunction(IntrinsicFunction intrinsicFunction) {
-        this.intrinsicFunction = intrinsicFunction;
+    public void setIFunc(IFunc iFunc) {
+        this.iFunc = iFunc;
     }
 
     @Override
@@ -70,7 +70,7 @@ public abstract class AbstractIntrinsicCall extends Instruction implements
 
     @Override
     public Type getType() {
-        return intrinsicFunction.getType();
+        return iFunc.getType();
     }
 
 }

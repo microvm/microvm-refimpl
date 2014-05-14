@@ -1,4 +1,4 @@
-package uvm.type;
+package uvm.ir.textinput;
 
 import static org.junit.Assert.assertEquals;
 import static uvm.ir.textinput.IntParsingUtils.manualParse;

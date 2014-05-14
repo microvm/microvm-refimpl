@@ -1,4 +1,4 @@
-package uvm.type;
+package uvm.ir.textinput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -15,6 +15,12 @@ import uvm.ssavalue.GlobalDataConstant;
 import uvm.ssavalue.IntConstant;
 import uvm.ssavalue.NullConstant;
 import uvm.ssavalue.StructConstant;
+import uvm.type.Func;
+import uvm.type.IRef;
+import uvm.type.Ref;
+import uvm.type.Struct;
+import uvm.type.Void;
+import uvm.type.WeakRef;
 
 public class ConstantParsingTest extends BundleTester {
     @Override
