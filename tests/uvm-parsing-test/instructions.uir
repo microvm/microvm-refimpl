@@ -83,9 +83,10 @@
     RETVOID
 }
 
-.funcdef @refCastTest <void (ref<void> iref<void>)> (%p0 %p1) {
+.funcdef @refCastTest <void (ref<void> iref<void> func<void ()>)> (%p0 %p1 %p2) {
     %refcast  = REFCAST  <ref<void> ref<int<32>>> %p0
     %irefcast = IREFCAST <iref<void> iref<int<64>>> %p1
+    %funccast = FUNCCAST <func<void()> func<@iiisig>> %p2
     
     RETVOID
 }

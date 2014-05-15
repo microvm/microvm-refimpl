@@ -70,6 +70,7 @@ import uvm.ssavalue.Parameter;
 import uvm.ssavalue.StructConstant;
 import uvm.ssavalue.UseBox;
 import uvm.ssavalue.Value;
+import uvm.type.Func;
 import uvm.type.IRef;
 import uvm.type.Int;
 import uvm.type.Ref;
@@ -82,21 +83,6 @@ public class InstructionParsingTest extends BundleTester {
     @Override
     protected String bundleName() {
         return "tests/uvm-parsing-test/instructions.uir";
-    }
-
-    private static <T> T assertType(Object obj, Class<T> cls) {
-        if (!cls.isAssignableFrom(obj.getClass())) {
-            fail("Found " + obj.getClass().getName() + ", expect "
-                    + cls.getName());
-        }
-        return cls.cast(obj);
-    }
-
-    private static void assertIntSize(Type type, int size) {
-        if (!(type instanceof Int)) {
-            fail("Found " + type.getClass().getName() + ", expect Int");
-        }
-        assertEquals(size, ((Int) type).getSize());
     }
 
     private Function curFunc;
@@ -131,14 +117,14 @@ public class InstructionParsingTest extends BundleTester {
     }
 
     private Parameter assertParameter(Instruction inst, int index) {
-        Parameter param = assertType(inst, Parameter.class);
+        Parameter param = assertType(Parameter.class, inst);
         assertEquals(index, param.getParamIndex());
         return param;
     }
 
     private InstBinOp assertBinOp(Instruction inst, BinOptr optr, Value op1,
             Value op2) {
-        InstBinOp binOp = assertType(inst, InstBinOp.class);
+        InstBinOp binOp = assertType(InstBinOp.class, inst);
         assertEquals(optr, binOp.getOptr());
         assertEquals(op1, binOp.getOp1());
         assertEquals(op2, binOp.getOp2());
@@ -166,7 +152,7 @@ public class InstructionParsingTest extends BundleTester {
 
         for (InstBinOp binOp : new InstBinOp[] { add, sub, mul, udiv, sdiv,
                 urem, srem, shl, lshr, ashr, and, or, xor }) {
-            assertIntSize(binOp.getType(), 32);
+            assertIntSize(32, binOp.getType());
         }
     }
 
@@ -182,13 +168,13 @@ public class InstructionParsingTest extends BundleTester {
         InstBinOp frem = assertBinOp(inst("%frem"), BinOptr.FREM, p0, p1);
 
         for (InstBinOp binOp : new InstBinOp[] { fadd, fsub, fmul, fdiv, frem }) {
-            assertType(binOp.getType(), uvm.type.Double.class);
+            assertType(uvm.type.Double.class, binOp.getType());
         }
     }
 
     private InstCmp assertCmp(Instruction inst, CmpOptr optr, Value op1,
             Value op2) {
-        InstCmp cmp = assertType(inst, InstCmp.class);
+        InstCmp cmp = assertType(InstCmp.class, inst);
         assertEquals(optr, cmp.getOptr());
         assertEquals(op1, cmp.getOp1());
         assertEquals(op2, cmp.getOp2());
@@ -213,8 +199,8 @@ public class InstructionParsingTest extends BundleTester {
 
         for (InstCmp cmp : new InstCmp[] { eq, ne, ult, ule, ugt, uge, slt,
                 sle, sgt, sge }) {
-            assertIntSize(cmp.getOpndType(), 64);
-            assertIntSize(cmp.getType(), 1);
+            assertIntSize(64, cmp.getOpndType());
+            assertIntSize(1, cmp.getType());
         }
     }
 
@@ -240,24 +226,24 @@ public class InstructionParsingTest extends BundleTester {
 
         for (InstCmp cmp : new InstCmp[] { ftrue, ffalse, foeq, fone, folt,
                 fole, fogt, foge, fueq, fune, fult, fule, fugt, fuge }) {
-            assertType(cmp.getOpndType(), uvm.type.Float.class);
-            assertIntSize(cmp.getType(), 1);
+            assertType(uvm.type.Float.class, cmp.getOpndType());
+            assertIntSize(1, cmp.getType());
         }
     }
 
     private InstConversion assertConversion(Instruction inst, ConvOptr optr,
             Object f, Object t, Value opnd) {
-        InstConversion conv = assertType(inst, InstConversion.class);
+        InstConversion conv = assertType(InstConversion.class, inst);
         assertEquals(optr, conv.getOptr());
         if (f instanceof Integer) {
-            assertIntSize(conv.getFromType(), (Integer) f);
+            assertIntSize((Integer) f, conv.getFromType());
         } else {
-            assertType(conv.getFromType(), (Class<?>) f);
+            assertType((Class<?>) f, conv.getFromType());
         }
         if (t instanceof Integer) {
-            assertIntSize(conv.getToType(), (Integer) t);
+            assertIntSize((Integer) t, conv.getToType());
         } else {
-            assertType(conv.getToType(), (Class<?>) t);
+            assertType((Class<?>) t, conv.getToType());
         }
         assertEquals(opnd, conv.getOpnd());
         return conv;
@@ -273,47 +259,47 @@ public class InstructionParsingTest extends BundleTester {
 
         InstConversion trunc = assertConversion(inst("%trunc"), ConvOptr.TRUNC,
                 64, 32, p1);
-        assertIntSize(trunc.getType(), 32);
+        assertIntSize(32, trunc.getType());
         InstConversion zext = assertConversion(inst("%zext"), ConvOptr.ZEXT,
                 32, 64, p0);
-        assertIntSize(zext.getType(), 64);
+        assertIntSize(64, zext.getType());
         InstConversion sext = assertConversion(inst("%sext"), ConvOptr.SEXT,
                 32, 64, p0);
-        assertIntSize(sext.getType(), 64);
+        assertIntSize(64, sext.getType());
 
         InstConversion fptrunc = assertConversion(inst("%fptrunc"),
                 ConvOptr.FPTRUNC, uvm.type.Double.class, uvm.type.Float.class,
                 p3);
-        assertType(fptrunc.getType(), uvm.type.Float.class);
+        assertType(uvm.type.Float.class, fptrunc.getType());
         InstConversion fpext = assertConversion(inst("%fpext"), ConvOptr.FPEXT,
                 uvm.type.Float.class, uvm.type.Double.class, p2);
-        assertType(fpext.getType(), uvm.type.Double.class);
+        assertType(uvm.type.Double.class, fpext.getType());
 
         InstConversion fptoui = assertConversion(inst("%fptoui"),
                 ConvOptr.FPTOUI, uvm.type.Double.class, 64, p3);
-        assertIntSize(fptoui.getType(), 64);
+        assertIntSize(64, fptoui.getType());
         InstConversion fptosi = assertConversion(inst("%fptosi"),
                 ConvOptr.FPTOSI, uvm.type.Double.class, 64, p3);
-        assertIntSize(fptosi.getType(), 64);
+        assertIntSize(64, fptosi.getType());
         InstConversion uitofp = assertConversion(inst("%uitofp"),
                 ConvOptr.UITOFP, 64, uvm.type.Double.class, p1);
-        assertType(uitofp.getType(), uvm.type.Double.class);
+        assertType(uvm.type.Double.class, uitofp.getType());
         InstConversion sitofp = assertConversion(inst("%sitofp"),
                 ConvOptr.SITOFP, 64, uvm.type.Double.class, p1);
-        assertType(sitofp.getType(), uvm.type.Double.class);
+        assertType(uvm.type.Double.class, sitofp.getType());
 
         InstConversion bitcast0 = assertConversion(inst("%bitcast0"),
                 ConvOptr.BITCAST, 32, uvm.type.Float.class, p0);
-        assertType(bitcast0.getType(), uvm.type.Float.class);
+        assertType(uvm.type.Float.class, bitcast0.getType());
         InstConversion bitcast1 = assertConversion(inst("%bitcast1"),
                 ConvOptr.BITCAST, 64, uvm.type.Double.class, p1);
-        assertType(bitcast1.getType(), uvm.type.Double.class);
+        assertType(uvm.type.Double.class, bitcast1.getType());
         InstConversion bitcast2 = assertConversion(inst("%bitcast2"),
                 ConvOptr.BITCAST, uvm.type.Float.class, 32, p2);
-        assertIntSize(bitcast2.getType(), 32);
+        assertIntSize(32, bitcast2.getType());
         InstConversion bitcast3 = assertConversion(inst("%bitcast3"),
                 ConvOptr.BITCAST, uvm.type.Double.class, 64, p3);
-        assertIntSize(bitcast3.getType(), 64);
+        assertIntSize(64, bitcast3.getType());
     }
 
     @Test
@@ -321,24 +307,47 @@ public class InstructionParsingTest extends BundleTester {
         loadFunc("@refCastTest");
         Parameter p0 = assertParameter(inst("%p0"), 0);
         Parameter p1 = assertParameter(inst("%p1"), 1);
+        Parameter p2 = assertParameter(inst("%p2"), 2);
 
         InstConversion refcast = assertConversion(inst("%refcast"),
                 ConvOptr.REFCAST, Ref.class, Ref.class, p0);
-        assertType(((Ref) refcast.getFromType()).getReferenced(),
-                uvm.type.Void.class);
-        assertIntSize(((Ref) refcast.getToType()).getReferenced(), 32);
-        assertIntSize(((Ref) refcast.getType()).getReferenced(), 32);
+        assertType(uvm.type.Void.class,
+                ((Ref) refcast.getFromType()).getReferenced());
+        assertIntSize(32, ((Ref) refcast.getToType()).getReferenced());
+        assertIntSize(32, ((Ref) refcast.getType()).getReferenced());
 
         InstConversion irefcast = assertConversion(inst("%irefcast"),
                 ConvOptr.IREFCAST, IRef.class, IRef.class, p1);
-        assertType(((IRef) irefcast.getFromType()).getReferenced(),
-                uvm.type.Void.class);
-        assertIntSize(((IRef) irefcast.getToType()).getReferenced(), 64);
-        assertIntSize(((IRef) irefcast.getType()).getReferenced(), 64);
+        assertType(uvm.type.Void.class,
+                ((IRef) irefcast.getFromType()).getReferenced());
+        assertIntSize(64, ((IRef) irefcast.getToType()).getReferenced());
+        assertIntSize(64, ((IRef) irefcast.getType()).getReferenced());
+
+        InstConversion funccast = assertConversion(inst("%funccast"),
+                ConvOptr.FUNCCAST, Func.class, Func.class, p2);
+        assertVVFunc(funccast.getFromType());
+        assertIIIFunc(funccast.getToType());
+    }
+
+    private void assertIIIFunc(Type type) {
+        Func fromFunc = assertType(Func.class, type);
+        FunctionSignature sig = fromFunc.getSig();
+        assertIIISig(sig);
+    }
+
+    private void assertVVFunc(Type type) {
+        Func fromFunc = assertType(Func.class, type);
+        FunctionSignature sig = fromFunc.getSig();
+        assertVVSig(sig);
+    }
+
+    private void assertVVSig(FunctionSignature sig) {
+        assertType(uvm.type.Void.class, sig.getReturnType());
+        assertTrue(sig.getParamTypes().isEmpty());
     }
 
     private IntConstant assertIntConstant(Value val, long value) {
-        IntConstant c = assertType(val, IntConstant.class);
+        IntConstant c = assertType(IntConstant.class, val);
         assertEquals(value, c.getValue());
         return c;
     }
@@ -347,16 +356,16 @@ public class InstructionParsingTest extends BundleTester {
     public void testCtrlFlow() {
         loadFunc("@ctrlFlow");
 
-        InstBranch br1 = assertType(inst("%br1"), InstBranch.class);
+        InstBranch br1 = assertType(InstBranch.class, inst("%br1"));
         assertEquals(bb("%head"), br1.getDest());
         assertNull(br1.getType());
 
-        InstBranch2 br2 = assertType(inst("%br2"), InstBranch2.class);
+        InstBranch2 br2 = assertType(InstBranch2.class, inst("%br2"));
         assertEquals(bb("%body"), br2.getIfTrue());
         assertNull(br2.getType());
 
-        InstSwitch sw = assertType(inst("%switch"), InstSwitch.class);
-        assertIntSize(sw.getOpndType(), 32);
+        InstSwitch sw = assertType(InstSwitch.class, inst("%switch"));
+        assertIntSize(32, sw.getOpndType());
         assertEquals(inst("%phi"), sw.getOpnd());
         assertEquals(bb("%other"), sw.getDefaultDest());
 
@@ -377,8 +386,8 @@ public class InstructionParsingTest extends BundleTester {
 
         assertNull(sw.getType());
 
-        InstPhi phi = assertType(inst("%phi"), InstPhi.class);
-        assertIntSize(phi.getType(), 32);
+        InstPhi phi = assertType(InstPhi.class, inst("%phi"));
+        assertIntSize(32, phi.getType());
 
         for (Map.Entry<BasicBlock, UseBox> e : phi.getValueMap().entrySet()) {
             if (e.getKey() == bb("%entry")) {
@@ -395,8 +404,8 @@ public class InstructionParsingTest extends BundleTester {
     public void testCallee2() {
         loadFunc("@callee2");
 
-        InstRet ret = assertType(inst("%ret"), InstRet.class);
-        assertIntSize(ret.getRetType(), 64);
+        InstRet ret = assertType(InstRet.class, inst("%ret"));
+        assertIntSize(64, ret.getRetType());
         assertEquals(inst("%rv"), ret.getRetVal());
         assertNull(ret.getType());
     }
@@ -405,68 +414,68 @@ public class InstructionParsingTest extends BundleTester {
     public void testCallee3() {
         loadFunc("@callee3");
 
-        InstThrow th = assertType(inst("%throw"), InstThrow.class);
+        InstThrow th = assertType(InstThrow.class, inst("%throw"));
         assertEquals(inst("%exc"), th.getException());
         assertNull(th.getType());
     }
 
     private void assertVoidVoidSig(FunctionSignature sig) {
-        assertType(sig.getReturnType(), uvm.type.Void.class);
+        assertType(uvm.type.Void.class, sig.getReturnType());
         assertTrue(sig.getParamTypes().isEmpty());
     }
 
     private void assertIIISig(FunctionSignature sig) {
-        assertIntSize(sig.getReturnType(), 64);
-        assertIntSize(sig.getParamTypes().get(0), 64);
-        assertIntSize(sig.getParamTypes().get(1), 64);
+        assertIntSize(64, sig.getReturnType());
+        assertIntSize(64, sig.getParamTypes().get(0));
+        assertIntSize(64, sig.getParamTypes().get(1));
     }
 
     @Test
     public void testCaller1() {
         loadFunc("@caller1");
 
-        InstCall v1 = assertType(inst("%v1"), InstCall.class);
+        InstCall v1 = assertType(InstCall.class, inst("%v1"));
         assertVoidVoidSig(v1.getSig());
         assertEquals(constant("@callee1"), v1.getFunc());
         assertTrue(v1.getArgs().isEmpty());
         assertTrue(v1.getKeepAlives().isEmpty());
-        assertType(v1.getType(), uvm.type.Void.class);
+        assertType(uvm.type.Void.class, v1.getType());
 
-        InstCall v2 = assertType(inst("%v2"), InstCall.class);
+        InstCall v2 = assertType(InstCall.class, inst("%v2"));
         assertIIISig(v2.getSig());
         assertTrue(v2.getKeepAlives().isEmpty());
-        assertIntSize(v2.getType(), 64);
+        assertIntSize(64, v2.getType());
 
         // Postpone argument tests to the last test case "testInference"
 
-        InstInvoke v3 = assertType(inst("%v3"), InstInvoke.class);
+        InstInvoke v3 = assertType(InstInvoke.class, inst("%v3"));
         assertIIISig(v3.getSig());
         assertEquals(bb("%cont"), v3.getNor());
         assertEquals(bb("%catch"), v3.getExc());
         assertTrue(v3.getKeepAlives().isEmpty());
-        assertIntSize(v3.getType(), 64);
+        assertIntSize(64, v3.getType());
 
-        InstCall v4 = assertType(inst("%v4"), InstCall.class);
+        InstCall v4 = assertType(InstCall.class, inst("%v4"));
         assertVoidVoidSig(v4.getSig());
         assertEquals(inst("%v2"), v4.getKeepAlives().get(0).getDst());
         assertEquals(inst("%v3"), v4.getKeepAlives().get(1).getDst());
-        assertType(v4.getType(), uvm.type.Void.class);
+        assertType(uvm.type.Void.class, v4.getType());
 
-        InstInvoke v5 = assertType(inst("%v5"), InstInvoke.class);
+        InstInvoke v5 = assertType(InstInvoke.class, inst("%v5"));
         assertIIISig(v5.getSig());
         assertEquals(inst("%v3"), v5.getArgs().get(0).getDst());
         assertEquals(inst("%v3"), v5.getArgs().get(1).getDst());
         assertEquals(inst("%v2"), v5.getKeepAlives().get(0).getDst());
-        assertIntSize(v5.getType(), 64);
+        assertIntSize(64, v5.getType());
 
-        InstRetVoid retv = assertType(inst("%retv"), InstRetVoid.class);
+        InstRetVoid retv = assertType(InstRetVoid.class, inst("%retv"));
         assertNull(retv.getType());
     }
 
     @Test
     public void testCaller2() {
         loadFunc("@caller2");
-        InstTailCall tc = assertType(inst("%tc"), InstTailCall.class);
+        InstTailCall tc = assertType(InstTailCall.class, inst("%tc"));
         assertIIISig(tc.getSig());
         assertEquals(constant("@callee2"), tc.getFunc());
         assertEquals(inst("%p0"), tc.getArgs().get(0).getDst());
@@ -475,13 +484,13 @@ public class InstructionParsingTest extends BundleTester {
     }
 
     private FloatConstant assertFloatConstant(Value val, float value) {
-        FloatConstant c = assertType(val, FloatConstant.class);
+        FloatConstant c = assertType(FloatConstant.class, val);
         assertEquals(value, c.getValue(), 0.001f);
         return c;
     }
 
     private DoubleConstant assertDoubleConstant(Value val, double value) {
-        DoubleConstant c = assertType(val, DoubleConstant.class);
+        DoubleConstant c = assertType(DoubleConstant.class, val);
         assertEquals(value, c.getValue(), 0.001d);
         return c;
     }
@@ -489,31 +498,31 @@ public class InstructionParsingTest extends BundleTester {
     @Test
     public void testAggregate() {
         loadFunc("@aggregate");
-        InstExtractValue e0 = assertType(inst("%e0"), InstExtractValue.class);
+        InstExtractValue e0 = assertType(InstExtractValue.class, inst("%e0"));
         assertEquals(type("@sid"), e0.getStructType());
         assertEquals(0, e0.getIndex());
         assertEquals(constant("@sid1"), e0.getOpnd());
-        assertIntSize(e0.getType(), 64);
+        assertIntSize(64, e0.getType());
 
-        InstExtractValue e1 = assertType(inst("%e1"), InstExtractValue.class);
+        InstExtractValue e1 = assertType(InstExtractValue.class, inst("%e1"));
         assertEquals(type("@sid"), e1.getStructType());
         assertEquals(1, e1.getIndex());
         assertEquals(constant("@sid1"), e1.getOpnd());
-        assertType(e1.getType(), uvm.type.Double.class);
+        assertType(uvm.type.Double.class, e1.getType());
 
-        InstInsertValue i0 = assertType(inst("%i0"), InstInsertValue.class);
+        InstInsertValue i0 = assertType(InstInsertValue.class, inst("%i0"));
         assertEquals(type("@sid"), i0.getStructType());
         assertEquals(0, i0.getIndex());
         assertEquals(constant("@sid1"), i0.getOpnd());
         assertIntConstant(i0.getNewVal(), 40);
-        assertType(i0.getType(), Struct.class);
+        assertType(Struct.class, i0.getType());
 
-        InstInsertValue i1 = assertType(inst("%i1"), InstInsertValue.class);
+        InstInsertValue i1 = assertType(InstInsertValue.class, inst("%i1"));
         assertEquals(type("@sid"), i1.getStructType());
         assertEquals(1, i1.getIndex());
         assertEquals(constant("@sid1"), i1.getOpnd());
         assertDoubleConstant(i1.getNewVal(), 40.0d);
-        assertType(i1.getType(), Struct.class);
+        assertType(Struct.class, i1.getType());
     }
 
     @Test
@@ -522,108 +531,108 @@ public class InstructionParsingTest extends BundleTester {
         Parameter p0 = assertParameter(inst("%p0"), 0);
         Parameter p1 = assertParameter(inst("%p1"), 1);
 
-        InstNew new_ = assertType(inst("%new"), InstNew.class);
-        assertIntSize(new_.getAllocType(), 64);
-        Ref newType = assertType(new_.getType(), Ref.class);
-        assertIntSize(newType.getReferenced(), 64);
+        InstNew new_ = assertType(InstNew.class, inst("%new"));
+        assertIntSize(64, new_.getAllocType());
+        Ref newType = assertType(Ref.class, new_.getType());
+        assertIntSize(64, newType.getReferenced());
 
-        InstNewHybrid newhybrid = assertType(inst("%newhybrid"),
-                InstNewHybrid.class);
+        InstNewHybrid newhybrid = assertType(InstNewHybrid.class,
+                inst("%newhybrid"));
         assertEquals(type("@hic"), newhybrid.getAllocType());
         assertEquals(inst("%p0"), newhybrid.getLength());
-        Ref newHybridType = assertType(newhybrid.getType(), Ref.class);
+        Ref newHybridType = assertType(Ref.class, newhybrid.getType());
         assertEquals(type("@hic"), newHybridType.getReferenced());
 
-        InstAlloca alloca = assertType(inst("%alloca"), InstAlloca.class);
-        assertIntSize(alloca.getAllocType(), 64);
-        IRef allocaType = assertType(alloca.getType(), IRef.class);
-        assertIntSize(allocaType.getReferenced(), 64);
+        InstAlloca alloca = assertType(InstAlloca.class, inst("%alloca"));
+        assertIntSize(64, alloca.getAllocType());
+        IRef allocaType = assertType(IRef.class, alloca.getType());
+        assertIntSize(64, allocaType.getReferenced());
 
-        InstAllocaHybrid allocahybrid = assertType(inst("%allocahybrid"),
-                InstAllocaHybrid.class);
+        InstAllocaHybrid allocahybrid = assertType(InstAllocaHybrid.class,
+                inst("%allocahybrid"));
         assertEquals(type("@hic"), allocahybrid.getAllocType());
         assertEquals(inst("%p0"), allocahybrid.getLength());
-        IRef allocaHybridType = assertType(allocahybrid.getType(), IRef.class);
+        IRef allocaHybridType = assertType(IRef.class, allocahybrid.getType());
         assertEquals(type("@hic"), allocaHybridType.getReferenced());
 
-        InstGetIRef getiref = assertType(inst("%getiref"), InstGetIRef.class);
+        InstGetIRef getiref = assertType(InstGetIRef.class, inst("%getiref"));
         assertEquals(type("@sid"), getiref.getReferentType());
         assertEquals(inst("%new2"), getiref.getOpnd());
-        IRef getirefType = assertType(getiref.getType(), IRef.class);
+        IRef getirefType = assertType(IRef.class, getiref.getType());
         assertEquals(type("@sid"), getirefType.getReferenced());
 
-        InstGetFieldIRef getfieldiref = assertType(inst("%getfieldiref"),
-                InstGetFieldIRef.class);
+        InstGetFieldIRef getfieldiref = assertType(InstGetFieldIRef.class,
+                inst("%getfieldiref"));
         assertEquals(type("@sid"), getfieldiref.getReferentType());
         assertEquals(0, getfieldiref.getIndex());
         assertEquals(inst("%getiref"), getfieldiref.getOpnd());
-        IRef getfieldirefType = assertType(getfieldiref.getType(), IRef.class);
-        assertIntSize(getfieldirefType.getReferenced(), 64);
+        IRef getfieldirefType = assertType(IRef.class, getfieldiref.getType());
+        assertIntSize(64, getfieldirefType.getReferenced());
 
-        InstGetElemIRef getelemiref = assertType(inst("%getelemiref"),
-                InstGetElemIRef.class);
+        InstGetElemIRef getelemiref = assertType(InstGetElemIRef.class,
+                inst("%getelemiref"));
         assertEquals(type("@al"), getelemiref.getReferentType());
         assertEquals(inst("%alloca2"), getelemiref.getOpnd());
         assertEquals(inst("%p1"), getelemiref.getIndex());
-        IRef getelemirefType = assertType(getelemiref.getType(), IRef.class);
-        assertIntSize(getelemirefType.getReferenced(), 64);
+        IRef getelemirefType = assertType(IRef.class, getelemiref.getType());
+        assertIntSize(64, getelemirefType.getReferenced());
 
-        InstShiftIRef shiftiref = assertType(inst("%shiftiref"),
-                InstShiftIRef.class);
-        assertIntSize(shiftiref.getReferentType(), 8);
+        InstShiftIRef shiftiref = assertType(InstShiftIRef.class,
+                inst("%shiftiref"));
+        assertIntSize(8, shiftiref.getReferentType());
         assertEquals(inst("%getvarpartiref"), shiftiref.getOpnd());
         assertEquals(inst("%p1"), shiftiref.getOffset());
-        IRef shiftirefType = assertType(shiftiref.getType(), IRef.class);
-        assertIntSize(shiftirefType.getReferenced(), 8);
+        IRef shiftirefType = assertType(IRef.class, shiftiref.getType());
+        assertIntSize(8, shiftirefType.getReferenced());
 
         InstGetFixedPartIRef getfixedpartiref = assertType(
-                inst("%getfixedpartiref"), InstGetFixedPartIRef.class);
+                InstGetFixedPartIRef.class, inst("%getfixedpartiref"));
         assertEquals(type("@hic"), getfixedpartiref.getReferentType());
         assertEquals(inst("%allocahybrid"), getfixedpartiref.getOpnd());
-        IRef getfixedpartirefType = assertType(getfixedpartiref.getType(),
-                IRef.class);
-        assertIntSize(getfixedpartirefType.getReferenced(), 64);
+        IRef getfixedpartirefType = assertType(IRef.class,
+                getfixedpartiref.getType());
+        assertIntSize(64, getfixedpartirefType.getReferenced());
 
-        InstGetVarPartIRef getvarpartiref = assertType(inst("%getvarpartiref"),
-                InstGetVarPartIRef.class);
+        InstGetVarPartIRef getvarpartiref = assertType(
+                InstGetVarPartIRef.class, inst("%getvarpartiref"));
         assertEquals(type("@hic"), getvarpartiref.getReferentType());
         assertEquals(inst("%allocahybrid"), getvarpartiref.getOpnd());
-        IRef getvarpartirefType = assertType(getvarpartiref.getType(),
-                IRef.class);
-        assertIntSize(getvarpartirefType.getReferenced(), 8);
+        IRef getvarpartirefType = assertType(IRef.class,
+                getvarpartiref.getType());
+        assertIntSize(8, getvarpartirefType.getReferenced());
 
-        InstLoad load = assertType(inst("%load"), InstLoad.class);
+        InstLoad load = assertType(InstLoad.class, inst("%load"));
         assertEquals(AtomicOrdering.NOT_ATOMIC, load.getOrdering());
-        assertIntSize(load.getReferentType(), 64);
+        assertIntSize(64, load.getReferentType());
         assertEquals(inst("%alloca"), load.getLocation());
-        assertIntSize(load.getType(), 64);
+        assertIntSize(64, load.getType());
 
-        InstStore store = assertType(inst("%store"), InstStore.class);
+        InstStore store = assertType(InstStore.class, inst("%store"));
         assertEquals(AtomicOrdering.NOT_ATOMIC, store.getOrdering());
-        assertIntSize(store.getReferentType(), 64);
+        assertIntSize(64, store.getReferentType());
         assertEquals(inst("%alloca"), store.getLocation());
         assertIntConstant(store.getNewVal(), 42);
         assertNull(store.getType());
 
-        InstCmpXchg cmpxchg = assertType(inst("%cmpxchg"), InstCmpXchg.class);
+        InstCmpXchg cmpxchg = assertType(InstCmpXchg.class, inst("%cmpxchg"));
         assertEquals(AtomicOrdering.ACQUIRE, cmpxchg.getOrderingSucc());
         assertEquals(AtomicOrdering.MONOTONIC, cmpxchg.getOrderingFail());
-        assertIntSize(cmpxchg.getReferentType(), 64);
+        assertIntSize(64, cmpxchg.getReferentType());
         assertEquals(inst("%alloca"), cmpxchg.getLocation());
         assertIntConstant(cmpxchg.getExpected(), 42);
         assertIntConstant(cmpxchg.getDesired(), 0);
-        assertIntSize(cmpxchg.getType(), 64);
+        assertIntSize(64, cmpxchg.getType());
 
-        InstAtomicRMW atomicrmw = assertType(inst("%atomicrmw"),
-                InstAtomicRMW.class);
+        InstAtomicRMW atomicrmw = assertType(InstAtomicRMW.class,
+                inst("%atomicrmw"));
         assertEquals(AtomicOrdering.ACQ_REL, atomicrmw.getOrdering());
         assertEquals(AtomicRMWOp.ADD, atomicrmw.getOptr());
-        assertIntSize(atomicrmw.getReferentType(), 64);
+        assertIntSize(64, atomicrmw.getReferentType());
         assertEquals(inst("%alloca"), atomicrmw.getLocation());
         assertIntConstant(atomicrmw.getOpnd(), 50);
-        assertIntSize(atomicrmw.getType(), 64);
+        assertIntSize(64, atomicrmw.getType());
 
-        InstFence fence = assertType(inst("%fence"), InstFence.class);
+        InstFence fence = assertType(InstFence.class, inst("%fence"));
         assertEquals(AtomicOrdering.MONOTONIC, fence.getOrdering());
         assertNull(fence.getType());
     }
@@ -673,15 +682,15 @@ public class InstructionParsingTest extends BundleTester {
     public void testTraps() {
         loadFunc("@traps");
 
-        InstTrap tp = assertType(inst("%tp"), InstTrap.class);
-        assertIntSize(tp.getType(), 32);
+        InstTrap tp = assertType(InstTrap.class, inst("%tp"));
+        assertIntSize(32, tp.getType());
         assertEquals(bb("%trapcont"), tp.getNor());
         assertEquals(bb("%trapexc"), tp.getExc());
         assertEquals(inst("%b"), tp.getKeepAlives().get(0).getDst());
         assertEquals(inst("%wp"), tp.getKeepAlives().get(1).getDst());
 
-        InstWatchPoint wp = assertType(inst("%wp"), InstWatchPoint.class);
-        assertIntSize(wp.getType(), 64);
+        InstWatchPoint wp = assertType(InstWatchPoint.class, inst("%wp"));
+        assertIntSize(64, wp.getType());
         assertEquals(bb("%body"), wp.getDisabled());
         assertEquals(bb("%wpcont"), wp.getNor());
         assertEquals(bb("%wpexc"), wp.getExc());
@@ -693,40 +702,38 @@ public class InstructionParsingTest extends BundleTester {
     public void testCCall() {
         loadFunc("@ccall");
 
-        InstCCall ccall = assertType(inst("%rv"), InstCCall.class);
+        InstCCall ccall = assertType(InstCCall.class, inst("%rv"));
         assertEquals(CallConv.DEFAULT, ccall.getCallConv());
-        assertType(ccall.getSig().getReturnType(), uvm.type.Void.class);
-        assertType(ccall.getSig().getParamTypes().get(0), uvm.type.Double.class);
+        assertType(uvm.type.Void.class, ccall.getSig().getReturnType());
+        assertType(uvm.type.Double.class, ccall.getSig().getParamTypes().get(0));
         assertEquals(inst("%p0"), ccall.getFunc());
         assertDoubleConstant(ccall.getArgs().get(0).getDst(), 3.14);
-        assertType(ccall.getType(), uvm.type.Void.class);
+        assertType(uvm.type.Void.class, ccall.getType());
     }
 
     @Test
     public void testStackAndIntrinsics() {
         loadFunc("@stack_and_intrinsic");
 
-        InstNewStack ns = assertType(inst("%ns"), InstNewStack.class);
+        InstNewStack ns = assertType(InstNewStack.class, inst("%ns"));
         assertIIISig(ns.getSig());
         assertEquals(constant("@callee2"), ns.getFunc());
         assertIntConstant(ns.getArgs().get(0).getDst(), 5);
         assertIntConstant(ns.getArgs().get(1).getDst(), 6);
-        assertType(ns.getType(), Stack.class);
+        assertType(Stack.class, ns.getType());
 
-        IFunc uvmSwapStack = IFuncFactory
-                .getIFuncByName("@uvm.swap_stack");
+        IFunc uvmSwapStack = IFuncFactory.getIFuncByName("@uvm.swap_stack");
 
-        InstICall icall = assertType(inst("%i"), InstICall.class);
+        InstICall icall = assertType(InstICall.class, inst("%i"));
         assertEquals(uvmSwapStack, icall.getIFunc());
         assertEquals(inst("%ns"), icall.getArgs().get(0).getDst());
         assertEquals(inst("%b"), icall.getKeepAlives().get(0).getDst());
         assertEquals(uvmSwapStack.getType(), icall.getType());
 
-        IFunc uvmKillStack = IFuncFactory
-                .getIFuncByName("@uvm.kill_stack");
+        IFunc uvmKillStack = IFuncFactory.getIFuncByName("@uvm.kill_stack");
 
-        InstIInvoke iinvoke = assertType(inst("%j"), InstIInvoke.class);
-        assertEquals(uvmSwapStack, iinvoke.getIFunc());
+        InstIInvoke iinvoke = assertType(InstIInvoke.class, inst("%j"));
+        assertEquals(uvmKillStack, iinvoke.getIFunc());
         assertEquals(inst("%ns"), iinvoke.getArgs().get(0).getDst());
         assertEquals(inst("%b"), iinvoke.getKeepAlives().get(0).getDst());
         assertEquals(inst("%c"), iinvoke.getKeepAlives().get(1).getDst());
@@ -734,20 +741,20 @@ public class InstructionParsingTest extends BundleTester {
     }
 
     public void assertIntConstOf(Value val, int len, long value) {
-        IntConstant c = assertType(val, IntConstant.class);
+        IntConstant c = assertType(IntConstant.class, val);
         assertEquals(len, c.getType().getSize());
         assertEquals(value, c.getValue());
     }
 
     public void assertFloatConstOf(Value val, double value) {
-        FloatConstant c = assertType(val, FloatConstant.class);
-        assertType(c.getType(), uvm.type.Float.class);
+        FloatConstant c = assertType(FloatConstant.class, val);
+        assertType(uvm.type.Float.class, c.getType());
         assertEquals(value, c.getValue(), 0.001f);
     }
 
     public void assertDoubleConstOf(Value val, double value) {
-        DoubleConstant c = assertType(val, DoubleConstant.class);
-        assertType(c.getType(), uvm.type.Double.class);
+        DoubleConstant c = assertType(DoubleConstant.class, val);
+        assertType(uvm.type.Double.class, c.getType());
         assertEquals(value, c.getValue(), 0.001d);
     }
 
@@ -763,7 +770,7 @@ public class InstructionParsingTest extends BundleTester {
 
     public void assertRainbows(Value val, long v0, long v1, long v2, long v3,
             float v4, double v5) {
-        StructConstant sc = assertType(val, StructConstant.class);
+        StructConstant sc = assertType(StructConstant.class, val);
         assertIntConstOf(sc.getValues().get(0), 8, v0);
         assertIntConstOf(sc.getValues().get(1), 16, v1);
         assertIntConstOf(sc.getValues().get(2), 32, v2);
@@ -796,18 +803,17 @@ public class InstructionParsingTest extends BundleTester {
         assertDoubleConstOf(((InstCmp) inst("%fueq")).getOp2(), 56.0d);
 
         assertIntConstOf(((InstConversion) inst("%trunc")).getOpnd(), 64, 57);
-        assertDoubleConstOf(((InstConversion) inst("%fptrunc")).getOpnd(), 58.0d);
+        assertDoubleConstOf(((InstConversion) inst("%fptrunc")).getOpnd(),
+                58.0d);
 
-        NullConstant refcastc = assertType(
-                ((InstConversion) inst("%refcast")).getOpnd(),
-                NullConstant.class);
-        assertType(((Ref) refcastc.getType()).getReferenced(),
-                uvm.type.Void.class);
-        NullConstant irefcastc = assertType(
-                ((InstConversion) inst("%irefcast")).getOpnd(),
-                NullConstant.class);
-        assertType(((IRef) irefcastc.getType()).getReferenced(),
-                uvm.type.Void.class);
+        NullConstant refcastc = assertType(NullConstant.class,
+                ((InstConversion) inst("%refcast")).getOpnd());
+        assertType(uvm.type.Void.class,
+                ((Ref) refcastc.getType()).getReferenced());
+        NullConstant irefcastc = assertType(NullConstant.class,
+                ((InstConversion) inst("%irefcast")).getOpnd());
+        assertType(uvm.type.Void.class,
+                ((IRef) irefcastc.getType()).getReferenced());
 
         assertIntConstOf(((InstSelect) inst("%select")).getCond(), 1, 1);
         assertDoubleConstOf(((InstSelect) inst("%select")).getIfTrue(), 59.0d);

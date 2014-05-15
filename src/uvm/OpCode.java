@@ -73,6 +73,7 @@ public abstract class OpCode {
     public static final int BITCAST = 0x39;
     public static final int REFCAST = 0x3A;
     public static final int IREFCAST= 0x3B;
+    public static final int FUNCCAST= 0x3C;
     
     // conditional move
     public static final int SELECT  = 0x40;

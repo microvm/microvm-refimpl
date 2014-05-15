@@ -249,7 +249,7 @@ fcmpops
 convops
     : 'TRUNC' | 'ZEXT' | 'SEXT' | 'FPTRUNC' | 'FPEXT'
     | 'FPTOUI' | 'FPTOSI' | 'UITOFP' | 'SITOFP' | 'BITCAST'
-    | 'REFCAST' | 'IREFCAST'
+    | 'REFCAST' | 'IREFCAST' | 'FUNCCAST'
     ;
 
 atomicord

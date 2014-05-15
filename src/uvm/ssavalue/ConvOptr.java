@@ -17,7 +17,8 @@ public enum ConvOptr {
     SITOFP(OpCode.SITOFP),
     BITCAST(OpCode.BITCAST),
     REFCAST(OpCode.REFCAST),
-    IREFCAST(OpCode.IREFCAST);
+    IREFCAST(OpCode.IREFCAST),
+    FUNCCAST(OpCode.FUNCCAST);
     
     private final int opCode;
 
