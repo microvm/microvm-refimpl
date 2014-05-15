@@ -142,21 +142,8 @@ public class RecursiveBundleBuilder {
         buildFuncBody.visit(ir);
     }
 
-    // ID facilities
-
-    private int nextId = 1;
-
-    /**
-     * Create a new globally unique ID.
-     * <p>
-     * TODO: Consider moving to a more "global" place. Candidate: MicroVM
-     * 
-     * @return A unique ID for everything: types, signatures, functions,
-     *         instructions, ...
-     */
     int makeID() {
-        int thisId = nextId++;
-        return thisId;
+        return IDMakerForText.INSTANCE.makeID();
     }
 
     // Types and function signatures
@@ -346,7 +333,7 @@ public class RecursiveBundleBuilder {
         // It does not make sense to declare a function multiple times.
 
         if (bundle.getFuncNs().getByName(name) != null) {
-            throw new ASTParsingException("Function " + name
+            ParserHelper.parseError(ctx, "Function " + name
                     + " declared multiple times.");
         }
 
@@ -354,25 +341,6 @@ public class RecursiveBundleBuilder {
 
         Function function = declareFunction(name, sig);
         makeFunctionConstant(function);
-    }
-
-    // Utility methods
-
-    /**
-     * Assert if an identifier is global
-     * 
-     * @param id
-     *            An id.
-     * @return The id parameter itself
-     * @throws ASTParsingException
-     *             Thrown if the ID is not global.
-     */
-    static String assertGlobal(String id) throws ASTParsingException {
-        if (id.charAt(0) != '@') {
-            throw new ASTParsingException("Met identifier " + id
-                    + " while expecting a global identifier");
-        }
-        return id;
     }
 
 }

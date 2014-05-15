@@ -86,7 +86,7 @@ class FuncBuilder {
         int id = rbb.makeID();
         entry.setID(id);
         LabelContext label = entryBlock.label();
-        String name = label != null ? label.LOCAL_ID().getText() : "(entry)";
+        String name = label != null ? label.LOCAL_ID().getText() : "%__entry__";
         entry.setName(name);
 
         cfg.setEntry(entry);
@@ -149,7 +149,12 @@ class FuncBuilder {
             }
         } else {
             if (hint == null) {
-                parseError("Cannot build constant without a type hint");
+                parseError(ctx, "Cannot build constant without a type hint");
+            }
+            if (hint.getID() == 0) {
+                parseError(ctx,
+                        "Text parser cannot infer literal constant type when the"
+                                + "type is not declared by the client.");
             }
             return new DeepConstMaker(rbb, hint).visit(ctx);
         }

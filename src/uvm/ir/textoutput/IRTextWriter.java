@@ -88,7 +88,7 @@ public class IRTextWriter {
             sb.append(g(paramTy)).append(" ");
         }
         sb.append(")");
-        pw.printf(".funcsig %s <%s>\n", g(sig), sb.toString());
+        pw.printf(".funcsig %s = %s\n", g(sig), sb.toString());
         writeComments();
     }
 

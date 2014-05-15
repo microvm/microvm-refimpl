@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static uvm.ir.textinput.TestingHelper.parseUir;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import org.junit.Before;
 
 import uvm.Bundle;
@@ -18,8 +21,12 @@ public abstract class BundleTester {
     @Before
     public void setUp() throws Exception {
         if (bundle == null) {
-            bundle = parseUir(bundleName());
+            loadBundle();
         }
+    }
+
+    protected void loadBundle() throws IOException, FileNotFoundException {
+        bundle = parseUir(bundleName());
     }
 
     protected abstract String bundleName();

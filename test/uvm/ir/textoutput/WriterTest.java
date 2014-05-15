@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import uvm.Bundle;
@@ -12,6 +13,7 @@ import uvm.ir.textinput.TestingHelper;
 public class WriterTest {
 
     @Test
+    @Ignore
     public void tests() throws FileNotFoundException, IOException {
         writeBundleFile("tests/uvm-parsing-test/types.uir");
         writeBundleFile("tests/uvm-parsing-test/constants.uir");

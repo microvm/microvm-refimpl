@@ -20,7 +20,7 @@ import uvm.type.Thread;
 import uvm.type.Void;
 import uvm.type.WeakRef;
 
-public class TypeParsingTests extends BundleTester {
+public class TypeParsingTest extends BundleTester {
 
     @Override
     protected String bundleName() {

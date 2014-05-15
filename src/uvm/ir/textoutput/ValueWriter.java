@@ -157,7 +157,7 @@ public class ValueWriter implements ValueVisitor<String> {
 
     @Override
     public String visitSelect(InstSelect inst) {
-        return String.format("SELECT <%s> %s %s", g(inst.getType()),
+        return String.format("SELECT <%s> %s %s %s", g(inst.getType()), v(inst.getCond()),
                 v(inst.getIfTrue()), v(inst.getIfFalse()));
     }
 
@@ -175,7 +175,7 @@ public class ValueWriter implements ValueVisitor<String> {
     @Override
     public String visitSwitch(InstSwitch inst) {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("SWITCH <%s> %s %s { ", g(inst.getOpnd()),
+        sb.append(String.format("SWITCH <%s> %s %s { ", g(inst.getOpndType()),
                 v(inst.getOpnd()), l(inst.getDefaultDest())));
         for (Map.Entry<UseBox, BasicBlock> e : inst.getCases().entrySet()) {
             sb.append(String.format("%s: %s; ", v(e.getKey().getDst()),
@@ -270,7 +270,7 @@ public class ValueWriter implements ValueVisitor<String> {
 
     @Override
     public String visitInsertValue(InstInsertValue inst) {
-        return String.format("INSERTVALUE <%s %d> %s", g(inst.getStructType()),
+        return String.format("INSERTVALUE <%s %d> %s %s", g(inst.getStructType()),
                 inst.getIndex(), v(inst.getOpnd()), v(inst.getNewVal()));
     }
 
@@ -341,7 +341,7 @@ public class ValueWriter implements ValueVisitor<String> {
 
     @Override
     public String visitStore(InstStore inst) {
-        return String.format("STORE %s <%s> %s", inst.getOrdering().toString(),
+        return String.format("STORE %s <%s> %s %s", inst.getOrdering().toString(),
                 g(inst.getReferentType()), v(inst.getLocation()),
                 v(inst.getNewVal()));
     }

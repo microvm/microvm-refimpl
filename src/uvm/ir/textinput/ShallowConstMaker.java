@@ -38,7 +38,7 @@ class ShallowConstMaker extends uIRBaseVisitor<Constant> {
     @Override
     public IntConstant visitIntConst(IntConstContext ctx) {
         if (!(expectedType instanceof Int)) {
-            throw new ASTParsingException("Int literal " + ctx.getText()
+            ParserHelper.parseError(ctx, "Int literal " + ctx.getText()
                     + " found. Expect" + expectedType);
         }
 
@@ -52,7 +52,7 @@ class ShallowConstMaker extends uIRBaseVisitor<Constant> {
     @Override
     public FloatConstant visitFloatConst(FloatConstContext ctx) {
         if (!(expectedType instanceof uvm.type.Float)) {
-            throw new ASTParsingException("Float literal " + ctx.getText()
+            ParserHelper.parseError(ctx, "Float literal " + ctx.getText()
                     + " found. Expect" + expectedType);
         }
 
@@ -65,7 +65,7 @@ class ShallowConstMaker extends uIRBaseVisitor<Constant> {
     @Override
     public DoubleConstant visitDoubleConst(DoubleConstContext ctx) {
         if (!(expectedType instanceof uvm.type.Double)) {
-            throw new ASTParsingException("Double literal " + ctx.getText()
+            ParserHelper.parseError(ctx, "Double literal " + ctx.getText()
                     + " found. Expect" + expectedType);
         }
 
@@ -78,7 +78,7 @@ class ShallowConstMaker extends uIRBaseVisitor<Constant> {
     @Override
     public StructConstant visitStructConst(StructConstContext ctx) {
         if (!(expectedType instanceof Struct)) {
-            throw new ASTParsingException("Struct literal " + ctx.getText()
+            ParserHelper.parseError(ctx, "Struct literal " + ctx.getText()
                     + " found. Expect" + expectedType);
         }
 
@@ -88,7 +88,7 @@ class ShallowConstMaker extends uIRBaseVisitor<Constant> {
         int expectedFields = type.getFieldTypes().size();
 
         if (actualFields != expectedFields) {
-            throw new ASTParsingException("Found " + actualFields + " fields: "
+            ParserHelper.parseError(ctx, "Found " + actualFields + " fields: "
                     + ctx.getText() + " Expect " + expectedFields + " fields.");
         }
 
@@ -106,7 +106,7 @@ class ShallowConstMaker extends uIRBaseVisitor<Constant> {
                 || (expectedType instanceof uvm.type.Thread) //
         || (expectedType instanceof uvm.type.Stack)//
         )) {
-            throw new ASTParsingException("NULL literal found. Expect"
+            ParserHelper.parseError(ctx, "NULL literal found. Expect"
                     + expectedType);
         }
 

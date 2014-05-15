@@ -43,6 +43,10 @@ public class ConstantParsingTest extends BundleTester {
         assertIntSize(64, ci64.getType());
         assertEquals(9223372036854775807L, ci64.getValue());
 
+        IntConstant ci64neg = assertType(IntConstant.class, constant("@ci64neg"));
+        assertIntSize(64, ci64neg.getType());
+        assertEquals(-42L, ci64neg.getValue());
+
         IntConstant cio64 = assertType(IntConstant.class, constant("@cio64"));
         assertEquals(0777L, cio64.getValue());
 

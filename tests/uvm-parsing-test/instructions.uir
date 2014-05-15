@@ -283,6 +283,16 @@
 
 .const @funcaddr <int<64>> = 0x0000001234567800
 
+.const @true <int<1>> = 1
+.const @false <int<1>> = 0
+
+.typedef @word = int<64>
+
+.const @n95 <@word> = 95
+.const @n96 <@word> = 96
+.const @n97 <@word> = 97
+.const @n98 <@word> = 98
+
 .funcdef @inference <float ()> () {
         %add  = ADD  <int<8>>  41 42
         %sub  = SUB  <int<16>> 43 44
@@ -300,7 +310,7 @@
         %refcast  = REFCAST  <ref<void> ref<int<32>>> NULL
         %irefcast = IREFCAST <iref<void> iref<int<64>>> NULL
         
-        %select = SELECT <double> 1 59.0d 60.0d
+        %select = SELECT <double> @true 59.0d 60.0d
     
     %bb2:
         %switch = SWITCH <int<32>> 61 %bb3 { 62:%bb4; }
@@ -314,11 +324,11 @@
         %extractvalue   = EXTRACTVALUE <@rainbows 0> {82 83 84 85 86.0f 87.0d}
         %insertvalue    = INSERTVALUE <@rainbows 0> {88 89 90 91 92.0f 93.0d} 94
         
-        %newhybrid      = NEWHYBRID <hybrid<void int<8>>> 95
-        %allocahybrid   = ALLOCAHYBRID <hybrid<void int<8>>> 96
+        %newhybrid      = NEWHYBRID <hybrid<void int<8>>> @n95
+        %allocahybrid   = ALLOCAHYBRID <hybrid<void int<8>>> @n96
         
-        %getelemiref    = GETELEMIREF <@garray_t> @garray 97
-        %shiftiref      = SHIFTIREF <int<32>> %getelemiref 98
+        %getelemiref    = GETELEMIREF <@garray_t> @garray @n97
+        %shiftiref      = SHIFTIREF <int<32>> %getelemiref @n98
         
         %store      = STORE <int<32>> %shiftiref 99
         %cmpxchg    = CMPXCHG ACQ_REL MONOTONIC <int<32>> %shiftiref 100 101

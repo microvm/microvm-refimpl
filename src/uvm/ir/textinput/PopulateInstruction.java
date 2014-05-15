@@ -140,14 +140,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
 
     @Override
     public Void visitInst(InstContext ctx) {
-        try {
-            return visit(ctx.instBody());
-        } catch (ASTParsingException e) {
-            System.out.format("Error: line %d col %d: %s", ctx.getStart()
-                    .getLine(), ctx.getStart().getCharPositionInLine(), e
-                    .getMessage());
-            throw e;
-        }
+        return visit(ctx.instBody());
     }
 
     @Override

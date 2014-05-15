@@ -36,7 +36,7 @@ class DeepTypeMaker extends ShallowTypeMaker {
         Type type = this.rbb.bundle.getTypeNs().getByName(name);
 
         if (type == null) {
-            throw new ASTParsingException("Undefined type " + name);
+            ParserHelper.parseError(ctx, "Undefined type " + name);
         }
 
         return type;

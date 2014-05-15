@@ -22,7 +22,7 @@ class DeepFuncSigMaker extends ShallowFuncSigMaker {
         FunctionSignature sig = rbb.bundle.getFuncSigNs().getByName(name);
 
         if (sig == null) {
-            throw new ASTParsingException("Undefined sig " + name);
+            ParserHelper.parseError(ctx, "Undefined sig " + name);
         }
 
         return sig;

@@ -3,6 +3,8 @@
 .const @ci32 <int<32>> = 2147483647
 .const @ci64 <int<64>> = 9223372036854775807
 
+.const @ci64neg <int<64>> = -42
+
 .const @cio64 <int<64>> = 0777
 
 .const @cix64 <int<64>> = 0x123456789abcdef0
