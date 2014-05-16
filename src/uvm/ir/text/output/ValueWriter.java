@@ -87,7 +87,7 @@ public class ValueWriter implements ValueVisitor<String> {
     @Override
     public String visitFloatConstant(FloatConstant floatConstant) {
         float value = floatConstant.getValue();
-        int bitsValue = Float.floatToIntBits(value);
+        int bitsValue = Float.floatToRawIntBits(value);
         String rv = String.format("bitsf(0x%x)", bitsValue);
         irTextWriter.addComment(String.format("%s = %f", rv, value));
         return rv;
@@ -96,7 +96,7 @@ public class ValueWriter implements ValueVisitor<String> {
     @Override
     public String visitDoubleConstant(DoubleConstant doubleConstant) {
         double value = doubleConstant.getValue();
-        long bitsValue = Double.doubleToLongBits(value);
+        long bitsValue = Double.doubleToRawLongBits(value);
         String rv = String.format("bitsd(0x%x)", bitsValue);
         irTextWriter.addComment(String.format("%s = %f", rv, value));
         return rv;
