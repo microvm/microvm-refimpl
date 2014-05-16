@@ -14,7 +14,7 @@ import uvm.BasicBlock;
 import uvm.Bundle;
 import uvm.Function;
 import uvm.IdentifiedHelper;
-import uvm.ir.textinput.RecursiveBundleBuilder;
+import uvm.ir.text.input.RecursiveBundleBuilder;
 import uvm.irtree.IRTreeBuilder;
 import uvm.irtree.IRTreeNode;
 import uvm.ssavalue.Constant;
