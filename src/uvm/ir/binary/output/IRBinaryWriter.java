@@ -1,12 +1,12 @@
 package uvm.ir.binary.output;
 
-import static uvm.ir.binary.output.TopLevelOpCodes.CONST;
-import static uvm.ir.binary.output.TopLevelOpCodes.FUNCDECL;
-import static uvm.ir.binary.output.TopLevelOpCodes.FUNCDEF;
-import static uvm.ir.binary.output.TopLevelOpCodes.FUNCSIG;
-import static uvm.ir.binary.output.TopLevelOpCodes.GLOBAL;
-import static uvm.ir.binary.output.TopLevelOpCodes.NAMEBIND;
-import static uvm.ir.binary.output.TopLevelOpCodes.TYPEDEF;
+import static uvm.TopLevelOpCodes.CONST;
+import static uvm.TopLevelOpCodes.FUNCDECL;
+import static uvm.TopLevelOpCodes.FUNCDEF;
+import static uvm.TopLevelOpCodes.FUNCSIG;
+import static uvm.TopLevelOpCodes.GLOBAL;
+import static uvm.TopLevelOpCodes.NAMEBIND;
+import static uvm.TopLevelOpCodes.TYPEDEF;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -22,6 +22,7 @@ import uvm.FunctionSignature;
 import uvm.GlobalData;
 import uvm.Identified;
 import uvm.OpCode;
+import uvm.ir.io.NestedIOException;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.Instruction;
 import uvm.ssavalue.Parameter;
@@ -85,7 +86,7 @@ public class IRBinaryWriter implements Closeable {
     }
 
     private void writeTypeDef(Type type) {
-        bos.writeByte(TYPEDEF);
+        bos.writeOpc(TYPEDEF);
         bos.writeID(type);
         type.accept(TYPE_WRITER);
     }

@@ -1,5 +1,11 @@
 package uvm.ir.binary.output;
 
+import java.util.List;
+import java.util.Map.Entry;
+
+import uvm.BasicBlock;
+import uvm.TopLevelOpCodes;
+import uvm.ssavalue.Constant;
 import uvm.ssavalue.DoubleConstant;
 import uvm.ssavalue.FloatConstant;
 import uvm.ssavalue.FunctionConstant;
@@ -46,290 +52,431 @@ import uvm.ssavalue.IntConstant;
 import uvm.ssavalue.NullConstant;
 import uvm.ssavalue.Parameter;
 import uvm.ssavalue.StructConstant;
+import uvm.ssavalue.UseBox;
 import uvm.ssavalue.ValueVisitor;
 
+/**
+ * Write value constructors in the binary form. For constants, write constant
+ * constructors. For instructions, write the instruction body.
+ */
 public class ValueWriter implements ValueVisitor<Void> {
 
+    @SuppressWarnings("unused")
     private IRBinaryWriter irBinaryWriter;
+    private BinaryOutputStream bos;
 
     public ValueWriter(IRBinaryWriter irBinaryWriter) {
         this.irBinaryWriter = irBinaryWriter;
+        this.bos = irBinaryWriter.bos;
     }
 
     @Override
     public Void visitIntConstant(IntConstant constant) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(TopLevelOpCodes.INTCC);
+        bos.writeLong(constant.getValue());
         return null;
     }
 
     @Override
     public Void visitFloatConstant(FloatConstant constant) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(TopLevelOpCodes.FLOATCC);
+        bos.writeFloat(constant.getValue());
         return null;
     }
 
     @Override
     public Void visitDoubleConstant(DoubleConstant constant) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(TopLevelOpCodes.DOUBLECC);
+        bos.writeDouble(constant.getValue());
         return null;
     }
 
     @Override
     public Void visitStructConstant(StructConstant constant) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(TopLevelOpCodes.STRUCTCC);
+        bos.writeLen(constant.getValues());
+        for (Constant subConst : constant.getValues()) {
+            bos.writeID(subConst);
+        }
         return null;
     }
 
     @Override
     public Void visitNullConstant(NullConstant constant) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(TopLevelOpCodes.NULLCC);
         return null;
     }
 
     @Override
     public Void visitGlobalDataConstant(GlobalDataConstant constant) {
-        // TODO Auto-generated method stub
+        // Not explicitly constructed.
         return null;
     }
 
     @Override
     public Void visitFunctionConstant(FunctionConstant constant) {
-        // TODO Auto-generated method stub
+        // Not explicitly constructed.
         return null;
     }
 
     @Override
     public Void visitParameter(Parameter parameter) {
-        // TODO Auto-generated method stub
+        // Not explicitly constructed.
         return null;
     }
 
     @Override
     public Void visitBinOp(InstBinOp inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getType());
+        bos.writeID(inst.getOp1());
+        bos.writeID(inst.getOp2());
         return null;
     }
 
     @Override
     public Void visitCmp(InstCmp inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getOpndType());
+        bos.writeID(inst.getOp1());
+        bos.writeID(inst.getOp2());
         return null;
     }
 
     @Override
     public Void visitConversion(InstConversion inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getFromType());
+        bos.writeID(inst.getToType());
+        bos.writeID(inst.getOpnd());
         return null;
     }
 
     @Override
     public Void visitSelect(InstSelect inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getType());
+        bos.writeID(inst.getCond());
+        bos.writeID(inst.getIfTrue());
+        bos.writeID(inst.getIfFalse());
         return null;
     }
 
     @Override
     public Void visitBranch(InstBranch inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getDest());
         return null;
     }
 
     @Override
     public Void visitBranch2(InstBranch2 inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getCond());
+        bos.writeID(inst.getIfTrue());
+        bos.writeID(inst.getIfFalse());
         return null;
     }
 
     @Override
     public Void visitSwitch(InstSwitch inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getOpndType());
+        bos.writeID(inst.getOpnd());
+        bos.writeID(inst.getDefaultDest());
+        bos.writeLen(inst.getCases().entrySet());
+        for (Entry<UseBox, BasicBlock> e : inst.getCases().entrySet()) {
+            bos.writeID(e.getKey().getDst());
+            bos.writeID(e.getValue());
+        }
         return null;
     }
 
     @Override
     public Void visitPhi(InstPhi inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getType());
+        bos.writeLen(inst.getValueMap().entrySet());
+        for (Entry<BasicBlock, UseBox> e : inst.getValueMap().entrySet()) {
+            bos.writeID(e.getKey());
+            bos.writeID(e.getValue().getDst());
+        }
         return null;
+    }
+
+    private void writeUseBoxIDList(List<UseBox> boxes) {
+        bos.writeLen(boxes);
+        for (UseBox ub : boxes) {
+            bos.writeID(ub.getDst());
+        }
     }
 
     @Override
     public Void visitCall(InstCall inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getSig());
+        bos.writeID(inst.getFunc());
+        writeUseBoxIDList(inst.getArgs());
+        writeUseBoxIDList(inst.getKeepAlives());
         return null;
     }
 
     @Override
     public Void visitInvoke(InstInvoke inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getSig());
+        bos.writeID(inst.getFunc());
+        bos.writeID(inst.getNor());
+        bos.writeID(inst.getExc());
+        writeUseBoxIDList(inst.getArgs());
+        writeUseBoxIDList(inst.getKeepAlives());
         return null;
     }
 
     @Override
     public Void visitTailCall(InstTailCall inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getSig());
+        bos.writeID(inst.getFunc());
+        writeUseBoxIDList(inst.getArgs());
         return null;
     }
 
     @Override
     public Void visitRet(InstRet inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getRetType());
+        bos.writeID(inst.getRetVal());
         return null;
     }
 
     @Override
     public Void visitRetVoid(InstRetVoid inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
         return null;
     }
 
     @Override
     public Void visitThrow(InstThrow inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getException());
         return null;
     }
 
     @Override
     public Void visitLandingPad(InstLandingPad inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
         return null;
     }
 
     @Override
     public Void visitExtractValue(InstExtractValue inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getStructType());
+        bos.writeLen(inst.getIndex());
+        bos.writeID(inst.getOpnd());
         return null;
     }
 
     @Override
     public Void visitInsertValue(InstInsertValue inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getStructType());
+        bos.writeLen(inst.getIndex());
+        bos.writeID(inst.getOpnd());
+        bos.writeID(inst.getNewVal());
         return null;
     }
 
     @Override
     public Void visitNew(InstNew inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getAllocType());
         return null;
     }
 
     @Override
     public Void visitNewHybrid(InstNewHybrid inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getAllocType());
+        bos.writeID(inst.getLength());
         return null;
     }
 
     @Override
     public Void visitAlloca(InstAlloca inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getAllocType());
         return null;
     }
 
     @Override
     public Void visitAllocaHybrid(InstAllocaHybrid inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getAllocType());
+        bos.writeID(inst.getLength());
         return null;
     }
 
     @Override
     public Void visitGetIRef(InstGetIRef inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getReferentType());
+        bos.writeID(inst.getOpnd());
         return null;
     }
 
     @Override
     public Void visitGetFieldIRef(InstGetFieldIRef inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getReferentType());
+        bos.writeLen(inst.getIndex());
+        bos.writeID(inst.getOpnd());
         return null;
     }
 
     @Override
     public Void visitGetElemIRef(InstGetElemIRef inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getReferentType());
+        bos.writeID(inst.getOpnd());
+        bos.writeID(inst.getIndex());
         return null;
     }
 
     @Override
     public Void visitShiftIRef(InstShiftIRef inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getReferentType());
+        bos.writeID(inst.getOpnd());
+        bos.writeID(inst.getOffset());
         return null;
     }
 
     @Override
     public Void visitGetFixedPartIRef(InstGetFixedPartIRef inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getReferentType());
+        bos.writeID(inst.getOpnd());
         return null;
     }
 
     @Override
     public Void visitGetVarPartIRef(InstGetVarPartIRef inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getReferentType());
+        bos.writeID(inst.getOpnd());
         return null;
     }
 
     @Override
     public Void visitLoad(InstLoad inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeOpc(inst.getOrdering().getOpCode());
+        bos.writeID(inst.getReferentType());
+        bos.writeID(inst.getLocation());
         return null;
     }
 
     @Override
     public Void visitStore(InstStore inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeOpc(inst.getOrdering().getOpCode());
+        bos.writeID(inst.getReferentType());
+        bos.writeID(inst.getLocation());
+        bos.writeID(inst.getNewVal());
         return null;
     }
 
     @Override
     public Void visitCmpXchg(InstCmpXchg inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeOpc(inst.getOrderingSucc().getOpCode());
+        bos.writeOpc(inst.getOrderingFail().getOpCode());
+        bos.writeID(inst.getReferentType());
+        bos.writeID(inst.getLocation());
+        bos.writeID(inst.getExpected());
+        bos.writeID(inst.getDesired());
         return null;
     }
 
     @Override
     public Void visitAtomicRMW(InstAtomicRMW inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeOpc(inst.getOrdering().getOpCode());
+        bos.writeOpc(inst.getOptr().getOpCode());
+        bos.writeID(inst.getReferentType());
+        bos.writeID(inst.getLocation());
+        bos.writeID(inst.getOpnd());
         return null;
     }
 
     @Override
     public Void visitFence(InstFence inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeOpc(inst.getOrdering().getOpCode());
         return null;
     }
 
     @Override
     public Void visitTrap(InstTrap inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getType());
+        bos.writeID(inst.getNor());
+        bos.writeID(inst.getExc());
+        writeUseBoxIDList(inst.getKeepAlives());
         return null;
     }
 
     @Override
     public Void visitWatchPoint(InstWatchPoint inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getWatchPointId());
+        bos.writeID(inst.getType());
+        bos.writeID(inst.getDisabled());
+        bos.writeID(inst.getNor());
+        bos.writeID(inst.getExc());
+        writeUseBoxIDList(inst.getKeepAlives());
         return null;
     }
 
     @Override
     public Void visitCCall(InstCCall inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getCallConv().getOpCode());
+        bos.writeID(inst.getSig());
+        bos.writeID(inst.getFunc());
+        writeUseBoxIDList(inst.getArgs());
         return null;
     }
 
     @Override
     public Void visitNewStack(InstNewStack inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getSig());
+        bos.writeID(inst.getFunc());
+        writeUseBoxIDList(inst.getArgs());
         return null;
     }
 
     @Override
     public Void visitICall(InstICall inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getIFunc());
+        writeUseBoxIDList(inst.getArgs());
+        writeUseBoxIDList(inst.getKeepAlives());
         return null;
     }
 
     @Override
     public Void visitIInvoke(InstIInvoke inst) {
-        // TODO Auto-generated method stub
+        bos.writeOpc(inst.opcode());
+        bos.writeID(inst.getIFunc());
+        bos.writeID(inst.getNor());
+        bos.writeID(inst.getExc());
+        writeUseBoxIDList(inst.getArgs());
+        writeUseBoxIDList(inst.getKeepAlives());
         return null;
     }
-
+            
 }

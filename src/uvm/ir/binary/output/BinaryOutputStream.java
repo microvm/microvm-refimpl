@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.util.Collection;
 
 import uvm.Identified;
+import uvm.ir.io.NestedIOException;
 
 /**
  * A helper class that writes numbers to an output stream.

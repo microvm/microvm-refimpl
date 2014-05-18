@@ -25,6 +25,9 @@ import uvm.type.Type;
  * TODO: In the future, it should be written at a larger-than-bundle level.
  */
 public class IRTextWriter {
+    // NOTE: PrintWriter never throws exception. It is a bad thing because
+    // errors will not be spotted the moment it happends. But since the text form
+    // itself is only a way of debugging, fixing this has low priority.
     private PrintWriter pw;
     private TypeWriter TYPE_WRITER = new TypeWriter(this);
     private ValueWriter VALUE_WRITER = new ValueWriter(this);

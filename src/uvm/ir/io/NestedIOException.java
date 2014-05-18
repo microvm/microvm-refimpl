@@ -1,4 +1,4 @@
-package uvm.ir.binary.output;
+package uvm.ir.io;
 
 /**
  * Wrapper for IOException so that the exception is not part of the function
