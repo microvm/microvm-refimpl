@@ -6,7 +6,7 @@ import uvm.type.Type;
  * An instance of GlobalData represents an instance of a type allocated in the
  * global memory.
  */
-public class GlobalData implements Identified {
+public class GlobalData implements IdentifiedSettable {
     private int id;
     private String name;
 
@@ -28,6 +28,7 @@ public class GlobalData implements Identified {
         return this.id;
     }
 
+    @Override
     public void setID(int id) {
         this.id = id;
     }
@@ -37,6 +38,7 @@ public class GlobalData implements Identified {
         return this.name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }

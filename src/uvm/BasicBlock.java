@@ -5,7 +5,7 @@ import java.util.List;
 
 import uvm.ssavalue.Instruction;
 
-public class BasicBlock implements Identified {
+public class BasicBlock implements IdentifiedSettable {
     private int id;
     private String name;
 
@@ -21,6 +21,7 @@ public class BasicBlock implements Identified {
         return id;
     }
 
+    @Override
     public void setID(int id) {
         this.id = id;
     }
@@ -30,6 +31,7 @@ public class BasicBlock implements Identified {
         return name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }

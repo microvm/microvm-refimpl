@@ -100,7 +100,7 @@ public class BinaryOutputStream extends FilterOutputStream {
     }
 
     public void writeArySz(int sz) {
-        writeInt(sz);
+        writeLong(sz);
     }
 
     public void writeOpc(byte opc) {

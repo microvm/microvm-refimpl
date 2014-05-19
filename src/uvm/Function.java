@@ -8,7 +8,7 @@ package uvm;
  * <p>
  * .funcdecl creates a new Function object, but .funcdef also creates a CFG.
  */
-public class Function implements Identified {
+public class Function implements IdentifiedSettable {
 
     /**
      * The unique function ID
@@ -60,6 +60,7 @@ public class Function implements Identified {
         return id;
     }
 
+    @Override
     public void setID(int id) {
         this.id = id;
     }
@@ -69,6 +70,7 @@ public class Function implements Identified {
         return name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }

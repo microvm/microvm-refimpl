@@ -25,6 +25,7 @@ import uvm.ssavalue.Constant;
 import uvm.ssavalue.Instruction;
 import uvm.ssavalue.Parameter;
 import uvm.type.Type;
+import uvm.util.LogUtil;
 
 /**
  * This package writes a bundle in the binary form.
@@ -91,6 +92,7 @@ public class IRBinaryWriter implements Closeable {
 
     private void writeFuncSigDef(FunctionSignature sig) {
         bos.writeOpc(FUNCSIG);
+        bos.writeID(sig);
         bos.writeID(sig.getReturnType());
         bos.writeLen(sig.getParamTypes());
         for (Type paramTy : sig.getParamTypes()) {
@@ -132,7 +134,7 @@ public class IRBinaryWriter implements Closeable {
         }
 
         List<BasicBlock> bbs = cfg.getBBs();
-        bos.writeLen(bbs.size());
+        bos.writeInt(bbs.size());
 
         for (BasicBlock bb : bbs) {
             bos.writeID(bb);
@@ -141,6 +143,7 @@ public class IRBinaryWriter implements Closeable {
             bos.writeInt(insts.size());
 
             for (Instruction inst : insts) {
+                bos.writeID(inst);
                 inst.accept(VALUE_WRITER);
             }
         }
@@ -149,6 +152,7 @@ public class IRBinaryWriter implements Closeable {
     private void maybeWriteNameBind(Identified obj) {
         try {
             if (obj.getName() != null) {
+                LogUtil.log("Binding %d to %s\n", obj.getID(), obj.getName());
                 bos.writeOpc(NAMEBIND);
                 bos.writeID(obj);
 

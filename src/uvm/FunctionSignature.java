@@ -5,7 +5,7 @@ import java.util.List;
 
 import uvm.type.Type;
 
-public class FunctionSignature implements Identified {
+public class FunctionSignature implements IdentifiedSettable {
     private int id;
     private String name;
 
@@ -25,6 +25,7 @@ public class FunctionSignature implements Identified {
         return id;
     }
 
+    @Override
     public void setID(int id) {
         this.id = id;
     }
@@ -34,6 +35,7 @@ public class FunctionSignature implements Identified {
         return name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }

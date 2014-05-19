@@ -3,8 +3,8 @@ package uvm.ssavalue;
 import java.util.ArrayList;
 import java.util.List;
 
-import uvm.Identified;
 import uvm.IdentifiedHelper;
+import uvm.IdentifiedSettable;
 import uvm.type.Type;
 
 /**
@@ -14,7 +14,7 @@ import uvm.type.Type;
  * Lists of {@link UseBox} can be retrieved to find all other Values used by the
  * current Value and all other Values using the current Value.
  */
-public abstract class Value implements Identified, HasOpCode {
+public abstract class Value implements IdentifiedSettable, HasOpCode {
 
     /**
      * The globally unique identifier to the value.
@@ -41,6 +41,7 @@ public abstract class Value implements Identified, HasOpCode {
         return id;
     }
 
+    @Override
     public void setID(int id) {
         this.id = id;
     }
@@ -50,6 +51,7 @@ public abstract class Value implements Identified, HasOpCode {
         return name;
     }
 
+    @Override
     public void setName(String regName) {
         this.name = regName;
     }

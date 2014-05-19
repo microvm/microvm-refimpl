@@ -1,11 +1,13 @@
 package uvm.ir.binary.input;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import uvm.BasicBlock;
 import uvm.Bundle;
@@ -13,6 +15,8 @@ import uvm.CFG;
 import uvm.Function;
 import uvm.FunctionSignature;
 import uvm.GlobalData;
+import uvm.IdentifiedSettable;
+import uvm.Namespace;
 import uvm.OpCode;
 import uvm.TopLevelOpCodes;
 import uvm.ir.io.NestedIOException;
@@ -46,6 +50,7 @@ import uvm.ssavalue.InstGetFixedPartIRef;
 import uvm.ssavalue.InstGetIRef;
 import uvm.ssavalue.InstGetVarPartIRef;
 import uvm.ssavalue.InstICall;
+import uvm.ssavalue.InstIInvoke;
 import uvm.ssavalue.InstInsertValue;
 import uvm.ssavalue.InstInvoke;
 import uvm.ssavalue.InstLandingPad;
@@ -79,6 +84,7 @@ import uvm.type.Ref;
 import uvm.type.Struct;
 import uvm.type.Type;
 import uvm.type.WeakRef;
+import uvm.util.LogUtil;
 
 /**
  * Read a bundle in the binary form.
@@ -86,7 +92,7 @@ import uvm.type.WeakRef;
  * This takes the DOM-like approach. An abstract syntax tree-like structure is
  * composed using "AbstractModel".
  */
-public class IRBinaryReader {
+public class IRBinaryReader implements Closeable {
     private static final String UTF8 = "UTF-8";
 
     private BinaryInputStream bis;
@@ -99,14 +105,12 @@ public class IRBinaryReader {
     private List<ToResolve<FunctionSignature>> pendingFuncSigs = new ArrayList<ToResolve<FunctionSignature>>();
     private List<ToResolve<GlobalData>> pendingGlobals = new ArrayList<ToResolve<GlobalData>>();
     private List<ToResolve<Function>> pendingFuncs = new ArrayList<ToResolve<Function>>();
-    private List<ToResolve<Value>> pendingValues = new ArrayList<ToResolve<Value>>();
+    private List<ToResolve<Value>> pendingGlobalValues = new ArrayList<ToResolve<Value>>();
+    private Map<CFG, List<ToResolve<Value>>> pendingLocalValues = new HashMap<CFG, List<ToResolve<Value>>>();
 
     // For name binding
 
     private Map<Integer, String> bindings = new HashMap<Integer, String>();
-
-    Map<Integer, Value> allValues = new HashMap<Integer, Value>();
-    Map<Integer, BasicBlock> allBBs = new HashMap<Integer, BasicBlock>();
 
     // Public interfaces
 
@@ -128,11 +132,9 @@ public class IRBinaryReader {
             readTopLevel(maybeOpCode);
         }
 
-        resolveTypes();
-        resolveFuncSigs();
-        resolveGlobals();
-        resolveFuncs();
-        resolveValues();
+        resolveIDs();
+
+        bindNames();
     }
 
     // Resolve later
@@ -155,13 +157,23 @@ public class IRBinaryReader {
         pendingFuncs.add(new ToResolve<Function>(obj, ids));
     }
 
-    private void resolveValueLater(Value obj, int... ids) {
-        pendingValues.add(new ToResolve<Value>(obj, ids));
+    private void resolveGlobalValueLater(Value obj, int... ids) {
+        pendingGlobalValues.add(new ToResolve<Value>(obj, ids));
     }
 
-    private void resolveValueLater(Value obj, int[] ids2, int[] ids3,
+    private void resolveGlobalValueLater(Value obj, int[] ids2, int[] ids3,
             int... ids) {
-        pendingValues.add(new ToResolve<Value>(obj, ids2, ids3, ids));
+        pendingGlobalValues.add(new ToResolve<Value>(obj, ids2, ids3, ids));
+    }
+
+    private void resolveLocalValueLater(List<ToResolve<Value>> trList,
+            Value obj, int... ids) {
+        trList.add(new ToResolve<Value>(obj, ids));
+    }
+
+    private void resolveLocalValueLater(List<ToResolve<Value>> trList,
+            Value obj, int[] ids2, int[] ids3, int... ids) {
+        trList.add(new ToResolve<Value>(obj, ids2, ids3, ids));
     }
 
     // Read from binary.
@@ -211,7 +223,7 @@ public class IRBinaryReader {
 
         switch (typeOpc) {
         case TopLevelOpCodes.INT: {
-            byte length = bis.readByte();
+            int length = bis.readByte();
             type = new Int(length);
             break;
         }
@@ -283,6 +295,9 @@ public class IRBinaryReader {
             type = new uvm.type.TagRef64();
             break;
         }
+        default: {
+            throw new RuntimeException("Unknown type code " + typeOpc);
+        }
         }
 
         type.setID(id);
@@ -310,30 +325,30 @@ public class IRBinaryReader {
         case TopLevelOpCodes.INTCC: {
             long num = bis.readLong();
             constant = new IntConstant(null, num);
-            resolveValueLater(constant, t);
+            resolveGlobalValueLater(constant, t);
             break;
         }
         case TopLevelOpCodes.FLOATCC: {
             float num = bis.readFloat();
             constant = new FloatConstant(null, num);
-            resolveValueLater(constant, t);
+            resolveGlobalValueLater(constant, t);
             break;
         }
         case TopLevelOpCodes.DOUBLECC: {
             double num = bis.readDouble();
             constant = new DoubleConstant(null, num);
-            resolveValueLater(constant, t);
+            resolveGlobalValueLater(constant, t);
             break;
         }
         case TopLevelOpCodes.STRUCTCC: {
             int[] ids = readIDList();
             constant = new StructConstant();
-            resolveValueLater(constant, ids, null, t);
+            resolveGlobalValueLater(constant, ids, null, t);
             break;
         }
         case TopLevelOpCodes.NULLCC: {
             constant = new NullConstant();
-            resolveValueLater(constant, t);
+            resolveGlobalValueLater(constant, t);
             break;
         }
         }
@@ -341,7 +356,6 @@ public class IRBinaryReader {
         constant.setID(id);
         bundle.getDeclaredConstNs().put(id, null, constant);
         bundle.getGlobalValueNs().put(id, null, constant);
-        allValues.put(id, constant);
     }
 
     private void readGlobalData(int opc) {
@@ -358,6 +372,7 @@ public class IRBinaryReader {
         int sig = bis.readID();
         Function func = new Function();
         func.setID(id);
+        bundle.getFuncNs().put(id, null, func);
         resolveFuncLater(func, sig);
     }
 
@@ -367,19 +382,24 @@ public class IRBinaryReader {
 
         Function func = new Function();
         func.setID(id);
+        bundle.getFuncNs().put(id, null, func);
         resolveFuncLater(func, sig);
 
         CFG cfg = new CFG();
         cfg.setFunc(func);
         func.setCFG(cfg);
 
+        List<ToResolve<Value>> localTrList = new ArrayList<ToResolve<Value>>();
+        pendingLocalValues.put(cfg, localTrList);
+
         int[] params = readIDList();
         for (int i = 0; i < params.length; i++) {
             Parameter param = new Parameter();
             param.setParamIndex(i);
             param.setID(params[i]);
-            resolveValueLater(param, sig);
+            resolveLocalValueLater(localTrList, param, sig);
             cfg.getParams().add(param);
+            cfg.getInstNs().put(param.getID(), null, param);
         }
 
         int nBBs = bis.readInt();
@@ -389,18 +409,18 @@ public class IRBinaryReader {
 
             BasicBlock bb = new BasicBlock(cfg);
             bb.setID(bbID);
-            allBBs.put(bbID, bb);
+            cfg.getBBNs().put(bbID, null, bb);
 
             int nInsts = bis.readInt();
             for (int j = 0; j < nInsts; j++) {
-                Instruction inst = readInst();
+                Instruction inst = readInst(localTrList);
                 bb.addInstruction(inst);
-                allValues.put(inst.getID(), inst);
+                cfg.getInstNs().put(inst.getID(), null, inst);
             }
         }
     }
 
-    private Instruction readInst() {
+    private Instruction readInst(List<ToResolve<Value>> trs) {
         int id = bis.readID();
         int opc = bis.readOpc();
 
@@ -431,7 +451,8 @@ public class IRBinaryReader {
             int op1 = bis.readID();
             int op2 = bis.readID();
             theInst.setOptr(BinOptr.valueByOpcode(opc));
-            resolveValueLater(inst, t, op1, op2);
+            resolveLocalValueLater(trs, inst, t, op1, op2);
+            break;
         }
         case OpCode.EQ:
         case OpCode.NE:
@@ -465,7 +486,8 @@ public class IRBinaryReader {
             int op1 = bis.readID();
             int op2 = bis.readID();
             theInst.setOptr(CmpOptr.valueByOpcode(opc));
-            resolveValueLater(inst, t, op1, op2);
+            resolveLocalValueLater(trs, inst, t, op1, op2);
+            break;
         }
         case OpCode.TRUNC:
         case OpCode.ZEXT:
@@ -486,7 +508,8 @@ public class IRBinaryReader {
             int t2 = bis.readID();
             int opnd = bis.readID();
             theInst.setOptr(ConvOptr.valueByOpcode(opc));
-            resolveValueLater(inst, t1, t2, opnd);
+            resolveLocalValueLater(trs, inst, t1, t2, opnd);
+            break;
         }
         case OpCode.SELECT: {
             inst = new InstSelect();
@@ -494,19 +517,22 @@ public class IRBinaryReader {
             int cond = bis.readID();
             int iftrue = bis.readID();
             int iffalse = bis.readID();
-            resolveValueLater(inst, t, cond, iftrue, iffalse);
+            resolveLocalValueLater(trs, inst, t, cond, iftrue, iffalse);
+            break;
         }
         case OpCode.BRANCH: {
             inst = new InstBranch();
             int dest = bis.readID();
-            resolveValueLater(inst, dest);
+            resolveLocalValueLater(trs, inst, dest);
+            break;
         }
         case OpCode.BRANCH2: {
             inst = new InstBranch2();
             int cond = bis.readID();
             int iftrue = bis.readID();
             int iffalse = bis.readID();
-            resolveValueLater(inst, cond, iftrue, iffalse);
+            resolveLocalValueLater(trs, inst, cond, iftrue, iffalse);
+            break;
         }
         case OpCode.SWITCH: {
             inst = new InstSwitch();
@@ -522,7 +548,8 @@ public class IRBinaryReader {
                 cases[i] = cas;
                 dests[i] = dst;
             }
-            resolveValueLater(inst, cases, dests, t, opnd, def);
+            resolveLocalValueLater(trs, inst, cases, dests, t, opnd, def);
+            break;
         }
         case OpCode.PHI: {
             inst = new InstPhi();
@@ -536,7 +563,8 @@ public class IRBinaryReader {
                 bbs[i] = bb;
                 vals[i] = val;
             }
-            resolveValueLater(inst, bbs, vals, t);
+            resolveLocalValueLater(trs, inst, bbs, vals, t);
+            break;
         }
         case OpCode.CALL: {
             inst = new InstCall();
@@ -544,7 +572,8 @@ public class IRBinaryReader {
             int func = bis.readID();
             int[] args = readIDList();
             int[] kas = readIDList();
-            resolveValueLater(inst, args, kas, sig, func);
+            resolveLocalValueLater(trs, inst, args, kas, sig, func);
+            break;
         }
         case OpCode.INVOKE: {
             inst = new InstInvoke();
@@ -554,31 +583,37 @@ public class IRBinaryReader {
             int exc = bis.readID();
             int[] args = readIDList();
             int[] kas = readIDList();
-            resolveValueLater(inst, args, kas, sig, func, nor, exc);
+            resolveLocalValueLater(trs, inst, args, kas, sig, func, nor, exc);
+            break;
         }
         case OpCode.TAILCALL: {
             inst = new InstTailCall();
             int sig = bis.readID();
             int func = bis.readID();
             int[] args = readIDList();
-            resolveValueLater(inst, args, null, sig, func);
+            resolveLocalValueLater(trs, inst, args, null, sig, func);
+            break;
         }
         case OpCode.RET: {
             inst = new InstRet();
             int t = bis.readID();
             int rv = bis.readID();
-            resolveValueLater(inst, t, rv);
+            resolveLocalValueLater(trs, inst, t, rv);
+            break;
         }
         case OpCode.RETVOID: {
             inst = new InstRetVoid();
+            break;
         }
         case OpCode.THROW: {
             inst = new InstThrow();
             int exc = bis.readID();
-            resolveValueLater(inst, exc);
+            resolveLocalValueLater(trs, inst, exc);
+            break;
         }
         case OpCode.LANDINGPAD: {
             inst = new InstLandingPad();
+            break;
         }
         case OpCode.EXTRACTVALUE: {
             InstExtractValue theInst = new InstExtractValue();
@@ -587,7 +622,8 @@ public class IRBinaryReader {
             int index = bis.readLen();
             int opnd = bis.readID();
             theInst.setIndex(index);
-            resolveValueLater(inst, t, opnd);
+            resolveLocalValueLater(trs, inst, t, opnd);
+            break;
         }
         case OpCode.INSERTVALUE: {
             InstInsertValue theInst = new InstInsertValue();
@@ -597,35 +633,41 @@ public class IRBinaryReader {
             int opnd = bis.readID();
             int newVal = bis.readID();
             theInst.setIndex(index);
-            resolveValueLater(inst, t, opnd, newVal);
+            resolveLocalValueLater(trs, inst, t, opnd, newVal);
+            break;
         }
         case OpCode.NEW: {
             inst = new InstNew();
             int t = bis.readID();
-            resolveValueLater(inst, t);
+            resolveLocalValueLater(trs, inst, t);
+            break;
         }
         case OpCode.NEWHYBRID: {
             inst = new InstNewHybrid();
             int t = bis.readID();
             int len = bis.readID();
-            resolveValueLater(inst, t, len);
+            resolveLocalValueLater(trs, inst, t, len);
+            break;
         }
         case OpCode.ALLOCA: {
             inst = new InstAlloca();
             int t = bis.readID();
-            resolveValueLater(inst, t);
+            resolveLocalValueLater(trs, inst, t);
+            break;
         }
         case OpCode.ALLOCAHYBRID: {
             inst = new InstAllocaHybrid();
             int t = bis.readID();
             int len = bis.readID();
-            resolveValueLater(inst, t, len);
+            resolveLocalValueLater(trs, inst, t, len);
+            break;
         }
         case OpCode.GETIREF: {
             inst = new InstGetIRef();
             int t = bis.readID();
             int opnd = bis.readID();
-            resolveValueLater(inst, t, opnd);
+            resolveLocalValueLater(trs, inst, t, opnd);
+            break;
         }
         case OpCode.GETFIELDIREF: {
             InstGetFieldIRef theInst = new InstGetFieldIRef();
@@ -634,35 +676,38 @@ public class IRBinaryReader {
             int index = bis.readLen();
             int opnd = bis.readID();
             theInst.setIndex(index);
-            resolveValueLater(inst, t, opnd);
+            resolveLocalValueLater(trs, inst, t, opnd);
+            break;
         }
         case OpCode.GETELEMIREF: {
             inst = new InstGetElemIRef();
             int t = bis.readID();
             int opnd = bis.readID();
             int index = bis.readID();
-            resolveValueLater(inst, t, opnd, index);
-
+            resolveLocalValueLater(trs, inst, t, opnd, index);
+            break;
         }
         case OpCode.SHIFTIREF: {
             inst = new InstShiftIRef();
             int t = bis.readID();
             int opnd = bis.readID();
             int offset = bis.readID();
-            resolveValueLater(inst, t, opnd, offset);
+            resolveLocalValueLater(trs, inst, t, opnd, offset);
+            break;
         }
         case OpCode.GETFIXEDPARTIREF: {
             inst = new InstGetFixedPartIRef();
             int t = bis.readID();
             int opnd = bis.readID();
-            resolveValueLater(inst, t, opnd);
-
+            resolveLocalValueLater(trs, inst, t, opnd);
+            break;
         }
         case OpCode.GETVARPARTIREF: {
             inst = new InstGetVarPartIRef();
             int t = bis.readID();
             int opnd = bis.readID();
-            resolveValueLater(inst, t, opnd);
+            resolveLocalValueLater(trs, inst, t, opnd);
+            break;
         }
         case OpCode.LOAD: {
             InstLoad theInst = new InstLoad();
@@ -671,7 +716,8 @@ public class IRBinaryReader {
             int t = bis.readID();
             int loc = bis.readID();
             theInst.setOrdering(AtomicOrdering.valueByOpcode(ord));
-            resolveValueLater(inst, t, loc);
+            resolveLocalValueLater(trs, inst, t, loc);
+            break;
         }
         case OpCode.STORE: {
             InstStore theInst = new InstStore();
@@ -681,7 +727,8 @@ public class IRBinaryReader {
             int loc = bis.readID();
             int newVal = bis.readID();
             theInst.setOrdering(AtomicOrdering.valueByOpcode(ord));
-            resolveValueLater(inst, t, loc, newVal);
+            resolveLocalValueLater(trs, inst, t, loc, newVal);
+            break;
         }
         case OpCode.CMPXCHG: {
             InstCmpXchg theInst = new InstCmpXchg();
@@ -694,7 +741,8 @@ public class IRBinaryReader {
             int desired = bis.readID();
             theInst.setOrderingSucc(AtomicOrdering.valueByOpcode(ordSucc));
             theInst.setOrderingFail(AtomicOrdering.valueByOpcode(ordFail));
-            resolveValueLater(inst, t, loc, expected, desired);
+            resolveLocalValueLater(trs, inst, t, loc, expected, desired);
+            break;
         }
         case OpCode.ATOMICRMW: {
             InstAtomicRMW theInst = new InstAtomicRMW();
@@ -706,13 +754,15 @@ public class IRBinaryReader {
             int opnd = bis.readID();
             theInst.setOrdering(AtomicOrdering.valueByOpcode(ord));
             theInst.setOptr(AtomicRMWOp.valueByOpcode(optr));
-            resolveValueLater(inst, t, loc, opnd);
+            resolveLocalValueLater(trs, inst, t, loc, opnd);
+            break;
         }
         case OpCode.FENCE: {
             InstFence theInst = new InstFence();
             inst = theInst;
             int ord = bis.readOpc();
             theInst.setOrdering(AtomicOrdering.valueByOpcode(ord));
+            break;
         }
         case OpCode.TRAP: {
             inst = new InstTrap();
@@ -720,7 +770,8 @@ public class IRBinaryReader {
             int nor = bis.readID();
             int exc = bis.readID();
             int[] kas = readIDList();
-            resolveValueLater(inst, kas, null, t, nor, exc);
+            resolveLocalValueLater(trs, inst, kas, null, t, nor, exc);
+            break;
         }
         case OpCode.WATCHPOINT: {
             InstWatchPoint theInst = new InstWatchPoint();
@@ -732,7 +783,8 @@ public class IRBinaryReader {
             int exc = bis.readID();
             int[] kas = readIDList();
             theInst.setWatchPointId(wpid);
-            resolveValueLater(inst, kas, null, t, dis, nor, exc);
+            resolveLocalValueLater(trs, inst, kas, null, t, dis, nor, exc);
+            break;
         }
         case OpCode.CCALL: {
             InstCCall theInst = new InstCCall();
@@ -742,35 +794,41 @@ public class IRBinaryReader {
             int func = bis.readID();
             int[] args = readIDList();
             theInst.setCallConv(CallConv.valueByOpcode(callconv));
-            resolveValueLater(inst, args, null, sig, func);
+            resolveLocalValueLater(trs, inst, args, null, sig, func);
+            break;
         }
         case OpCode.NEWSTACK: {
             inst = new InstNewStack();
             int sig = bis.readID();
             int func = bis.readID();
             int[] args = readIDList();
-            resolveValueLater(inst, args, null, sig, func);
+            resolveLocalValueLater(trs, inst, args, null, sig, func);
+            break;
         }
         case OpCode.ICALL: {
             inst = new InstICall();
             int func = bis.readID();
             int[] args = readIDList();
             int[] kas = readIDList();
-            resolveValueLater(inst, args, kas, func);
+            resolveLocalValueLater(trs, inst, args, kas, func);
+            break;
         }
         case OpCode.IINVOKE: {
-            inst = new InstInvoke();
+            inst = new InstIInvoke();
             int func = bis.readID();
             int nor = bis.readID();
             int exc = bis.readID();
             int[] args = readIDList();
             int[] kas = readIDList();
-            resolveValueLater(inst, args, kas, func, nor, exc);
+            resolveLocalValueLater(trs, inst, args, kas, func, nor, exc);
+            break;
+        }
+        default: {
+            throw new RuntimeException("Unknown instruction opcode " + opc);
         }
         }
 
         inst.setID(id);
-        allValues.put(id, inst);
 
         return inst;
     }
@@ -783,12 +841,21 @@ public class IRBinaryReader {
             bis.read(buf);
             String name = new String(buf, UTF8);
             bindings.put(id, name);
+            LogUtil.log("Received binding %d to %s\n", id, name);
         } catch (IOException e) {
             throw new NestedIOException(e);
         }
     }
 
     // Resolve items
+
+    private void resolveIDs() {
+        resolveTypes();
+        resolveFuncSigs();
+        resolveGlobals();
+        resolveFuncs();
+        resolveValues();
+    }
 
     private void resolveTypes() {
         for (ToResolve<Type> tr : pendingTypes) {
@@ -812,9 +879,9 @@ public class IRBinaryReader {
             gd.setType(bundle.getTypeNs().getByID(tr.ids[0]));
 
             GlobalDataConstant constant = new GlobalDataConstant();
+            constant.setID(gd.getID());
             constant.setGlobalData(gd);
             bundle.getGlobalValueNs().put(constant.getID(), null, constant);
-            allValues.put(constant.getID(), constant);
         }
     }
 
@@ -824,16 +891,60 @@ public class IRBinaryReader {
             func.setSig(bundle.getFuncSigNs().getByID(tr.ids[0]));
 
             FunctionConstant constant = new FunctionConstant();
+            constant.setID(func.getID());
             constant.setFunction(func);
             bundle.getGlobalValueNs().put(constant.getID(), null, constant);
-            allValues.put(constant.getID(), constant);
         }
     }
 
     private void resolveValues() {
-        for (ToResolve<Value> tr : pendingValues) {
-            tr.resultObj.accept(new ValueResolver(this, tr));
+        for (ToResolve<Value> tr : pendingGlobalValues) {
+            tr.resultObj.accept(new ValueResolver(this, null, tr));
         }
 
+        for (Entry<CFG, List<ToResolve<Value>>> e : pendingLocalValues
+                .entrySet()) {
+            CFG cfg = e.getKey();
+            for (ToResolve<Value> tr : e.getValue()) {
+                tr.resultObj.accept(new ValueResolver(this, cfg, tr));
+            }
+        }
+
+    }
+
+    // Name binding
+
+    private void bindNames() {
+        bindAll(bundle.getTypeNs());
+        bindAll(bundle.getFuncSigNs());
+        bindAll(bundle.getGlobalDataNs());
+        bindAll(bundle.getDeclaredConstNs());
+        bindAll(bundle.getGlobalValueNs());
+        bindAll(bundle.getFuncNs());
+        for (Function func : bundle.getFuncNs().getObjects()) {
+            CFG cfg = func.getCFG();
+            if (cfg != null) {
+                bindAll(cfg.getBBNs());
+                bindAll(cfg.getInstNs());
+            }
+        }
+    }
+
+    // The Closeable interface
+
+    private void bindAll(Namespace<? extends IdentifiedSettable> ns) {
+        for (int id : ns.getIDSet()) {
+            String name = bindings.get(id);
+            if (name != null) {
+                ns.bind(id, name);
+                ns.getByID(id).setName(name);
+                LogUtil.log("Using (ns) binding %d to %s\n", id, name);
+            }
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        bis.close();
     }
 }

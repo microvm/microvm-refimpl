@@ -1,6 +1,7 @@
 package uvm.ir.binary.input;
 
 import uvm.BasicBlock;
+import uvm.CFG;
 import uvm.ssavalue.DoubleConstant;
 import uvm.ssavalue.FloatConstant;
 import uvm.ssavalue.FunctionConstant;
@@ -60,10 +61,27 @@ public class ValueResolver extends AbstractResolver implements
         ValueVisitor<Void> {
 
     private ToResolve<Value> tr;
+    private CFG cfg;
 
-    public ValueResolver(IRBinaryReader br, ToResolve<Value> tr) {
+    public ValueResolver(IRBinaryReader br, CFG cfg, ToResolve<Value> tr) {
         super(br);
+        this.cfg = cfg;
         this.tr = tr;
+    }
+
+    protected Value value(int id) {
+        if (cfg != null) {
+            Value localVal = cfg.getInstNs().getByID(id);
+            if (localVal != null) {
+                return localVal;
+            }
+        }
+        return br.bundle.getGlobalValueNs().getByID(id);
+
+    }
+
+    protected BasicBlock bb(int id) {
+        return cfg.getBBNs().getByID(id);
     }
 
     @Override
@@ -318,7 +336,7 @@ public class ValueResolver extends AbstractResolver implements
 
     @Override
     public Void visitShiftIRef(InstShiftIRef inst) {
-        inst.setReferentType((Array) type(tr.ids[0]));
+        inst.setReferentType(type(tr.ids[0]));
         inst.setOpnd(value(tr.ids[1]));
         inst.setOffset(value(tr.ids[2]));
         return null;

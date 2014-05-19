@@ -1,11 +1,11 @@
 package uvm.type;
 
-import uvm.Identified;
+import uvm.IdentifiedSettable;
 
 /**
  * Supertype of all µVM types.
  */
-public abstract class Type implements Identified {
+public abstract class Type implements IdentifiedSettable {
     private int id;
     private String name;
 
@@ -14,6 +14,7 @@ public abstract class Type implements Identified {
         return id;
     }
 
+    @Override
     public void setID(int id) {
         this.id = id;
     }
@@ -23,6 +24,7 @@ public abstract class Type implements Identified {
         return name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }

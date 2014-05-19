@@ -443,7 +443,7 @@ public class ValueWriter implements ValueVisitor<Void> {
     @Override
     public Void visitCCall(InstCCall inst) {
         bos.writeOpc(inst.opcode());
-        bos.writeID(inst.getCallConv().getOpCode());
+        bos.writeOpc(inst.getCallConv().getOpCode());
         bos.writeID(inst.getSig());
         bos.writeID(inst.getFunc());
         writeUseBoxIDList(inst.getArgs());

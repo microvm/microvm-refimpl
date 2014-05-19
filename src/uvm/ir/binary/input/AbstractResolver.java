@@ -1,13 +1,11 @@
 package uvm.ir.binary.input;
 
-import uvm.BasicBlock;
 import uvm.Function;
 import uvm.FunctionSignature;
 import uvm.GlobalData;
 import uvm.ifunc.IFunc;
 import uvm.ifunc.IFuncFactory;
 import uvm.ssavalue.Constant;
-import uvm.ssavalue.Value;
 import uvm.type.Type;
 
 public abstract class AbstractResolver {
@@ -36,14 +34,6 @@ public abstract class AbstractResolver {
 
     protected Constant constant(int id) {
         return br.bundle.getGlobalValueNs().getByID(id);
-    }
-
-    protected Value value(int id) {
-        return br.allValues.get(id);
-    }
-
-    protected BasicBlock bb(int id) {
-        return br.allBBs.get(id);
     }
 
     protected IFunc ifunc(int i) {
