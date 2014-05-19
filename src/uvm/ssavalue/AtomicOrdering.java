@@ -20,4 +20,24 @@ public enum AtomicOrdering {
     public int getOpCode() {
         return opCode;
     }
+
+    public static AtomicOrdering valueByOpcode(int opc) {
+        switch (opc) {
+        case OrderingOpCodes.NOT_ATOMIC:
+            return NOT_ATOMIC;
+        case OrderingOpCodes.UNORDERED:
+            return UNORDERED;
+        case OrderingOpCodes.MONOTONIC:
+            return MONOTONIC;
+        case OrderingOpCodes.ACQUIRE:
+            return ACQUIRE;
+        case OrderingOpCodes.RELEASE:
+            return RELEASE;
+        case OrderingOpCodes.ACQ_REL:
+            return ACQ_REL;
+        case OrderingOpCodes.SEQ_CST:
+            return SEQ_CST;
+        }
+        return null;
+    }
 }

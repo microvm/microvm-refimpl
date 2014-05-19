@@ -2,7 +2,7 @@ package uvm.ssavalue;
 
 public enum CallConv {
     DEFAULT(0);
-    
+
     private final int opCode;
 
     private CallConv(int opCode) {
@@ -11,5 +11,13 @@ public enum CallConv {
 
     public int getOpCode() {
         return opCode;
+    }
+
+    public static CallConv valueByOpcode(int callconv) {
+        if (callconv == 0) {
+            return DEFAULT;
+        } else {
+            return null;
+        }
     }
 }
