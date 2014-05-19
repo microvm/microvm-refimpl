@@ -11,7 +11,6 @@ import static uvm.TopLevelOpCodes.TYPEDEF;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.util.List;
 
 import uvm.BasicBlock;
@@ -21,7 +20,6 @@ import uvm.Function;
 import uvm.FunctionSignature;
 import uvm.GlobalData;
 import uvm.Identified;
-import uvm.OpCode;
 import uvm.ir.io.NestedIOException;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.Instruction;
@@ -34,7 +32,7 @@ import uvm.type.Type;
  * TODO: In the future, it should be written at a larger-than-bundle level.
  */
 public class IRBinaryWriter implements Closeable {
-    private static final Charset UTF8 = Charset.forName("UTF-8");
+    private static final String UTF8 = "UTF-8";
     private TypeWriter TYPE_WRITER;
     private ValueWriter VALUE_WRITER;
 
@@ -134,36 +132,32 @@ public class IRBinaryWriter implements Closeable {
         }
 
         List<BasicBlock> bbs = cfg.getBBs();
-        int nParams = bbs.size();
-
-        for (BasicBlock bb : bbs) {
-            nParams += bb.getInsts().size();
-        }
-
-        bos.writeLen(nParams);
+        bos.writeLen(bbs.size());
 
         for (BasicBlock bb : bbs) {
             bos.writeID(bb);
-            bos.writeOpc(OpCode.LABEL);
+            
+            List<Instruction> insts = bb.getInsts();
+            bos.writeInt(insts.size());
 
-            for (Instruction inst : bb.getInsts()) {
+            for (Instruction inst : insts) {
                 inst.accept(VALUE_WRITER);
             }
         }
     }
 
     private void maybeWriteNameBind(Identified obj) {
-        if (obj.getName() != null) {
-            bos.writeOpc(NAMEBIND);
-            bos.writeID(obj);
+        try {
+            if (obj.getName() != null) {
+                bos.writeOpc(NAMEBIND);
+                bos.writeID(obj);
 
-            byte[] nameUTF8 = obj.getName().getBytes(UTF8);
-            bos.writeLen(nameUTF8.length);
-            try {
+                byte[] nameUTF8 = obj.getName().getBytes(UTF8);
+                bos.writeLen(nameUTF8.length);
                 bos.write(nameUTF8);
-            } catch (IOException e) {
-                throw new NestedIOException(e);
             }
+        } catch (IOException e) {
+            throw new NestedIOException(e);
         }
     }
 
