@@ -3,9 +3,20 @@ package uvm.refimpl.mem.simpleimmix;
 import static uvm.util.ErrorUtils.uvmError;
 import uvm.refimpl.mem.Space;
 
+/**
+ * A simple mark-region space.
+ * <p>
+ * The space is partitioned into blocks. Each mutator has one active block at a
+ * time and allocates sequentially within the block. When a mutator exhausts a
+ * block, it asks the space for another block. When there is no block available
+ * globally, it will trigger a GC and try again. If the GC does not release any
+ * memory, it is an out-of-memory case. The VM terminates in this case.
+ */
 public class SimpleImmixSpace extends Space {
 
     public static final long BLOCK_SIZE = 32768;
+
+    public SimpleImmixHeap heap;
 
     public long nBlocks;
 
@@ -14,8 +25,11 @@ public class SimpleImmixSpace extends Space {
     public long nFree;
     public long pageCursor;
 
-    public SimpleImmixSpace(String name, long begin, long extend) {
+    public SimpleImmixSpace(SimpleImmixHeap heap, String name, long begin,
+            long extend) {
         super(name, begin, extend);
+        this.heap = heap;
+
         if (begin % BLOCK_SIZE != 0) {
             uvmError("space should be aligned to BLOCK_SIZE " + BLOCK_SIZE);
         }
@@ -28,6 +42,7 @@ public class SimpleImmixSpace extends Space {
         freeList = new long[(int) nBlocks];
         nFree = nBlocks;
         pageCursor = 0L;
+
     }
 
     public long getBlockAddr(long pageNum) {
@@ -35,34 +50,41 @@ public class SimpleImmixSpace extends Space {
     }
 
     public long getBlock() {
-        
-        // TODO: This is one point that can trigger GC or out-of-memory.
-        //
-        // while(true) {
-        //     addr = atomicTryGetBlock();
-        // 
-        //     if (addr) {
-        //         return addr;
-        //     } else {
-        //         stopMyMutator();
-        //         iAmFirst = trySetGlobalPauseFlag()
-        //         if (iAmFirst) {
-        //             waitForMutators();
-        //             doGC();
-        // TODO: How to determine real out-of-memory case?
-        //       Not being able to recycle any space is an option.
-        //         } else {
-        //             waitForGC();
-        //         }
-        //     }
-        // }
-        
-        long pageNum = freeList[(int) pageCursor++];
-        return getBlockAddr(pageNum);
+        while (true) {
+            // Try to get a block, may fail.
+            long myBlock = tryGetBlock();
+
+            // If successful, return.
+            if (myBlock != 0) {
+                return myBlock;
+            }
+
+            // Otherwise trigger the GC and wait for the GC to complete.
+            heap.triggerAndWaitForGC();
+        }
     }
 
-    public SimpleImmixMutator makeMutator() {
-        return new SimpleImmixMutator(this);
+    private long tryGetBlock() {
+        long myCursor;
+
+        // Does not really need lock. An atomic getAndInc will suffice.
+        heap.lock.lock();
+        try {
+            myCursor = pageCursor;
+            pageCursor++;
+        } finally {
+            heap.lock.unlock();
+        }
+
+        if (myCursor >= nFree) {
+            return -1;
+        }
+
+        long pageNum = freeList[(int) myCursor];
+
+        long blockAddr = getBlockAddr(pageNum);
+
+        return blockAddr;
     }
 
 }
