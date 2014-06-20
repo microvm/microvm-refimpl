@@ -2,6 +2,7 @@ package uvm.refimpl.mem;
 
 import static uvm.refimpl.mem.MemConstants.WORD_SIZE_BYTES;
 import static uvm.refimpl.mem.TypeSizes.sizeOf;
+import static uvm.refimpl.mem.TypeSizes.alignOf;
 import uvm.type.Array;
 import uvm.type.Double;
 import uvm.type.Float;
@@ -14,45 +15,39 @@ import uvm.type.Stack;
 import uvm.type.Struct;
 import uvm.type.TagRef64;
 import uvm.type.Thread;
+import uvm.type.Type;
 import uvm.type.TypeVisitor;
 import uvm.type.Void;
 import uvm.type.WeakRef;
 
 /**
  * Return the alignment (in bytes) of each type.
+ * <p>
+ * Atomic types align to their own sizes except IRef which is only single-word
+ * aligned. Structs have the largest alignment of its fields. Arrays have the
+ * same alignment as their elements. The void type and empty structs are 1-byte
+ * aligned as it can be at any byte.
  */
 public class AlignOf implements TypeVisitor<Integer> {
 
-    public static int genericAlign(int n, int wordSize) {
-        if (n < wordSize) {
-            int i = 1;
-            while (i < n) {
-                i <<= 1;
-            }
-            return i;
-        } else {
-            return wordSize;
-        }
-    }
-
     @Override
     public Integer visitInt(Int type) {
-        return genericAlign(sizeOf(type), WORD_SIZE_BYTES);
+        return sizeOf(type);
     }
 
     @Override
     public Integer visitFloat(Float type) {
-        return 4;
+        return sizeOf(type);
     }
 
     @Override
     public Integer visitDouble(Double type) {
-        return 8;
+        return sizeOf(type);
     }
 
     @Override
     public Integer visitRef(Ref type) {
-        return WORD_SIZE_BYTES;
+        return sizeOf(type);
     }
 
     @Override
@@ -62,17 +57,24 @@ public class AlignOf implements TypeVisitor<Integer> {
 
     @Override
     public Integer visitWeakRef(WeakRef type) {
-        return WORD_SIZE_BYTES;
+        return sizeOf(type);
     }
 
     @Override
     public Integer visitStruct(Struct type) {
-        return genericAlign(sizeOf(type), WORD_SIZE_BYTES);
+        int maxAlign = 1;
+        for (Type ty : type.getFieldTypes()) {
+            int align = alignOf(ty);
+            if (align > maxAlign) {
+                maxAlign = align;
+            }
+        }
+        return maxAlign;
     }
 
     @Override
     public Integer visitArray(Array type) {
-        return genericAlign(sizeOf(type), WORD_SIZE_BYTES);
+        return alignOf(type.getElemType());
     }
 
     @Override
@@ -82,27 +84,27 @@ public class AlignOf implements TypeVisitor<Integer> {
 
     @Override
     public Integer visitVoid(Void type) {
-        return -1;
+        return 1;
     }
 
     @Override
     public Integer visitFunc(Func type) {
-        return WORD_SIZE_BYTES;
+        return sizeOf(type);
     }
 
     @Override
     public Integer visitThread(Thread type) {
-        return WORD_SIZE_BYTES;
+        return sizeOf(type);
     }
 
     @Override
     public Integer visitStack(Stack type) {
-        return WORD_SIZE_BYTES;
+        return sizeOf(type);
     }
 
     @Override
     public Integer visitTagRef64(TagRef64 type) {
-        return WORD_SIZE_BYTES;
+        return sizeOf(type);
     }
 
 }

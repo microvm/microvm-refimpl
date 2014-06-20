@@ -23,6 +23,10 @@ import uvm.type.WeakRef;
 
 /**
  * Return the length (in bytes) of an object of each type.
+ * <p>
+ * Atomic types have their own sizes. For aggregate types, structs have all of
+ * its fields aligned for their respective alignment requirements, and arrays
+ * have many elements all of which are aligned.
  */
 public class SizeOf implements TypeVisitor<Integer> {
 
@@ -60,7 +64,7 @@ public class SizeOf implements TypeVisitor<Integer> {
 
     @Override
     public Integer visitIRef(IRef type) {
-        return WORD_SIZE_BYTES;
+        return 2 * WORD_SIZE_BYTES;
     }
 
     @Override
