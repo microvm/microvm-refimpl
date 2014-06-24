@@ -1,6 +1,6 @@
 package uvm.refimpl.itpr;
 
-public class StackBox {
+public class StackBox extends ValueBox {
     private InterpreterStack stack;
 
     public InterpreterStack getStack() {

@@ -1,6 +1,6 @@
 package uvm.refimpl.itpr;
 
-public class RefBox {
+public class RefBox extends ValueBox {
     private long addr;
 
     public long getAddr() {

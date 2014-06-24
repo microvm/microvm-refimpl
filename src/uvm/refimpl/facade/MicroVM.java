@@ -3,16 +3,18 @@ package uvm.refimpl.facade;
 import uvm.Bundle;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
-import uvm.refimpl.mem.simpleimmix.SimpleImmixHeap;
+import uvm.refimpl.mem.MemoryManager;
 import uvm.util.ErrorUtils;
 
 public class MicroVM {
     public static final long HEAP_SIZE = 0x400000L; // 4MiB
+    public static final long GLOBAL_SIZE = 0x100000L; // 1MiB
+    public static final long STACK_SIZE = 0x1000L; // 4KiB per stack
 
-    public SimpleImmixHeap heap;
+    public MemoryManager mm;
 
     public MicroVM() {
-        heap = new SimpleImmixHeap(HEAP_SIZE);
+        mm = new MemoryManager(HEAP_SIZE, GLOBAL_SIZE, STACK_SIZE);
     }
 
     public void addBundle(Bundle bundle) {

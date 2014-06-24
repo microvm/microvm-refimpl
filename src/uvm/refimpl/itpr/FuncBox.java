@@ -2,7 +2,7 @@ package uvm.refimpl.itpr;
 
 import uvm.Function;
 
-public class FuncBox {
+public class FuncBox extends ValueBox {
     private Function func;
 
     public Function getFunc() {

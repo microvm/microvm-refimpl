@@ -14,17 +14,24 @@ public class Space {
         this.name = name;
         this.begin = begin;
         this.extend = extend;
+
+        addSpace(this);
     }
-    
+
     public boolean isInSpace(long addr) {
         return begin <= addr && addr < begin + extend;
     }
 
     private static final int MAX_SPACES = 20;
+    private static int nSpaces = 0;
     private static Space[] spaces = new Space[MAX_SPACES];
-    
+
+    private static void addSpace(Space space) {
+        spaces[nSpaces++] = space;
+    }
+
     public static Space getSpaceForAddress(long addr) {
-        for (int i=0; i<MAX_SPACES; i++) {
+        for (int i = 0; i < nSpaces; i++) {
             if (spaces[i] != null && spaces[i].isInSpace(addr)) {
                 return spaces[i];
             }

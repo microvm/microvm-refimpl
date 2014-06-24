@@ -1,6 +1,6 @@
 package uvm.refimpl.itpr;
 
-public class IRefBox {
+public class IRefBox extends ValueBox {
     private long base;
     private long offset;
 

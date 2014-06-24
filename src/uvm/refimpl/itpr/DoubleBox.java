@@ -1,6 +1,6 @@
 package uvm.refimpl.itpr;
 
-public class DoubleBox {
+public class DoubleBox extends ValueBox {
     private double value;
 
     public double getValue() {

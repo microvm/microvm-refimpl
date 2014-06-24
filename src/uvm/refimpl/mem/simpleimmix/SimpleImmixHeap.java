@@ -13,7 +13,6 @@ import uvm.refimpl.mem.UnsafeMemorySupport;
  * 
  */
 public class SimpleImmixHeap {
-    public static final long HEAP_ADDR_BEGIN = 0x100000L;
     public static final long GC_HEADER_SIZE_BITS = 64;
     public static final long GC_HEADER_SIZE_BYTES = 8;
     public static final long GC_HEADER_SIZE_LOG = 6;
@@ -34,10 +33,10 @@ public class SimpleImmixHeap {
     public SimpleImmixCollector collector;
     public Thread collectorThread;
 
-    public SimpleImmixHeap(long size) {
+    public SimpleImmixHeap(long begin, long size) {
         super();
 
-        space = new SimpleImmixSpace(this, "SimpleImmixSpace", HEAP_ADDR_BEGIN,
+        space = new SimpleImmixSpace(this, "SimpleImmixSpace", begin,
                 size);
 
         liveMutators = 0;

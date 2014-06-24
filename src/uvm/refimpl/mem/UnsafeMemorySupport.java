@@ -26,7 +26,7 @@ public class UnsafeMemorySupport implements MemorySupport {
         }
     }
 
-    public static final int MEMORY_SIZE = 0x800000; // 8MiB
+    public static final int MEMORY_SIZE = 0x1600000; // 16MiB
 
     private byte[] mem = new byte[MEMORY_SIZE];
 
