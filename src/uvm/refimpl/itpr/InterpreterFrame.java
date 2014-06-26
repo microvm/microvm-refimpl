@@ -51,7 +51,6 @@ public class InterpreterFrame {
         }
     }
 
-
     private void makeTypedBox(Value inst) {
         // TODO Auto-generated method stub
 
@@ -79,6 +78,10 @@ public class InterpreterFrame {
 
     public Instruction getCurInst() {
         return curBb.getInsts().get(curInstIndex);
+    }
+
+    public void incPC() {
+        curInstIndex++;
     }
 
     public void jump(BasicBlock bb, int ix) {

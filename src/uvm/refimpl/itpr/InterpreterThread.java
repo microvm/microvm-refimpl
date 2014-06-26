@@ -58,9 +58,7 @@ import uvm.type.Func;
 import uvm.type.IRef;
 import uvm.type.Int;
 import uvm.type.Ref;
-import uvm.type.Stack;
 import uvm.type.Type;
-import uvm.util.ErrorUtils;
 
 public class InterpreterThread implements Runnable {
 
@@ -101,6 +99,10 @@ public class InterpreterThread implements Runnable {
         return stack.getTop().getCurInst();
     }
 
+    public void incPC() {
+        stack.getTop().incPC();
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends ValueBox> T getValueBox(Value value) {
         if (value instanceof Constant) {
@@ -111,8 +113,8 @@ public class InterpreterThread implements Runnable {
     }
 
     private void error(String string) {
-        ErrorUtils.uvmError("Function " + IdentifiedHelper.repr(getCurFunc())
-                + " BB " + IdentifiedHelper.repr(getCurBb()) + " inst "
+        error("Function " + IdentifiedHelper.repr(getCurFunc()) + " BB "
+                + IdentifiedHelper.repr(getCurBb()) + " inst "
                 + IdentifiedHelper.repr(getCurInst()) + " : " + string);
     }
 
@@ -150,6 +152,37 @@ public class InterpreterThread implements Runnable {
 
     private static long up(long n, long l) {
         return OpHelper.unprepare(n, l);
+    }
+
+    public void branchAndMovePC(BasicBlock dest) {
+        branchAndMovePC(dest, 0);
+    }
+
+    public void branchAndMovePC(BasicBlock dest, long excAddr) {
+        BasicBlock curBb = getCurBb();
+        int i = 0;
+        while (true) {
+            Instruction inst = dest.getInsts().get(i);
+            if (inst instanceof InstPhi) {
+                InstPhi phi = (InstPhi) inst;
+                Value val = phi.getValueFrom(curBb);
+                ValueBox vb = getValueBox(val);
+                ValueBox db = getValueBox(inst);
+                db.copyValue(vb);
+                i++;
+            } else if (inst instanceof InstLandingPad) {
+                RefBox db = getValueBox(inst);
+                db.setAddr(excAddr);
+                i++;
+            } else {
+                break;
+            }
+        }
+        jump(dest, i);
+    }
+
+    private void jump(BasicBlock bb, int ix) {
+        stack.getTop().jump(bb, ix);
     }
 
     private class InstructionExecutor implements ValueVisitor<Void> {
@@ -316,6 +349,7 @@ public class InterpreterThread implements Runnable {
                 error("Bad type for binary operation: "
                         + type.getClass().getName());
             }
+            incPC();
             return null;
         }
 
@@ -506,8 +540,7 @@ public class InterpreterThread implements Runnable {
                             + inst.getOptr().toString());
                 }
 
-                IntBox rvBox = getValueBox(inst);
-                rvBox.setValue(rv ? 1 : 0);
+                setInt(inst, rv ? 1 : 0);
             } else if (type instanceof IRef) {
                 IRefBox op1 = getValueBox(inst.getOp1());
                 IRefBox op2 = getValueBox(inst.getOp2());
@@ -528,14 +561,14 @@ public class InterpreterThread implements Runnable {
                             + inst.getOptr().toString());
                 }
 
-                IntBox rvBox = getValueBox(inst);
-                rvBox.setValue(rv ? 1 : 0);
-            } else if (type instanceof Func) {
-                FuncBox op1 = getValueBox(inst.getOp1());
-                FuncBox op2 = getValueBox(inst.getOp2());
+                setInt(inst, rv ? 1 : 0);
+            } else if (type instanceof Func || type instanceof uvm.type.Thread
+                    || type instanceof uvm.type.Stack) {
+                WrapperBox<?> op1 = getValueBox(inst.getOp1());
+                WrapperBox<?> op2 = getValueBox(inst.getOp2());
 
-                Function v1 = op1.getFunc();
-                Function v2 = op2.getFunc();
+                Object v1 = op1.getObject();
+                Object v2 = op2.getObject();
                 boolean rv = false;
 
                 switch (inst.getOptr()) {
@@ -546,59 +579,16 @@ public class InterpreterThread implements Runnable {
                     rv = v1 != v2;
                     break;
                 default:
-                    error("Unexpected op for Func cmp "
+                    error("Unexpected op for Func/Thread/Stack cmp "
                             + inst.getOptr().toString());
                 }
 
-                IntBox rvBox = getValueBox(inst);
-                rvBox.setValue(rv ? 1 : 0);
-            } else if (type instanceof uvm.type.Thread) {
-                ThreadBox op1 = getValueBox(inst.getOp1());
-                ThreadBox op2 = getValueBox(inst.getOp2());
-
-                InterpreterThread v1 = op1.getThread();
-                InterpreterThread v2 = op2.getThread();
-                boolean rv = false;
-
-                switch (inst.getOptr()) {
-                case EQ:
-                    rv = v1 == v2;
-                    break;
-                case NE:
-                    rv = v1 != v2;
-                    break;
-                default:
-                    error("Unexpected op for Thread cmp "
-                            + inst.getOptr().toString());
-                }
-
-                IntBox rvBox = getValueBox(inst);
-                rvBox.setValue(rv ? 1 : 0);
-            } else if (type instanceof Stack) {
-                StackBox op1 = getValueBox(inst.getOp1());
-                StackBox op2 = getValueBox(inst.getOp2());
-
-                InterpreterStack v1 = op1.getStack();
-                InterpreterStack v2 = op2.getStack();
-                boolean rv = false;
-
-                switch (inst.getOptr()) {
-                case EQ:
-                    rv = v1 == v2;
-                    break;
-                case NE:
-                    rv = v1 != v2;
-                    break;
-                default:
-                    error("Unexpected op for Stack cmp "
-                            + inst.getOptr().toString());
-                }
-
-                IntBox rvBox = getValueBox(inst);
-                rvBox.setValue(rv ? 1 : 0);
+                setInt(inst, rv ? 1 : 0);
             } else {
                 error("Bad type for comparison: " + type.getClass().getName());
             }
+
+            incPC();
             return null;
 
         }
@@ -653,8 +643,7 @@ public class InterpreterThread implements Runnable {
                 } else if (ft instanceof uvm.type.Double) {
                     rv = (long) getDouble(opnd);
                 } else {
-                    ErrorUtils.uvmError("Bad type for FPTOxI: "
-                            + IdentifiedHelper.repr(ft));
+                    error("Bad type for FPTOxI: " + IdentifiedHelper.repr(ft));
                     return null;
                 }
                 rv = OpHelper.truncFromLong(rv, tl);
@@ -680,8 +669,7 @@ public class InterpreterThread implements Runnable {
                     double rv = (double) fv;
                     setDouble(inst, rv);
                 } else {
-                    ErrorUtils.uvmError("Bad type for xITOFP: "
-                            + IdentifiedHelper.repr(tt));
+                    error("Bad type for xITOFP: " + IdentifiedHelper.repr(tt));
                     return null;
                 }
                 break;
@@ -708,53 +696,56 @@ public class InterpreterThread implements Runnable {
                     long rv = Double.doubleToRawLongBits(fv);
                     setInt(inst, rv);
                 } else {
-                    ErrorUtils.uvmError("Bad type for BITCAST: "
-                            + IdentifiedHelper.repr(ft) + " and "
-                            + IdentifiedHelper.repr(tt));
+                    error("Bad type for BITCAST: " + IdentifiedHelper.repr(ft)
+                            + " and " + IdentifiedHelper.repr(tt));
                     return null;
                 }
-            case REFCAST: {
-                RefBox fb = getValueBox(opnd);
-                RefBox rb = getValueBox(inst);
-                rb.setAddr(fb.getAddr());
-                break;
-            }
-            case IREFCAST: {
-                IRefBox fb = getValueBox(opnd);
-                IRefBox rb = getValueBox(inst);
-                rb.setBase(fb.getBase());
-                rb.setOffset(fb.getOffset());
-                break;
-            }
+            case REFCAST:
+            case IREFCAST:
             case FUNCCAST: {
-                FuncBox fb = getValueBox(opnd);
-                FuncBox rb = getValueBox(inst);
-                rb.setFunc(fb.getFunc());
+                ValueBox fb = getValueBox(opnd);
+                ValueBox rb = getValueBox(inst);
+                rb.copyValue(fb);
                 break;
             }
             default:
-                ErrorUtils.uvmError("Unknown conversion operator "
+                error("Unknown conversion operator "
                         + inst.getOptr().toString());
                 return null;
             }
+
+            incPC();
             return null;
         }
 
         @Override
         public Void visitSelect(InstSelect inst) {
-            // TODO Auto-generated method stub
+            long cond = getInt(inst.getCond());
+            ValueBox rb = getValueBox(inst);
+            if (cond == 1) {
+                rb.copyValue(getValueBox(inst.getIfTrue()));
+            } else {
+                rb.copyValue(getValueBox(inst.getIfFalse()));
+            }
+
+            incPC();
             return null;
         }
 
         @Override
         public Void visitBranch(InstBranch inst) {
-            // TODO Auto-generated method stub
+            branchAndMovePC(inst.getDest());
             return null;
         }
 
         @Override
         public Void visitBranch2(InstBranch2 inst) {
-            // TODO Auto-generated method stub
+            long cond = getInt(inst.getCond());
+            if (cond == 1) {
+                branchAndMovePC(inst.getIfTrue());
+            } else {
+                branchAndMovePC(inst.getIfFalse());
+            }
             return null;
         }
 
