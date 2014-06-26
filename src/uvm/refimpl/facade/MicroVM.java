@@ -1,6 +1,7 @@
 package uvm.refimpl.facade;
 
 import uvm.Bundle;
+import uvm.refimpl.itpr.ConstantPool;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
 import uvm.refimpl.mem.MemoryManager;
@@ -12,6 +13,8 @@ public class MicroVM {
     public static final long STACK_SIZE = 0x1000L; // 4KiB per stack
 
     public MemoryManager mm;
+    
+    public ConstantPool constantPool;
 
     public MicroVM() {
         mm = new MemoryManager(HEAP_SIZE, GLOBAL_SIZE, STACK_SIZE);

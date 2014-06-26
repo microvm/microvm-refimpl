@@ -11,4 +11,9 @@ public class IntBox extends ValueBox {
         this.value = value;
     }
 
+    @Override
+    public void copyValue(ValueBox that) {
+        this.value = ((IntBox) that).getValue();
+    }
+
 }

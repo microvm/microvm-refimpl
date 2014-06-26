@@ -1,14 +1,13 @@
 package uvm.refimpl.itpr;
 
-public class StackBox extends ValueBox {
-    private InterpreterStack stack;
+public class StackBox extends WrapperBox<InterpreterStack> {
 
     public InterpreterStack getStack() {
-        return stack;
+        return object;
     }
 
     public void setStack(InterpreterStack stack) {
-        this.stack = stack;
+        this.object = stack;
     }
-    
+
 }

@@ -13,4 +13,12 @@ public class StructBox extends ValueBox {
     public void addBox(ValueBox box) {
         boxes.add(box);
     }
+
+    @Override
+    public void copyValue(ValueBox _that) {
+        StructBox that = (StructBox) _that;
+        for (int i = 0; i < boxes.size(); i++) {
+            this.getBox(i).copyValue(that.getBox(i));
+        }
+    }
 }

@@ -47,58 +47,10 @@ public class InterpreterFrame {
         for (BasicBlock bb : cfg.getBBs()) {
             for (Instruction inst : bb.getInsts()) {
                 makeTypedBox(inst);
-                for (UseBox ub : inst.getUses()) {
-                    Value dst = ub.getDst();
-                    if (dst instanceof Constant) {
-                        ValueBox constBox = makeConstBox((Constant) dst);
-                        // TODO: Assign this to a dict.
-                    }
-                }
             }
         }
     }
 
-    private ValueBox makeConstBox(Constant constant) {
-        ValueBox theBox = null;
-
-        if (constant instanceof IntConstant) {
-            IntConstant c = (IntConstant) constant;
-            IntBox b = new IntBox();
-            b.setValue(c.getValue());
-            theBox = b;
-        } else if (constant instanceof FloatConstant) {
-            FloatConstant c = (FloatConstant) constant;
-            FloatBox b = new FloatBox();
-            b.setValue(c.getValue());
-            theBox = b;
-        } else if (constant instanceof DoubleConstant) {
-            FloatConstant c = (FloatConstant) constant;
-            FloatBox b = new FloatBox();
-            b.setValue(c.getValue());
-            theBox = b;
-        } else if (constant instanceof StructConstant) {
-            StructConstant c = (StructConstant) constant;
-            StructBox b = new StructBox();
-            for (Constant cc : c.getValues()) {
-                ValueBox cb = makeConstBox(cc);
-                b.addBox(cb);
-            }
-            theBox = b;
-        } else if (constant instanceof NullConstant) {
-            NullConstant c = (NullConstant) constant;
-            
-            FloatBox b = new FloatBox();
-        } else if (constant instanceof FunctionConstant) {
-            FloatConstant c = (FloatConstant) constant;
-            FloatBox b = new FloatBox();
-            b.setValue(c.getValue());
-            theBox = b;
-        } else if (constant instanceof GlobalDataConstant) {
-            
-        }
-
-        return theBox;
-    }
 
     private void makeTypedBox(Value inst) {
         // TODO Auto-generated method stub

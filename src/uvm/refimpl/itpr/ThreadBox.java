@@ -1,14 +1,13 @@
 package uvm.refimpl.itpr;
 
-public class ThreadBox extends ValueBox {
-    private InterpreterThread thread;
+public class ThreadBox extends WrapperBox<InterpreterThread> {
 
     public InterpreterThread getThread() {
-        return thread;
+        return object;
     }
 
     public void setThread(InterpreterThread thread) {
-        this.thread = thread;
+        this.object = thread;
     }
 
 }

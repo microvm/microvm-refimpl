@@ -49,4 +49,13 @@ public class TagRef64Box extends ValueBox {
         refAddr = addr;
         kind = REF_KIND;
     }
+
+    @Override
+    public void copyValue(ValueBox _that) {
+        TagRef64Box that = (TagRef64Box) _that;
+        this.kind = that.kind;
+        this.fpVal = that.fpVal;
+        this.intVal = that.intVal;
+        this.refAddr = that.refAddr;
+    }
 }

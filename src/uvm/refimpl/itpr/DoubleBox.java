@@ -10,5 +10,10 @@ public class DoubleBox extends ValueBox {
     public void setValue(double value) {
         this.value = value;
     }
+
+    @Override
+    public void copyValue(ValueBox that) {
+        this.value = ((DoubleBox) that).getValue();
+    }
     
 }

@@ -23,4 +23,11 @@ public class IRefBox extends ValueBox {
     public long getAddr() {
         return this.base + this.offset;
     }
+
+    @Override
+    public void copyValue(ValueBox _that) {
+        IRefBox that = (IRefBox) _that;
+        this.base = that.getBase();
+        this.offset = that.getOffset();
+    }
 }

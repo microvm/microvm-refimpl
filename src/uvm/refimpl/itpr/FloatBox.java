@@ -11,4 +11,9 @@ public class FloatBox extends ValueBox {
         this.value = value;
     }
 
+    @Override
+    public void copyValue(ValueBox that) {
+        this.value = ((FloatBox) that).getValue();
+    }
+
 }

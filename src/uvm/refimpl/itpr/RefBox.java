@@ -10,5 +10,10 @@ public class RefBox extends ValueBox {
     public void setAddr(long addr) {
         this.addr = addr;
     }
-    
+
+    @Override
+    public void copyValue(ValueBox that) {
+        this.addr = ((RefBox) that).getAddr();
+    }
+
 }
