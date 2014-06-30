@@ -1,8 +1,14 @@
 package uvm.refimpl.itpr;
 
+import java.util.List;
+import java.util.Map;
+
 import uvm.BasicBlock;
 import uvm.Function;
 import uvm.IdentifiedHelper;
+import uvm.refimpl.mem.MemoryManager;
+import uvm.refimpl.mem.TypeSizes;
+import uvm.ssavalue.AbstractCall;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.ConvOptr;
 import uvm.ssavalue.DoubleConstant;
@@ -49,9 +55,11 @@ import uvm.ssavalue.InstTrap;
 import uvm.ssavalue.InstWatchPoint;
 import uvm.ssavalue.Instruction;
 import uvm.ssavalue.IntConstant;
+import uvm.ssavalue.NonTailCall;
 import uvm.ssavalue.NullConstant;
 import uvm.ssavalue.Parameter;
 import uvm.ssavalue.StructConstant;
+import uvm.ssavalue.UseBox;
 import uvm.ssavalue.Value;
 import uvm.ssavalue.ValueVisitor;
 import uvm.type.Func;
@@ -70,10 +78,14 @@ public class InterpreterThread implements Runnable {
 
     private ConstantPool constantPool;
 
-    public InterpreterThread(InterpreterStack stack, ConstantPool constantPool) {
+    private MemoryManager memoryManager;
+
+    public InterpreterThread(InterpreterStack stack, ConstantPool constantPool,
+            MemoryManager memoryManager) {
         // TODO: Inject more necessary resources.
         this.stack = stack;
         this.constantPool = constantPool;
+        this.memoryManager = memoryManager;
     }
 
     @Override
@@ -140,6 +152,24 @@ public class InterpreterThread implements Runnable {
 
     private void setDouble(Value opnd, double val) {
         ((DoubleBox) getValueBox(opnd)).setValue(val);
+    }
+
+    private long getRefAddr(Value opnd) {
+        return ((RefBox) getValueBox(opnd)).getAddr();
+    }
+
+    private void setRef(Value opnd, long addr) {
+        ((RefBox) getValueBox(opnd)).setAddr(addr);
+    }
+
+    private long getIRefAddr(Value opnd) {
+        return ((IRefBox) getValueBox(opnd)).getAddr();
+    }
+
+    private void setIRef(Value opnd, long base, long offset) {
+        IRefBox box = getValueBox(opnd);
+        box.setBase(base);
+        box.setOffset(offset);
     }
 
     private static long pu(long n, long l) {
@@ -355,7 +385,7 @@ public class InterpreterThread implements Runnable {
 
         @Override
         public Void visitCmp(InstCmp inst) {
-            Type type = inst.getType();
+            Type type = inst.getOpndType();
             if (type instanceof Int) {
                 Int t = (Int) type;
                 long l = t.getSize();
@@ -521,11 +551,8 @@ public class InterpreterThread implements Runnable {
 
                 setInt(inst, rv ? 1 : 0);
             } else if (type instanceof Ref) {
-                RefBox op1 = getValueBox(inst.getOp1());
-                RefBox op2 = getValueBox(inst.getOp2());
-
-                long v1 = op1.getAddr();
-                long v2 = op2.getAddr();
+                long v1 = getRefAddr(inst.getOp1());
+                long v2 = getRefAddr(inst.getOp2());
                 boolean rv = false;
 
                 switch (inst.getOptr()) {
@@ -542,11 +569,8 @@ public class InterpreterThread implements Runnable {
 
                 setInt(inst, rv ? 1 : 0);
             } else if (type instanceof IRef) {
-                IRefBox op1 = getValueBox(inst.getOp1());
-                IRefBox op2 = getValueBox(inst.getOp2());
-
-                long v1 = op1.getAddr();
-                long v2 = op2.getAddr();
+                long v1 = getIRefAddr(inst.getOp1());
+                long v2 = getIRefAddr(inst.getOp2());
                 boolean rv = false;
 
                 switch (inst.getOptr()) {
@@ -751,127 +775,269 @@ public class InterpreterThread implements Runnable {
 
         @Override
         public Void visitSwitch(InstSwitch inst) {
-            // TODO Auto-generated method stub
+            Type type = inst.getOpndType();
+            if (type instanceof Int) {
+                long length = ((Int) type).getSize();
+                long opnd = OpHelper.trunc(getInt(inst.getOpnd()), length);
+                for (Map.Entry<UseBox, BasicBlock> e : inst.getCases()
+                        .entrySet()) {
+                    Value caseVal = e.getKey().getDst();
+                    long c = OpHelper.trunc(getInt(caseVal), length);
+                    if (opnd == c) {
+                        branchAndMovePC(e.getValue());
+                        return null;
+                    }
+                }
+                branchAndMovePC(inst.getDefaultDest());
+            } else {
+                error("Unsupported type for SELECT: "
+                        + type.getClass().getName());
+            }
+
             return null;
         }
 
         @Override
         public Void visitPhi(InstPhi inst) {
-            // TODO Auto-generated method stub
+            error("Phi is unreachable by direct execution");
             return null;
+        }
+
+        private void visitAbstractCall(AbstractCall inst,
+                InterpreterFrame prevFrame) {
+            FuncBox calleeBox = getValueBox(inst.getFunc());
+            Function callee = calleeBox.getFunc();
+
+            InterpreterFrame newFrame = new InterpreterFrame(callee, prevFrame);
+            stack.setTop(newFrame);
+
+            List<UseBox> args = inst.getArgs();
+            List<Parameter> params = callee.getCFG().getParams();
+            for (int i = 0; i < args.size(); i++) {
+                ValueBox argBox = getValueBox(args.get(i).getDst());
+                ValueBox paramBox = newFrame.getValueBox(params.get(i));
+                paramBox.copyValue(argBox);
+            }
+        }
+
+        private void visitNonTailCall(NonTailCall inst) {
+            visitAbstractCall(inst, stack.getTop());
         }
 
         @Override
         public Void visitCall(InstCall inst) {
-            // TODO Auto-generated method stub
+            visitNonTailCall(inst);
             return null;
         }
 
         @Override
         public Void visitInvoke(InstInvoke inst) {
-            // TODO Auto-generated method stub
+            visitNonTailCall(inst);
             return null;
         }
 
         @Override
         public Void visitTailCall(InstTailCall inst) {
-            // TODO Auto-generated method stub
+            visitAbstractCall(inst, stack.getTop().getPrevFrame());
             return null;
+        }
+
+        private void genericReturn(ValueBox rvb) {
+            stack.setTop(stack.getTop().getPrevFrame());
+
+            Instruction instCont = getCurInst();
+
+            if (rvb != null) {
+                ValueBox instBox = getValueBox(instCont);
+                instBox.copyValue(rvb);
+            }
+
+            if (instCont instanceof InstCall) {
+                incPC();
+            } else if (instCont instanceof InstInvoke) {
+                branchAndMovePC(((InstInvoke) instCont).getNor());
+            }
+
+            // TODO: also rewind stack memory.
         }
 
         @Override
         public Void visitRet(InstRet inst) {
-            // TODO Auto-generated method stub
+            ValueBox rvb = getValueBox(inst.getRetVal());
+            genericReturn(rvb);
             return null;
         }
 
         @Override
         public Void visitRetVoid(InstRetVoid inst) {
-            // TODO Auto-generated method stub
+            genericReturn(null);
             return null;
         }
 
         @Override
         public Void visitThrow(InstThrow inst) {
-            // TODO Auto-generated method stub
+            RefBox excBox = getValueBox(inst.getException());
+            long excAddr = excBox.getAddr();
+
+            for (InterpreterFrame frame = stack.getTop().getPrevFrame(); frame != null; frame = frame
+                    .getPrevFrame()) {
+                Instruction callerInst = frame.getCurInst();
+                if (callerInst instanceof InstInvoke) {
+                    branchAndMovePC(((InstInvoke) callerInst).getExc(), excAddr);
+                    return null;
+                }
+            }
+
+            error("Thrown unwinded the stack below the last frame.");
             return null;
+
+            // TODO: Also rewind stack memory.
         }
 
         @Override
         public Void visitLandingPad(InstLandingPad inst) {
-            // TODO Auto-generated method stub
+            error("LANDINGPAD is unreachable in normal flow.");
             return null;
         }
 
         @Override
         public Void visitExtractValue(InstExtractValue inst) {
-            // TODO Auto-generated method stub
+            int index = inst.getIndex();
+            StructBox opndBox = getValueBox(inst.getOpnd());
+            ValueBox instBox = getValueBox(inst);
+            instBox.copyValue(opndBox.getBox(index));
+            incPC();
             return null;
         }
 
         @Override
         public Void visitInsertValue(InstInsertValue inst) {
-            // TODO Auto-generated method stub
+            int index = inst.getIndex();
+            StructBox opndBox = getValueBox(inst.getOpnd());
+            StructBox instBox = getValueBox(inst);
+            ValueBox newValBox = getValueBox(inst.getNewVal());
+            int nFields = inst.getStructType().getFieldTypes().size();
+            for (int i = 0; i < nFields; i++) {
+                if (i != index) {
+                    instBox.getBox(i).copyValue(opndBox.getBox(i));
+                } else {
+                    instBox.getBox(i).copyValue(newValBox);
+                }
+            }
+            incPC();
             return null;
         }
 
         @Override
         public Void visitNew(InstNew inst) {
-            // TODO Auto-generated method stub
+            Type type = inst.getAllocType();
+            long addr = memoryManager.newScalar(type);
+            setRef(inst, addr);
+            incPC();
             return null;
         }
 
         @Override
         public Void visitNewHybrid(InstNewHybrid inst) {
-            // TODO Auto-generated method stub
+            Type type = inst.getAllocType();
+            long len = getInt(inst.getLength());
+            long addr = memoryManager.newHybrid(type, len);
+            setRef(inst, addr);
+            incPC();
             return null;
         }
 
         @Override
         public Void visitAlloca(InstAlloca inst) {
-            // TODO Auto-generated method stub
+            Type type = inst.getAllocType();
+            long addr = memoryManager.allocaScalar(type);
+            setIRef(inst, 0, addr);
+            incPC();
             return null;
         }
 
         @Override
         public Void visitAllocaHybrid(InstAllocaHybrid inst) {
-            // TODO Auto-generated method stub
+            Type type = inst.getAllocType();
+            long len = getInt(inst.getLength());
+            long addr = memoryManager.allocaHybrid(type, len);
+            setIRef(inst, 0, addr);
+            incPC();
             return null;
         }
 
         @Override
         public Void visitGetIRef(InstGetIRef inst) {
-            // TODO Auto-generated method stub
+            long addr = getRefAddr(inst.getOpnd());
+            setIRef(inst, addr, 0);
+            incPC();
             return null;
         }
 
         @Override
         public Void visitGetFieldIRef(InstGetFieldIRef inst) {
-            // TODO Auto-generated method stub
+            IRefBox oldIRef = getValueBox(inst.getOpnd());
+            long oldBase = oldIRef.getBase();
+            long oldOffset = oldIRef.getOffset();
+            long fieldOffset = TypeSizes.fieldOffsetOf(inst.getReferentType(),
+                    inst.getIndex());
+            long newOffset = oldOffset + fieldOffset;
+            setIRef(inst, oldBase, newOffset);
+            incPC();
             return null;
         }
 
         @Override
         public Void visitGetElemIRef(InstGetElemIRef inst) {
-            // TODO Auto-generated method stub
+            IRefBox oldIRef = getValueBox(inst.getOpnd());
+            long oldBase = oldIRef.getBase();
+            long oldOffset = oldIRef.getOffset();
+
+            long index = getInt(inst.getIndex());
+            long fieldOffset = TypeSizes.shiftOffsetOf(inst.getReferentType()
+                    .getElemType(), index);
+            long newOffset = oldOffset + fieldOffset;
+            setIRef(inst, oldBase, newOffset);
+            incPC();
             return null;
         }
 
         @Override
         public Void visitShiftIRef(InstShiftIRef inst) {
-            // TODO Auto-generated method stub
+            IRefBox oldIRef = getValueBox(inst.getOpnd());
+            long oldBase = oldIRef.getBase();
+            long oldOffset = oldIRef.getOffset();
+
+            long index = getInt(inst.getOffset());
+            long fieldOffset = TypeSizes.shiftOffsetOf(inst.getReferentType(),
+                    index);
+            long newOffset = oldOffset + fieldOffset;
+            setIRef(inst, oldBase, newOffset);
+            incPC();
             return null;
         }
 
         @Override
         public Void visitGetFixedPartIRef(InstGetFixedPartIRef inst) {
-            // TODO Auto-generated method stub
+            getValueBox(inst).copyValue(getValueBox(inst.getOpnd()));
+            incPC();
             return null;
         }
 
         @Override
         public Void visitGetVarPartIRef(InstGetVarPartIRef inst) {
-            // TODO Auto-generated method stub
+            IRefBox oldIRef = getValueBox(inst.getOpnd());
+            long oldBase = oldIRef.getBase();
+            long oldOffset = oldIRef.getOffset();
+
+            long fixedSize = TypeSizes.sizeOf(inst.getReferentType()
+                    .getFixedPart());
+            long varOffset = TypeSizes.alignUp(fixedSize,
+                    TypeSizes.alignOf(inst.getReferentType().getVarPart()));
+            
+            long newOffset = oldOffset + varOffset;
+            setIRef(inst, oldBase, newOffset);
+            incPC();
             return null;
         }
 

@@ -1,8 +1,5 @@
 package uvm.refimpl.mem;
 
-import static uvm.refimpl.mem.TypeSizes.alignOf;
-import static uvm.refimpl.mem.TypeSizes.alignUp;
-import static uvm.refimpl.mem.TypeSizes.sizeOf;
 import static uvm.refimpl.mem.MemConstants.WORD_SIZE_BYTES;
 import uvm.type.Array;
 import uvm.type.Double;
@@ -16,7 +13,6 @@ import uvm.type.Stack;
 import uvm.type.Struct;
 import uvm.type.TagRef64;
 import uvm.type.Thread;
-import uvm.type.Type;
 import uvm.type.TypeVisitor;
 import uvm.type.Void;
 import uvm.type.WeakRef;
@@ -28,93 +24,76 @@ import uvm.type.WeakRef;
  * its fields aligned for their respective alignment requirements, and arrays
  * have many elements all of which are aligned.
  */
-public class SizeOf implements TypeVisitor<Integer> {
-
-    public static int genericSize(int n, int wordSize) {
-        if (n < wordSize) {
-            int i = 1;
-            while (i < n) {
-                i <<= 1;
-            }
-            return i;
-        } else {
-            return alignUp(n, wordSize);
-        }
-    }
+public class SizeOf implements TypeVisitor<Long> {
 
     @Override
-    public Integer visitInt(Int type) {
+    public Long visitInt(Int type) {
         return TypeSizes.nextPowOfTwo(type.getSize());
     }
 
     @Override
-    public Integer visitFloat(Float type) {
-        return 4;
+    public Long visitFloat(Float type) {
+        return 4L;
     }
 
     @Override
-    public Integer visitDouble(Double type) {
-        return 8;
+    public Long visitDouble(Double type) {
+        return 8L;
     }
 
     @Override
-    public Integer visitRef(Ref type) {
+    public Long visitRef(Ref type) {
         return WORD_SIZE_BYTES;
     }
 
     @Override
-    public Integer visitIRef(IRef type) {
+    public Long visitIRef(IRef type) {
         return 2 * WORD_SIZE_BYTES;
     }
 
     @Override
-    public Integer visitWeakRef(WeakRef type) {
+    public Long visitWeakRef(WeakRef type) {
         return WORD_SIZE_BYTES;
     }
 
     @Override
-    public Integer visitStruct(Struct type) {
-        int sz = 0;
-        for (Type ty : type.getFieldTypes()) {
-            sz = alignUp(sz, alignOf(ty)) + sizeOf(ty);
-        }
-        return sz;
+    public Long visitStruct(Struct type) {
+        return TypeSizes.structPrefixSizeOf(type, type.getFieldTypes().size());
     }
 
     @Override
-    public Integer visitArray(Array type) {
-        return alignUp(sizeOf(type.getElemType()), alignOf(type.getElemType()))
-                * type.getLength();
+    public Long visitArray(Array type) {
+        return TypeSizes.arrayPrefixSizeOf(type, type.getLength());
     }
 
     @Override
-    public Integer visitHybrid(Hybrid type) {
-        return -1;
+    public Long visitHybrid(Hybrid type) {
+        return -1L;
     }
 
     @Override
-    public Integer visitVoid(Void type) {
-        return 0;
+    public Long visitVoid(Void type) {
+        return 0L;
     }
 
     @Override
-    public Integer visitFunc(Func type) {
+    public Long visitFunc(Func type) {
         return WORD_SIZE_BYTES;
     }
 
     @Override
-    public Integer visitThread(Thread type) {
+    public Long visitThread(Thread type) {
         return WORD_SIZE_BYTES;
     }
 
     @Override
-    public Integer visitStack(Stack type) {
+    public Long visitStack(Stack type) {
         return WORD_SIZE_BYTES;
     }
 
     @Override
-    public Integer visitTagRef64(TagRef64 type) {
-        return 64;
+    public Long visitTagRef64(TagRef64 type) {
+        return 64L;
     }
 
 }

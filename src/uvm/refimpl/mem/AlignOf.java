@@ -28,43 +28,43 @@ import uvm.type.WeakRef;
  * same alignment as their elements. The void type and empty structs are 1-byte
  * aligned as it can be at any byte.
  */
-public class AlignOf implements TypeVisitor<Integer> {
+public class AlignOf implements TypeVisitor<Long> {
 
     @Override
-    public Integer visitInt(Int type) {
+    public Long visitInt(Int type) {
         return sizeOf(type);
     }
 
     @Override
-    public Integer visitFloat(Float type) {
+    public Long visitFloat(Float type) {
         return sizeOf(type);
     }
 
     @Override
-    public Integer visitDouble(Double type) {
+    public Long visitDouble(Double type) {
         return sizeOf(type);
     }
 
     @Override
-    public Integer visitRef(Ref type) {
+    public Long visitRef(Ref type) {
         return sizeOf(type);
     }
 
     @Override
-    public Integer visitIRef(IRef type) {
+    public Long visitIRef(IRef type) {
         return WORD_SIZE_BYTES;
     }
 
     @Override
-    public Integer visitWeakRef(WeakRef type) {
+    public Long visitWeakRef(WeakRef type) {
         return sizeOf(type);
     }
 
     @Override
-    public Integer visitStruct(Struct type) {
-        int maxAlign = 1;
+    public Long visitStruct(Struct type) {
+        long maxAlign = 1;
         for (Type ty : type.getFieldTypes()) {
-            int align = alignOf(ty);
+            long align = alignOf(ty);
             if (align > maxAlign) {
                 maxAlign = align;
             }
@@ -73,37 +73,37 @@ public class AlignOf implements TypeVisitor<Integer> {
     }
 
     @Override
-    public Integer visitArray(Array type) {
+    public Long visitArray(Array type) {
         return alignOf(type.getElemType());
     }
 
     @Override
-    public Integer visitHybrid(Hybrid type) {
-        return -1;
+    public Long visitHybrid(Hybrid type) {
+        return -1L;
     }
 
     @Override
-    public Integer visitVoid(Void type) {
-        return 1;
+    public Long visitVoid(Void type) {
+        return 1L;
     }
 
     @Override
-    public Integer visitFunc(Func type) {
+    public Long visitFunc(Func type) {
         return sizeOf(type);
     }
 
     @Override
-    public Integer visitThread(Thread type) {
+    public Long visitThread(Thread type) {
         return sizeOf(type);
     }
 
     @Override
-    public Integer visitStack(Stack type) {
+    public Long visitStack(Stack type) {
         return sizeOf(type);
     }
 
     @Override
-    public Integer visitTagRef64(TagRef64 type) {
+    public Long visitTagRef64(TagRef64 type) {
         return sizeOf(type);
     }
 

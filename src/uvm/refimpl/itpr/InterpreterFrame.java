@@ -5,17 +5,8 @@ import java.util.HashMap;
 import uvm.BasicBlock;
 import uvm.CFG;
 import uvm.Function;
-import uvm.ssavalue.Constant;
-import uvm.ssavalue.DoubleConstant;
-import uvm.ssavalue.FloatConstant;
-import uvm.ssavalue.FunctionConstant;
-import uvm.ssavalue.GlobalDataConstant;
 import uvm.ssavalue.Instruction;
-import uvm.ssavalue.IntConstant;
-import uvm.ssavalue.NullConstant;
 import uvm.ssavalue.Parameter;
-import uvm.ssavalue.StructConstant;
-import uvm.ssavalue.UseBox;
 import uvm.ssavalue.Value;
 
 public class InterpreterFrame {
@@ -96,4 +87,5 @@ public class InterpreterFrame {
     public ValueBox getValueBox(Value value) {
         return getValueDict().get(value);
     }
+
 }
