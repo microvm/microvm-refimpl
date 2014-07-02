@@ -6,9 +6,12 @@ import java.util.Map;
 import uvm.BasicBlock;
 import uvm.Function;
 import uvm.IdentifiedHelper;
+import uvm.Namespace;
 import uvm.refimpl.mem.MemoryManager;
+import uvm.refimpl.mem.MemorySupport;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.ssavalue.AbstractCall;
+import uvm.ssavalue.AtomicOrdering;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.ConvOptr;
 import uvm.ssavalue.DoubleConstant;
@@ -67,8 +70,15 @@ import uvm.type.IRef;
 import uvm.type.Int;
 import uvm.type.Ref;
 import uvm.type.Type;
+import uvm.type.WeakRef;
 
 public class InterpreterThread implements Runnable {
+
+    private int id;
+
+    public int getID() {
+        return id;
+    }
 
     private InterpreterStack stack;
 
@@ -80,12 +90,24 @@ public class InterpreterThread implements Runnable {
 
     private MemoryManager memoryManager;
 
-    public InterpreterThread(InterpreterStack stack, ConstantPool constantPool,
-            MemoryManager memoryManager) {
+    private MemorySupport memorySupport;
+
+    private Namespace<Function> funcSpace;
+
+    private ThreadManager threadManager;
+
+    public InterpreterThread(int id, InterpreterStack stack,
+            ConstantPool constantPool, MemoryManager memoryManager,
+            MemorySupport memorySupport, Namespace<Function> funcSpace,
+            ThreadManager threadManager) {
         // TODO: Inject more necessary resources.
+        this.id = id;
         this.stack = stack;
         this.constantPool = constantPool;
         this.memoryManager = memoryManager;
+        this.memorySupport = memorySupport;
+        this.funcSpace = funcSpace;
+        this.threadManager = threadManager;
     }
 
     @Override
@@ -1034,7 +1056,7 @@ public class InterpreterThread implements Runnable {
                     .getFixedPart());
             long varOffset = TypeSizes.alignUp(fixedSize,
                     TypeSizes.alignOf(inst.getReferentType().getVarPart()));
-            
+
             long newOffset = oldOffset + varOffset;
             setIRef(inst, oldBase, newOffset);
             incPC();
@@ -1043,31 +1065,319 @@ public class InterpreterThread implements Runnable {
 
         @Override
         public Void visitLoad(InstLoad inst) {
-            // TODO Auto-generated method stub
+            long loc = getIRefAddr(inst.getLocation());
+            boolean isAtomic = inst.getOrdering() != AtomicOrdering.NOT_ATOMIC;
+            Type rt = inst.getReferentType();
+            if (rt instanceof Int) {
+                Int irt = (Int) rt;
+                long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
+                long val;
+                if (loadSize == 8) {
+                    val = isAtomic ? memorySupport.loadByteAtomic(loc)
+                            : memorySupport.loadByte(loc);
+                } else if (loadSize == 16) {
+                    val = isAtomic ? memorySupport.loadShortAtomic(loc)
+                            : memorySupport.loadShort(loc);
+                } else if (loadSize == 32) {
+                    val = isAtomic ? memorySupport.loadIntAtomic(loc)
+                            : memorySupport.loadInt(loc);
+                } else if (loadSize == 64) {
+                    val = isAtomic ? memorySupport.loadLongAtomic(loc)
+                            : memorySupport.loadLong(loc);
+                } else {
+                    error("Unsupported Int length for load: " + loadSize);
+                    return null;
+                }
+                setInt(inst, val);
+            } else if (rt instanceof uvm.type.Float) {
+                float val = isAtomic ? memorySupport.loadFloatAtomic(loc)
+                        : memorySupport.loadFloat(loc);
+                setFloat(inst, val);
+            } else if (rt instanceof uvm.type.Double) {
+                double val = isAtomic ? memorySupport.loadDoubleAtomic(loc)
+                        : memorySupport.loadDouble(loc);
+                setDouble(inst, val);
+            } else if (rt instanceof Ref || rt instanceof WeakRef) {
+                // Java never reads reference partially. Should it always be
+                // atomic?
+                long addr = isAtomic ? memorySupport.loadLongAtomic(loc)
+                        : memorySupport.loadLong(loc);
+                setRef(inst, addr);
+            } else if (rt instanceof IRef) {
+                if (isAtomic) {
+                    error("This implementation does not support loading IRef atomically.");
+                } else {
+                    long base = memorySupport.loadLong(loc);
+                    long offset = memorySupport.loadLong(loc + 8);
+                    setIRef(inst, base, offset);
+                }
+            } else if (rt instanceof Func) {
+                long id = isAtomic ? memorySupport.loadLongAtomic(loc)
+                        : memorySupport.loadLong(loc);
+                Function func = funcSpace.getByID((int) id);
+                FuncBox box = getValueBox(inst);
+                box.setFunc(func);
+            } else if (rt instanceof uvm.type.Thread) {
+                long id = isAtomic ? memorySupport.loadLongAtomic(loc)
+                        : memorySupport.loadLong(loc);
+                InterpreterThread thr = threadManager.getThreadByID((int) id);
+                ThreadBox box = getValueBox(inst);
+                box.setThread(thr);
+            } else if (rt instanceof uvm.type.Stack) {
+                long id = isAtomic ? memorySupport.loadLongAtomic(loc)
+                        : memorySupport.loadLong(loc);
+                InterpreterStack sta = threadManager.getStackByID((int) id);
+                StackBox box = getValueBox(inst);
+                box.setStack(sta);
+            } else {
+                error("Unsupported type to load: " + rt.getClass().getName());
+            }
+
+            incPC();
             return null;
         }
 
         @Override
         public Void visitStore(InstStore inst) {
-            // TODO Auto-generated method stub
+            long loc = getIRefAddr(inst.getLocation());
+            boolean isAtomic = inst.getOrdering() != AtomicOrdering.NOT_ATOMIC;
+            Type rt = inst.getReferentType();
+            if (rt instanceof Int) {
+                Int irt = (Int) rt;
+                long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
+                long val = getInt(inst.getNewVal());
+                if (loadSize == 8) {
+                    if (isAtomic) {
+                        memorySupport.storeByteAtomic(loc, (byte) val);
+                    } else {
+                        memorySupport.storeByte(loc, (byte) val);
+                    }
+                } else if (loadSize == 16) {
+                    if (isAtomic) {
+                        memorySupport.storeShortAtomic(loc, (short) val);
+                    } else {
+                        memorySupport.storeShort(loc, (short) val);
+                    }
+                } else if (loadSize == 32) {
+                    if (isAtomic) {
+                        memorySupport.storeIntAtomic(loc, (int) val);
+                    } else {
+                        memorySupport.storeInt(loc, (int) val);
+                    }
+                } else if (loadSize == 64) {
+                    if (isAtomic) {
+                        memorySupport.storeLongAtomic(loc, val);
+                    } else {
+                        memorySupport.storeLong(loc, val);
+                    }
+                } else {
+                    error("Unsupported Int length for store: " + loadSize);
+                    return null;
+                }
+            } else if (rt instanceof uvm.type.Float) {
+                float val = getFloat(inst.getNewVal());
+                if (isAtomic) {
+                    memorySupport.storeFloatAtomic(loc, val);
+                } else {
+                    memorySupport.storeFloat(loc, val);
+                }
+            } else if (rt instanceof uvm.type.Double) {
+                double val = getDouble(inst.getNewVal());
+                if (isAtomic) {
+                    memorySupport.storeDoubleAtomic(loc, val);
+                } else {
+                    memorySupport.storeDouble(loc, val);
+                }
+            } else if (rt instanceof Ref || rt instanceof WeakRef) {
+                // Java never reads reference partially. Should it always be
+                // atomic?
+                long addr = getRefAddr(inst.getNewVal());
+                if (isAtomic) {
+                    memorySupport.storeLongAtomic(loc, addr);
+                } else {
+                    memorySupport.storeLong(loc, addr);
+                }
+            } else if (rt instanceof IRef) {
+                if (isAtomic) {
+                    error("This implementation does not support storing IRef atomically.");
+                } else {
+                    IRefBox irb = getValueBox(inst.getNewVal());
+                    long base = irb.getBase();
+                    long offset = irb.getOffset();
+                    memorySupport.storeLong(loc, base);
+                    memorySupport.storeLong(loc + 8, offset);
+                }
+            } else if (rt instanceof Func) {
+                FuncBox box = getValueBox(inst);
+                Function func = box.getFunc();
+                long id = func.getID();
+                if (isAtomic) {
+                    memorySupport.storeLongAtomic(loc, id);
+                } else {
+                    memorySupport.storeLong(loc, id);
+                }
+            } else if (rt instanceof uvm.type.Thread) {
+                ThreadBox box = getValueBox(inst);
+                InterpreterThread thr = box.getThread();
+                long id = thr.getID();
+                if (isAtomic) {
+                    memorySupport.storeLongAtomic(loc, id);
+                } else {
+                    memorySupport.storeLong(loc, id);
+                }
+            } else if (rt instanceof uvm.type.Stack) {
+                StackBox box = getValueBox(inst);
+                InterpreterStack sta = box.getStack();
+                long id = sta.getID();
+                if (isAtomic) {
+                    memorySupport.storeLongAtomic(loc, id);
+                } else {
+                    memorySupport.storeLong(loc, id);
+                }
+            } else {
+                error("Unsupported type to store: " + rt.getClass().getName());
+            }
+
+            incPC();
             return null;
         }
 
         @Override
         public Void visitCmpXchg(InstCmpXchg inst) {
-            // TODO Auto-generated method stub
+            long loc = getIRefAddr(inst.getLocation());
+            Type rt = inst.getReferentType();
+            if (rt instanceof Int) {
+                Int irt = (Int) rt;
+                long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
+                long expected = getInt(inst.getExpected());
+                long desired = getInt(inst.getDesired());
+                long oldVal;
+                if (loadSize == 32) {
+                    oldVal = memorySupport.cmpXchgInt(loc, (int) expected,
+                            (int) desired);
+                } else if (loadSize == 64) {
+                    oldVal = memorySupport.cmpXchgLong(loc, expected, desired);
+                } else {
+                    error("Unsupported Int length for cmpxchg: " + loadSize);
+                    return null;
+                }
+                setInt(inst, oldVal);
+            } else if (rt instanceof Ref || rt instanceof WeakRef) {
+                long expected = getRefAddr(inst.getExpected());
+                long desired = getRefAddr(inst.getDesired());
+                long oldAddr = memorySupport
+                        .cmpXchgLong(loc, expected, desired);
+                setRef(inst, oldAddr);
+            } else {
+                error("Unsupported type to cmpxchg: " + rt.getClass().getName());
+            }
+
+            incPC();
             return null;
         }
 
         @Override
         public Void visitAtomicRMW(InstAtomicRMW inst) {
-            // TODO Auto-generated method stub
+            long loc = getIRefAddr(inst.getLocation());
+            Type rt = inst.getReferentType();
+            if (rt instanceof Int) {
+                Int irt = (Int) rt;
+                long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
+                long opnd = getInt(inst.getOpnd());
+                long oldVal;
+                if (loadSize == 32) {
+                    switch (inst.getOptr()) {
+                    case XCHG:
+                        oldVal = memorySupport.fetchXchgInt(loc, (int) opnd);
+                        break;
+                    case ADD:
+                        oldVal = memorySupport.fetchAddInt(loc, (int) opnd);
+                        break;
+                    case SUB:
+                        oldVal = memorySupport.fetchSubInt(loc, (int) opnd);
+                        break;
+                    case AND:
+                        oldVal = memorySupport.fetchAndInt(loc, (int) opnd);
+                        break;
+                    case NAND:
+                        oldVal = memorySupport.fetchNandInt(loc, (int) opnd);
+                        break;
+                    case OR:
+                        oldVal = memorySupport.fetchOrInt(loc, (int) opnd);
+                        break;
+                    case XOR:
+                        oldVal = memorySupport.fetchXorInt(loc, (int) opnd);
+                        break;
+                    case MAX:
+                        oldVal = memorySupport.fetchMaxInt(loc, (int) opnd);
+                        break;
+                    case MIN:
+                        oldVal = memorySupport.fetchMinInt(loc, (int) opnd);
+                        break;
+                    case UMAX:
+                        oldVal = memorySupport.fetchUmaxInt(loc, (int) opnd);
+                        break;
+                    case UMIN:
+                        oldVal = memorySupport.fetchUminInt(loc, (int) opnd);
+                        break;
+                    default:
+                        error("Unrecognised atomicrmw op: " + inst.getOptr());
+                    }
+                } else if (loadSize == 64) {
+                    switch (inst.getOptr()) {
+                    case XCHG:
+                        oldVal = memorySupport.fetchXchgLong(loc, opnd);
+                        break;
+                    case ADD:
+                        oldVal = memorySupport.fetchAddLong(loc, opnd);
+                        break;
+                    case SUB:
+                        oldVal = memorySupport.fetchSubLong(loc, opnd);
+                        break;
+                    case AND:
+                        oldVal = memorySupport.fetchAndLong(loc, opnd);
+                        break;
+                    case NAND:
+                        oldVal = memorySupport.fetchNandLong(loc, opnd);
+                        break;
+                    case OR:
+                        oldVal = memorySupport.fetchOrLong(loc, opnd);
+                        break;
+                    case XOR:
+                        oldVal = memorySupport.fetchXorLong(loc, opnd);
+                        break;
+                    case MAX:
+                        oldVal = memorySupport.fetchMaxLong(loc, opnd);
+                        break;
+                    case MIN:
+                        oldVal = memorySupport.fetchMinLong(loc, opnd);
+                        break;
+                    case UMAX:
+                        oldVal = memorySupport.fetchUmaxLong(loc, opnd);
+                        break;
+                    case UMIN:
+                        oldVal = memorySupport.fetchUminLong(loc, opnd);
+                        break;
+                    default:
+                        error("Unrecognised atomicrmw op: " + inst.getOptr());
+                    }
+                } else {
+                    error("Unsupported Int length for atomicrmw: " + loadSize);
+                    return null;
+                }
+            } else {
+                error("Unsupported type to atomicrmw: "
+                        + rt.getClass().getName());
+            }
+
+            incPC();
             return null;
         }
 
         @Override
         public Void visitFence(InstFence inst) {
-            // TODO Auto-generated method stub
+            memorySupport.fence();
+            incPC();
             return null;
         }
 
