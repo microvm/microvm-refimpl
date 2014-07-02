@@ -8,6 +8,14 @@ import uvm.Function;
 import uvm.ssavalue.Instruction;
 import uvm.ssavalue.Parameter;
 import uvm.ssavalue.Value;
+import uvm.type.Func;
+import uvm.type.IRef;
+import uvm.type.Int;
+import uvm.type.Ref;
+import uvm.type.Struct;
+import uvm.type.TagRef64;
+import uvm.type.Type;
+import uvm.util.ErrorUtils;
 
 public class InterpreterFrame {
     private Function func;
@@ -33,18 +41,49 @@ public class InterpreterFrame {
 
     private void makeBoxes() {
         for (Parameter param : cfg.getParams()) {
-            makeTypedBox(param);
+            valueDict.put(param, makeTypedBox(param.getType()));
         }
         for (BasicBlock bb : cfg.getBBs()) {
             for (Instruction inst : bb.getInsts()) {
-                makeTypedBox(inst);
+                valueDict.put(inst, makeTypedBox(inst.getType()));
             }
         }
     }
 
-    private void makeTypedBox(Value inst) {
-        // TODO Auto-generated method stub
-
+    private ValueBox makeTypedBox(Type type) {
+        if (type instanceof Int) {
+            return new IntBox();
+        } else if (type instanceof uvm.type.Float) {
+            return new FloatBox();
+        } else if (type instanceof uvm.type.Double) {
+            return new DoubleBox();
+        } else if (type instanceof Ref) {
+            return new RefBox();
+        } else if (type instanceof IRef) {
+            return new IRefBox();
+        } else if (type instanceof Struct) {
+            Struct structType = (Struct) type;
+            StructBox box = new StructBox();
+            for (Type fieldType : structType.getFieldTypes()) {
+                ValueBox fieldBox = makeTypedBox(fieldType);
+                box.addBox(fieldBox);
+            }
+        } else if (type instanceof Func) {
+            return new FuncBox();
+        } else if (type instanceof uvm.type.Thread) {
+            return new ThreadBox();
+        } else if (type instanceof uvm.type.Stack) {
+            return new StackBox();
+        } else if (type instanceof TagRef64) {
+            return new TagRef64Box();
+        } else if (type instanceof uvm.type.Void) {
+            return new VoidBox();
+        } else {
+            ErrorUtils.uvmError("Unknown type to create type: "
+                    + type.getClass().getName());
+            return null;
+        }
+        return null;
     }
 
     public Function getFunc() {

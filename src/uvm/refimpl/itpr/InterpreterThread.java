@@ -1515,7 +1515,6 @@ public class InterpreterThread implements Runnable {
             }
             return null;
         }
-
     }
 
     private Long handleIntrinsicCall(AbstractIntrinsicCall inst) {
