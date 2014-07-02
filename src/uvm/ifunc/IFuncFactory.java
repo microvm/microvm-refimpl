@@ -26,12 +26,18 @@ public class IFuncFactory {
         ifuncs.put(id, name, ifunc);
     }
 
+    public static final int IFUNC__UVM__NEW_THREAD = 0x201;
+    public static final int IFUNC__UVM__SWAP_STACK = 0x202;
+    public static final int IFUNC__UVM__KILL_STACK = 0x203;
+    public static final int IFUNC__UVM__SWAP_AND_KILL = 0x204;
+    public static final int IFUNC__UVM__THREAD_EXIT = 0x205;
+
     static {
-        add(0x1, "@uvm.new_thread", THREAD);
-        add(0x2, "@uvm.swap_stack", VOID, STACK);
-        add(0x3, "@uvm.kill_stack", VOID, STACK);
-        add(0x4, "@uvm.swap_and_kill", VOID, STACK);
-        add(0x5, "@uvm.thread_exit", VOID);
+        add(IFUNC__UVM__NEW_THREAD, "@uvm.new_thread", THREAD);
+        add(IFUNC__UVM__SWAP_STACK, "@uvm.swap_stack", VOID, STACK);
+        add(IFUNC__UVM__KILL_STACK, "@uvm.kill_stack", VOID, STACK);
+        add(IFUNC__UVM__SWAP_AND_KILL, "@uvm.swap_and_kill", VOID, STACK);
+        add(IFUNC__UVM__THREAD_EXIT, "@uvm.thread_exit", VOID);
     }
 
     /**

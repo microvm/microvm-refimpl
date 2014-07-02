@@ -54,7 +54,6 @@ public class Function implements IdentifiedSettable {
         return name + " = " + sig;
     }
 
-
     @Override
     public int getID() {
         return id;
@@ -97,6 +96,10 @@ public class Function implements IdentifiedSettable {
 
     public void setCompiledFunc(CompiledFunction compiledFunc) {
         this.compiledFunc = compiledFunc;
+    }
+
+    public boolean isDefined() {
+        return cfg != null;
     }
 
 }

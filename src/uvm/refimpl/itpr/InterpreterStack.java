@@ -22,4 +22,9 @@ public class InterpreterStack {
         return id;
     }
 
+    public void kill() {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

@@ -7,10 +7,15 @@ import uvm.BasicBlock;
 import uvm.Function;
 import uvm.IdentifiedHelper;
 import uvm.Namespace;
+import uvm.ifunc.IFunc;
+import uvm.ifunc.IFuncFactory;
+import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.mem.MemoryManager;
 import uvm.refimpl.mem.MemorySupport;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.ssavalue.AbstractCall;
+import uvm.ssavalue.AbstractIntrinsicCall;
+import uvm.ssavalue.AbstractTrap;
 import uvm.ssavalue.AtomicOrdering;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.ConvOptr;
@@ -96,18 +101,24 @@ public class InterpreterThread implements Runnable {
 
     private ThreadManager threadManager;
 
-    public InterpreterThread(int id, InterpreterStack stack,
+    private TrapManager trapManager;
+
+    private MicroVM microVM;
+
+    public InterpreterThread(int id, MicroVM microVM, InterpreterStack stack,
             ConstantPool constantPool, MemoryManager memoryManager,
             MemorySupport memorySupport, Namespace<Function> funcSpace,
-            ThreadManager threadManager) {
+            ThreadManager threadManager, TrapManager trapManager) {
         // TODO: Inject more necessary resources.
         this.id = id;
+        this.microVM = microVM;
         this.stack = stack;
         this.constantPool = constantPool;
         this.memoryManager = memoryManager;
         this.memorySupport = memorySupport;
         this.funcSpace = funcSpace;
         this.threadManager = threadManager;
+        this.trapManager = trapManager;
     }
 
     @Override
@@ -194,6 +205,30 @@ public class InterpreterThread implements Runnable {
         box.setOffset(offset);
     }
 
+    private Function getFunc(Value opnd) {
+        return ((FuncBox) getValueBox(opnd)).getFunc();
+    }
+
+    private void setFunc(Value opnd, Function func) {
+        ((FuncBox) getValueBox(opnd)).setFunc(func);
+    }
+
+    private InterpreterThread getThread(Value opnd) {
+        return ((ThreadBox) getValueBox(opnd)).getThread();
+    }
+
+    private void setThread(Value opnd, InterpreterThread thr) {
+        ((ThreadBox) getValueBox(opnd)).setThread(thr);
+    }
+
+    private InterpreterStack getStack(Value opnd) {
+        return ((StackBox) getValueBox(opnd)).getStack();
+    }
+
+    private void setStack(Value opnd, InterpreterStack sta) {
+        ((StackBox) getValueBox(opnd)).setStack(sta);
+    }
+
     private static long pu(long n, long l) {
         return OpHelper.prepareUnsigned(n, l);
     }
@@ -206,11 +241,11 @@ public class InterpreterThread implements Runnable {
         return OpHelper.unprepare(n, l);
     }
 
-    public void branchAndMovePC(BasicBlock dest) {
+    private void branchAndMovePC(BasicBlock dest) {
         branchAndMovePC(dest, 0);
     }
 
-    public void branchAndMovePC(BasicBlock dest, long excAddr) {
+    private void branchAndMovePC(BasicBlock dest, long excAddr) {
         BasicBlock curBb = getCurBb();
         int i = 0;
         while (true) {
@@ -235,6 +270,35 @@ public class InterpreterThread implements Runnable {
 
     private void jump(BasicBlock bb, int ix) {
         stack.getTop().jump(bb, ix);
+    }
+
+    private void resolvePotentiallyUndefinedFunction(Function func) {
+        while (running) {
+            if (!func.isDefined()) {
+                trapManager.getUndefinedFunctionHandler().onUndefinedFunction(
+                        InterpreterThread.this, func);
+            } else {
+                break;
+            }
+        }
+    }
+
+    private void unwindStack(long excAddr) {
+        for (InterpreterFrame frame = stack.getTop().getPrevFrame(); frame != null; frame = frame
+                .getPrevFrame()) {
+            Instruction callerInst = frame.getCurInst();
+            if (callerInst instanceof InstInvoke) {
+                branchAndMovePC(((InstInvoke) callerInst).getExc(), excAddr);
+                return;
+            }
+        }
+        // TODO: Also rewind stack memory.
+
+        error("Thrown unwinded the stack below the last frame.");
+    }
+
+    private void swapStack(InterpreterStack newStack) {
+        this.stack = newStack;
     }
 
     private class InstructionExecutor implements ValueVisitor<Void> {
@@ -827,8 +891,13 @@ public class InterpreterThread implements Runnable {
 
         private void visitAbstractCall(AbstractCall inst,
                 InterpreterFrame prevFrame) {
-            FuncBox calleeBox = getValueBox(inst.getFunc());
-            Function callee = calleeBox.getFunc();
+            Function callee = getFunc(inst.getFunc());
+
+            resolvePotentiallyUndefinedFunction(callee);
+
+            if (!running) {
+                return;
+            }
 
             InterpreterFrame newFrame = new InterpreterFrame(callee, prevFrame);
             stack.setTop(newFrame);
@@ -901,19 +970,8 @@ public class InterpreterThread implements Runnable {
             RefBox excBox = getValueBox(inst.getException());
             long excAddr = excBox.getAddr();
 
-            for (InterpreterFrame frame = stack.getTop().getPrevFrame(); frame != null; frame = frame
-                    .getPrevFrame()) {
-                Instruction callerInst = frame.getCurInst();
-                if (callerInst instanceof InstInvoke) {
-                    branchAndMovePC(((InstInvoke) callerInst).getExc(), excAddr);
-                    return null;
-                }
-            }
-
-            error("Thrown unwinded the stack below the last frame.");
+            unwindStack(excAddr);
             return null;
-
-            // TODO: Also rewind stack memory.
         }
 
         @Override
@@ -1115,20 +1173,17 @@ public class InterpreterThread implements Runnable {
                 long id = isAtomic ? memorySupport.loadLongAtomic(loc)
                         : memorySupport.loadLong(loc);
                 Function func = funcSpace.getByID((int) id);
-                FuncBox box = getValueBox(inst);
-                box.setFunc(func);
+                setFunc(inst, func);
             } else if (rt instanceof uvm.type.Thread) {
                 long id = isAtomic ? memorySupport.loadLongAtomic(loc)
                         : memorySupport.loadLong(loc);
                 InterpreterThread thr = threadManager.getThreadByID((int) id);
-                ThreadBox box = getValueBox(inst);
-                box.setThread(thr);
+                setThread(inst, thr);
             } else if (rt instanceof uvm.type.Stack) {
                 long id = isAtomic ? memorySupport.loadLongAtomic(loc)
                         : memorySupport.loadLong(loc);
                 InterpreterStack sta = threadManager.getStackByID((int) id);
-                StackBox box = getValueBox(inst);
-                box.setStack(sta);
+                setStack(inst, sta);
             } else {
                 error("Unsupported type to load: " + rt.getClass().getName());
             }
@@ -1208,8 +1263,8 @@ public class InterpreterThread implements Runnable {
                     memorySupport.storeLong(loc + 8, offset);
                 }
             } else if (rt instanceof Func) {
-                FuncBox box = getValueBox(inst);
-                Function func = box.getFunc();
+                Function func = getFunc(inst.getNewVal());
+
                 long id = func.getID();
                 if (isAtomic) {
                     memorySupport.storeLongAtomic(loc, id);
@@ -1217,8 +1272,7 @@ public class InterpreterThread implements Runnable {
                     memorySupport.storeLong(loc, id);
                 }
             } else if (rt instanceof uvm.type.Thread) {
-                ThreadBox box = getValueBox(inst);
-                InterpreterThread thr = box.getThread();
+                InterpreterThread thr = getThread(inst.getNewVal());
                 long id = thr.getID();
                 if (isAtomic) {
                     memorySupport.storeLongAtomic(loc, id);
@@ -1226,8 +1280,7 @@ public class InterpreterThread implements Runnable {
                     memorySupport.storeLong(loc, id);
                 }
             } else if (rt instanceof uvm.type.Stack) {
-                StackBox box = getValueBox(inst);
-                InterpreterStack sta = box.getStack();
+                InterpreterStack sta = getStack(inst.getNewVal());
                 long id = sta.getID();
                 if (isAtomic) {
                     memorySupport.storeLongAtomic(loc, id);
@@ -1284,7 +1337,7 @@ public class InterpreterThread implements Runnable {
                 Int irt = (Int) rt;
                 long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
                 long opnd = getInt(inst.getOpnd());
-                long oldVal;
+                long oldVal = 0;
                 if (loadSize == 32) {
                     switch (inst.getOptr()) {
                     case XCHG:
@@ -1365,6 +1418,7 @@ public class InterpreterThread implements Runnable {
                     error("Unsupported Int length for atomicrmw: " + loadSize);
                     return null;
                 }
+                setInt(inst, oldVal);
             } else {
                 error("Unsupported type to atomicrmw: "
                         + rt.getClass().getName());
@@ -1381,42 +1435,126 @@ public class InterpreterThread implements Runnable {
             return null;
         }
 
+        private void visitAbstractTrap(AbstractTrap inst) {
+            Long excAddr = trapManager.getTrapHandler().onTrap(
+                    InterpreterThread.this);
+            if (excAddr == null) {
+                branchAndMovePC(inst.getNor());
+            } else {
+                branchAndMovePC(inst.getExc(), excAddr);
+            }
+        }
+
         @Override
         public Void visitTrap(InstTrap inst) {
-            // TODO Auto-generated method stub
+            visitAbstractTrap(inst);
             return null;
         }
 
         @Override
         public Void visitWatchPoint(InstWatchPoint inst) {
-            // TODO Auto-generated method stub
+            boolean isEnabled = trapManager.isWatchpointEnabled(inst
+                    .getWatchPointId());
+            if (isEnabled) {
+                visitAbstractTrap(inst);
+            } else {
+                branchAndMovePC(inst.getDisabled());
+            }
             return null;
         }
 
         @Override
         public Void visitCCall(InstCCall inst) {
-            // TODO Auto-generated method stub
+            error("Not implemented in the Java implementation.");
             return null;
         }
 
         @Override
         public Void visitNewStack(InstNewStack inst) {
-            // TODO Auto-generated method stub
+
+            Function func = getFunc(inst.getFunc());
+
+            resolvePotentiallyUndefinedFunction(func);
+
+            if (!running) {
+                return null;
+            }
+
+            InterpreterStack sta = microVM.newStack(func);
+
+            StackBox instBox = getValueBox(inst);
+            instBox.setStack(sta);
+
             return null;
         }
 
         @Override
         public Void visitICall(InstICall inst) {
-            // TODO Auto-generated method stub
+            Long excAddr = handleIntrinsicCall(inst);
+            if (!running) {
+                return null;
+            }
+            if (excAddr == null) {
+                incPC();
+            } else {
+                unwindStack(excAddr);
+            }
             return null;
         }
 
         @Override
         public Void visitIInvoke(InstIInvoke inst) {
-            // TODO Auto-generated method stub
+            Long excAddr = handleIntrinsicCall(inst);
+            if (!running) {
+                return null;
+            }
+            if (excAddr == null) {
+                branchAndMovePC(inst.getNor());
+            } else {
+                branchAndMovePC(inst.getExc(), excAddr);
+            }
             return null;
         }
 
+    }
+
+    private Long handleIntrinsicCall(AbstractIntrinsicCall inst) {
+        IFunc ifunc = inst.getIFunc();
+        List<UseBox> args = inst.getArgs();
+        switch (ifunc.getID()) {
+        case IFuncFactory.IFUNC__UVM__NEW_THREAD: {
+            InterpreterStack sta = getStack(args.get(0).getDst());
+            InterpreterThread thr = microVM.newThread(sta);
+            setThread(inst, thr);
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__SWAP_STACK: {
+            InterpreterStack sta = getStack(args.get(0).getDst());
+            swapStack(sta);
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__KILL_STACK: {
+            InterpreterStack sta = getStack(args.get(0).getDst());
+            sta.kill();
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__SWAP_AND_KILL: {
+            InterpreterStack sta = getStack(args.get(0).getDst());
+            InterpreterStack oldStack = stack;
+            swapStack(sta);
+            oldStack.kill();
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__THREAD_EXIT: {
+            running = false;
+            break;
+        }
+        default: {
+            error("Unimplemented intrinsic function: "
+                    + IdentifiedHelper.repr(ifunc));
+        }
+        }
+        return null;
     }
 
 }

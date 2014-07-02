@@ -1,6 +1,7 @@
 package uvm.refimpl.facade;
 
 import uvm.Bundle;
+import uvm.Function;
 import uvm.refimpl.itpr.ConstantPool;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
@@ -24,7 +25,7 @@ public class MicroVM {
         ErrorUtils.uvmError("Not implemented");
     }
 
-    public InterpreterStack newStack(int id) {
+    public InterpreterStack newStack(Function function) {
         ErrorUtils.uvmError("Not implemented");
         return null;
     }
