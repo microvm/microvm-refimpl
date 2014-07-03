@@ -21,12 +21,12 @@ public class SimpleImmixCollector implements Runnable {
 
     private void park() {
         heap.lock.lock();
-        while (heap.liveMutators > 0
-                && heap.mutatorsStopped != heap.liveMutators) {
+        while (heap.liveMutators == 0
+                || heap.mutatorsStopped != heap.liveMutators) {
             try {
                 heap.gcCanStart.await();
             } catch (InterruptedException e) {
-                // Do nothing.
+                break;
             }
         }
         heap.lock.unlock();

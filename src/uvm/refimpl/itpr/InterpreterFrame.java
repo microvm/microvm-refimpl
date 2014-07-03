@@ -1,12 +1,17 @@
 package uvm.refimpl.itpr;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import uvm.BasicBlock;
 import uvm.CFG;
 import uvm.Function;
+import uvm.IdentifiedHelper;
+import uvm.ssavalue.HasKeepAlives;
 import uvm.ssavalue.Instruction;
 import uvm.ssavalue.Parameter;
+import uvm.ssavalue.UseBox;
 import uvm.ssavalue.Value;
 import uvm.type.Func;
 import uvm.type.IRef;
@@ -41,12 +46,19 @@ public class InterpreterFrame {
 
     private void makeBoxes() {
         for (Parameter param : cfg.getParams()) {
-            valueDict.put(param, makeTypedBox(param.getType()));
+            maybePutBox(param);
         }
         for (BasicBlock bb : cfg.getBBs()) {
             for (Instruction inst : bb.getInsts()) {
-                valueDict.put(inst, makeTypedBox(inst.getType()));
+                maybePutBox(inst);
             }
+        }
+    }
+
+    private void maybePutBox(Value value) {
+        Type type = value.getType();
+        if (type != null) {
+            valueDict.put(value, makeTypedBox(type));
         }
     }
 
@@ -125,6 +137,23 @@ public class InterpreterFrame {
 
     public ValueBox getValueBox(Value value) {
         return getValueDict().get(value);
+    }
+
+    public List<ValueBox> dumpKeepAlives() {
+        Instruction inst = getCurInst();
+        if (inst instanceof HasKeepAlives) {
+            HasKeepAlives hka = (HasKeepAlives) inst;
+            List<UseBox> kas = hka.getKeepAlives();
+            ArrayList<ValueBox> boxes = new ArrayList<ValueBox>(kas.size());
+            for (UseBox ub : kas) {
+                boxes.add(getValueBox(ub.getDst()));
+            }
+            return boxes;
+        } else {
+            ErrorUtils.uvmError("Instruction does not have keepalives: "
+                    + IdentifiedHelper.repr(inst));
+            return null;
+        }
     }
 
 }

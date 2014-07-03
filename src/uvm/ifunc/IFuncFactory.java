@@ -33,7 +33,7 @@ public class IFuncFactory {
     public static final int IFUNC__UVM__THREAD_EXIT = 0x205;
 
     static {
-        add(IFUNC__UVM__NEW_THREAD, "@uvm.new_thread", THREAD);
+        add(IFUNC__UVM__NEW_THREAD, "@uvm.new_thread", THREAD, STACK);
         add(IFUNC__UVM__SWAP_STACK, "@uvm.swap_stack", VOID, STACK);
         add(IFUNC__UVM__KILL_STACK, "@uvm.kill_stack", VOID, STACK);
         add(IFUNC__UVM__SWAP_AND_KILL, "@uvm.swap_and_kill", VOID, STACK);

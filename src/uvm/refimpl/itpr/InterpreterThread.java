@@ -9,8 +9,8 @@ import uvm.IdentifiedHelper;
 import uvm.Namespace;
 import uvm.ifunc.IFunc;
 import uvm.ifunc.IFuncFactory;
+import uvm.platformsupport.MemorySupport;
 import uvm.refimpl.facade.MicroVM;
-import uvm.refimpl.mem.MemorySupport;
 import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.ssavalue.AbstractCall;
@@ -95,12 +95,16 @@ public class InterpreterThread implements Runnable {
 
     private Mutator mutator;
 
+    private Thread vmThread;
+
     public InterpreterThread(int id, MicroVM microVM, InterpreterStack stack,
             Mutator mutator) {
         this.id = id;
         this.microVM = microVM;
         this.stack = stack;
         this.mutator = mutator;
+
+        vmThread = new Thread(this);
     }
 
     // Resource getters
@@ -136,6 +140,10 @@ public class InterpreterThread implements Runnable {
 
     // Helper methods
 
+    public InterpreterStack getStack() {
+        return stack;
+    }
+
     private Function getCurFunc() {
         return stack.getTop().getFunc();
     }
@@ -144,15 +152,15 @@ public class InterpreterThread implements Runnable {
         return stack.getTop().getCurBb();
     }
 
-    public int getCurInstIndex() {
+    private int getCurInstIndex() {
         return stack.getTop().getCurInstIndex();
     }
 
-    public Instruction getCurInst() {
+    private Instruction getCurInst() {
         return stack.getTop().getCurInst();
     }
 
-    public void incPC() {
+    private void incPC() {
         stack.getTop().incPC();
     }
 
@@ -1565,6 +1573,18 @@ public class InterpreterThread implements Runnable {
         }
         }
         return null;
+    }
+
+    public void start() {
+        vmThread.start();
+    }
+
+    public void join() throws InterruptedException {
+        vmThread.join();
+    }
+
+    public void exit() {
+        running = false;
     }
 
 }

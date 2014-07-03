@@ -4,9 +4,9 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import uvm.refimpl.mem.MemorySupport;
+import uvm.platformsupport.MemorySupport;
+import uvm.platformsupport.ordinaryjava.UnsafeMemorySupport;
 import uvm.refimpl.mem.Mutator;
-import uvm.refimpl.mem.UnsafeMemorySupport;
 
 /**
  * A heap which uses the simplified Immix GC algorithm.
@@ -51,6 +51,7 @@ public class SimpleImmixHeap {
         
         collector = new SimpleImmixCollector(this);
         collectorThread = new Thread(collector);
+        collectorThread.setDaemon(true);
         collectorThread.start();
     }
 

@@ -1,4 +1,4 @@
-package uvm.refimpl.mem;
+package uvm.platformsupport;
 
 /**
  * An abstract interface for accessing the memory.

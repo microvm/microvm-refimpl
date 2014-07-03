@@ -726,6 +726,7 @@ public class InstructionParsingTest extends BundleTester {
 
         InstICall icall = assertType(InstICall.class, inst("%i"));
         assertEquals(uvmSwapStack, icall.getIFunc());
+        assertType(uvm.type.Void.class, icall.getType());
         assertEquals(inst("%ns"), icall.getArgs().get(0).getDst());
         assertEquals(inst("%b"), icall.getKeepAlives().get(0).getDst());
         assertEquals(uvmSwapStack.getType(), icall.getType());
@@ -734,6 +735,7 @@ public class InstructionParsingTest extends BundleTester {
 
         InstIInvoke iinvoke = assertType(InstIInvoke.class, inst("%j"));
         assertEquals(uvmKillStack, iinvoke.getIFunc());
+        assertType(uvm.type.Void.class, iinvoke.getType());
         assertEquals(inst("%ns"), iinvoke.getArgs().get(0).getDst());
         assertEquals(inst("%b"), iinvoke.getKeepAlives().get(0).getDst());
         assertEquals(inst("%c"), iinvoke.getKeepAlives().get(1).getDst());

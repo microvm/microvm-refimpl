@@ -2,17 +2,16 @@ package uvm.refimpl.facade;
 
 import uvm.Bundle;
 import uvm.Function;
-import uvm.Namespace;
+import uvm.platformsupport.Config;
+import uvm.platformsupport.MemorySupport;
+import uvm.platformsupport.ordinaryjava.UnsafeMemorySupport;
 import uvm.refimpl.itpr.ConstantPool;
-import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
 import uvm.refimpl.itpr.ThreadStackManager;
 import uvm.refimpl.itpr.TrapManager;
 import uvm.refimpl.mem.MemoryManager;
-import uvm.refimpl.mem.MemorySupport;
-import uvm.refimpl.mem.UnsafeMemorySupport;
-import uvm.util.ErrorUtils;
+import uvm.ssavalue.Constant;
 
 public class MicroVM {
     public static final long HEAP_SIZE = 0x400000L; // 4MiB
@@ -40,7 +39,7 @@ public class MicroVM {
         constantPool = new ConstantPool();
         threadStackManager = new ThreadStackManager(this);
         memoryManager = new MemoryManager(HEAP_SIZE, GLOBAL_SIZE, STACK_SIZE);
-        memorySupport = new UnsafeMemorySupport();
+        memorySupport = Config.MEMORY_SUPPORT;
         trapManager = new TrapManager(this);
     }
 
@@ -49,6 +48,12 @@ public class MicroVM {
      */
     public void addBundle(Bundle bundle) {
         globalBundle.mergeFrom(bundle);
+        
+        for(Constant constant : bundle.getGlobalValueNs().getObjects()) {
+            constantPool.addConstant(constant);
+        }
+        
+        // TODO Add global memory items.
     }
 
     public InterpreterStack newStack(Function function) {

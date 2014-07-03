@@ -57,6 +57,7 @@ public class ThreadStackManager {
         InterpreterThread thr = new InterpreterThread(id, microVM,
                 stack, mutator);
         threadRegistry.put(id, thr);
+        thr.start();
         return thr;
     }
 }

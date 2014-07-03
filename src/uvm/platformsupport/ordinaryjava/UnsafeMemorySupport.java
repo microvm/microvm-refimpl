@@ -1,8 +1,9 @@
-package uvm.refimpl.mem;
+package uvm.platformsupport.ordinaryjava;
 
 import java.lang.reflect.Field;
 
 import sun.misc.Unsafe;
+import uvm.platformsupport.MemorySupport;
 
 /**
  * This class uses a byte array and the sun.misc.Unsafe object and Java's

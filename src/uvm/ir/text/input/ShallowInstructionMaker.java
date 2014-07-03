@@ -44,6 +44,7 @@ import parser.uIRParser.InstWatchPointContext;
 import parser.uIRParser.IntLiteralContext;
 import parser.uIRParser.TypeContext;
 import uvm.FunctionSignature;
+import uvm.ifunc.IFunc;
 import uvm.ifunc.IFuncFactory;
 import uvm.ssavalue.AtomicOrdering;
 import uvm.ssavalue.AtomicRMWOp;
@@ -94,6 +95,7 @@ import uvm.type.Array;
 import uvm.type.Hybrid;
 import uvm.type.Struct;
 import uvm.type.Type;
+import uvm.util.ErrorUtils;
 
 /**
  * Private for RecursiveBundleBuilder use.
@@ -383,16 +385,24 @@ public class ShallowInstructionMaker extends uIRBaseVisitor<Instruction> {
     @Override
     public InstICall visitInstICall(InstICallContext ctx) {
         InstICall inst = new InstICall();
-        inst.setIFunc(IFuncFactory
-                .getIFuncByName(ctx.GLOBAL_ID().getText()));
+        String iFuncName = ctx.GLOBAL_ID().getText();
+        IFunc iFunc = IFuncFactory.getIFuncByName(iFuncName);
+        if (iFunc == null) {
+            ErrorUtils.uvmError("Unknown intrinsic function:  " + iFuncName);
+        }
+        inst.setIFunc(iFunc);
         return inst;
     }
 
     @Override
     public InstIInvoke visitInstIInvoke(InstIInvokeContext ctx) {
         InstIInvoke inst = new InstIInvoke();
-        inst.setIFunc(IFuncFactory
-                .getIFuncByName(ctx.GLOBAL_ID().getText()));
+        String iFuncName = ctx.GLOBAL_ID().getText();
+        IFunc iFunc = IFuncFactory.getIFuncByName(iFuncName);
+        if (iFunc == null) {
+            ErrorUtils.uvmError("Unknown intrinsic function: " + iFuncName);
+        }
+        inst.setIFunc(iFunc);
         return inst;
     }
 
