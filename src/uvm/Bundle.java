@@ -2,6 +2,7 @@ package uvm;
 
 import uvm.ssavalue.Constant;
 import uvm.type.Type;
+import uvm.util.ErrorUtils;
 
 /**
  * A "bundle" is analog to JVM's class file and one Bundle corresponds to one
@@ -12,7 +13,7 @@ public class Bundle {
      * All types.
      */
     private Namespace<Type> typeNs = new SimpleNamespace<Type>();
-    
+
     /**
      * All function signatures.
      */
@@ -28,12 +29,12 @@ public class Bundle {
      * All constants declared by ".const" only.
      */
     private Namespace<Constant> declaredConstNs = new SimpleNamespace<Constant>();
-    
+
     /**
      * All global data.
      */
     private Namespace<GlobalData> globalDataNs = new SimpleNamespace<GlobalData>();
-    
+
     /**
      * All functions, declared or defined.
      */
@@ -61,6 +62,42 @@ public class Bundle {
 
     public Namespace<Function> getFuncNs() {
         return funcNs;
+    }
+
+    private <T extends Identified> void simpleMerge(Namespace<T> nsDst,
+            Namespace<T> nsSrc) {
+        for (int id : nsSrc.getIDSet()) {
+            T obj = nsSrc.getByID(id);
+            if (nsDst.getByID(id) != null) {
+                ErrorUtils.uvmError("Redefinition not allowed: "
+                        + IdentifiedHelper.repr(obj));
+                return;
+            }
+            String name = obj.getName();
+            nsDst.put(id, name, obj);
+        }
+    }
+
+    private void mergeFuncs(Namespace<Function> nsDst, Namespace<Function> nsSrc) {
+        for (int id : nsSrc.getIDSet()) {
+            Function oldFunc = nsDst.getByID(id);
+            Function newFunc = nsSrc.getByID(id);
+            if (oldFunc != null) {
+                oldFunc.setCFG(newFunc.getCFG());
+            } else {
+                String name = newFunc.getName();
+                nsDst.put(id, name, newFunc);
+            }
+        }
+    }
+
+    public void mergeFrom(Bundle bundle) {
+        simpleMerge(typeNs, bundle.typeNs);
+        simpleMerge(funcSigNs, bundle.funcSigNs);
+        simpleMerge(globalValueNs, bundle.globalValueNs);
+        simpleMerge(declaredConstNs, bundle.declaredConstNs);
+        simpleMerge(globalDataNs, bundle.globalDataNs);
+        mergeFuncs(funcNs, bundle.funcNs);
     }
 
 }

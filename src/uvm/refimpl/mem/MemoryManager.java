@@ -1,20 +1,20 @@
 package uvm.refimpl.mem;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import uvm.refimpl.mem.simpleimmix.SimpleImmixHeap;
-import uvm.type.Type;
 
 public class MemoryManager {
     private static final long MEMORY_BEGIN = 0x100000L; // Reserve 1MiB;
 
-    private long heapSize;
-    private long globalSize;
-    private long stackSize;
+    private final long heapSize;
+    private final long globalSize;
+    private final long stackSize;
 
-    private SimpleImmixHeap heap;
-    private GlobalMemory global;
-    private List<StackMemory> stacks;
+    private final SimpleImmixHeap heap;
+    private final GlobalMemory global;
+    private final List<StackMemory> stacks = new ArrayList<StackMemory>();
 
     private long stackBegin;
 
@@ -28,24 +28,18 @@ public class MemoryManager {
         stackBegin = MEMORY_BEGIN + heapSize + globalSize;
     }
 
-    public long newScalar(Type type) {
-        // TODO Auto-generated method stub
-        return 0;
+    public Mutator makeMutator() {
+        return heap.makeMutator();
     }
 
-    public long newHybrid(Type type, long len) {
-        // TODO Auto-generated method stub
-        return 0;
-    }
+    public StackMemory makeStackMemory() {
+        long myStackBegin;
+        synchronized (this) {
+            myStackBegin = stackBegin;
+            stackBegin += stackSize;
+        }
 
-    public long allocaScalar(Type type) {
-        // TODO Auto-generated method stub
-        return 0;
+        StackMemory stackMemory = new StackMemory(myStackBegin, stackSize);
+        return stackMemory;
     }
-
-    public long allocaHybrid(Type type, long len) {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
 }

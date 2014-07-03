@@ -5,6 +5,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import uvm.refimpl.mem.MemorySupport;
+import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.UnsafeMemorySupport;
 
 /**
@@ -89,9 +90,9 @@ public class SimpleImmixHeap {
         return rv;
     }
 
-    public SimpleImmixMutator makeMutator() {
+    public Mutator makeMutator() {
         lock.lock();
-        SimpleImmixMutator mutator;
+        Mutator mutator;
         try {
             mutator = new SimpleImmixMutator(this, space);
             liveMutators++;

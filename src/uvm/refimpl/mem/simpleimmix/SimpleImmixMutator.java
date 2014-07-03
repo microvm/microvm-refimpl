@@ -1,9 +1,10 @@
 package uvm.refimpl.mem.simpleimmix;
 
+import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.util.ErrorUtils;
 
-public class SimpleImmixMutator {
+public class SimpleImmixMutator extends Mutator {
 
     public long curBlockAddr;
     public long cursor;

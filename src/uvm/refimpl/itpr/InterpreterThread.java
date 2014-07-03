@@ -10,8 +10,8 @@ import uvm.Namespace;
 import uvm.ifunc.IFunc;
 import uvm.ifunc.IFuncFactory;
 import uvm.refimpl.facade.MicroVM;
-import uvm.refimpl.mem.MemoryManager;
 import uvm.refimpl.mem.MemorySupport;
+import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.ssavalue.AbstractCall;
 import uvm.ssavalue.AbstractIntrinsicCall;
@@ -91,35 +91,41 @@ public class InterpreterThread implements Runnable {
 
     private InstructionExecutor executor = new InstructionExecutor();
 
-    private ConstantPool constantPool;
-
-    private MemoryManager memoryManager;
-
-    private MemorySupport memorySupport;
-
-    private Namespace<Function> funcSpace;
-
-    private ThreadManager threadManager;
-
-    private TrapManager trapManager;
-
     private MicroVM microVM;
 
+    private Mutator mutator;
+
     public InterpreterThread(int id, MicroVM microVM, InterpreterStack stack,
-            ConstantPool constantPool, MemoryManager memoryManager,
-            MemorySupport memorySupport, Namespace<Function> funcSpace,
-            ThreadManager threadManager, TrapManager trapManager) {
-        // TODO: Inject more necessary resources.
+            Mutator mutator) {
         this.id = id;
         this.microVM = microVM;
         this.stack = stack;
-        this.constantPool = constantPool;
-        this.memoryManager = memoryManager;
-        this.memorySupport = memorySupport;
-        this.funcSpace = funcSpace;
-        this.threadManager = threadManager;
-        this.trapManager = trapManager;
+        this.mutator = mutator;
     }
+
+    // Resource getters
+
+    private ConstantPool constantPool() {
+        return microVM.getConstantPool();
+    }
+
+    private MemorySupport memorySupport() {
+        return microVM.getMemorySupport();
+    }
+
+    private Namespace<Function> funcSpace() {
+        return microVM.getGlobalBundle().getFuncNs();
+    }
+
+    private ThreadStackManager threadStackManager() {
+        return microVM.getThreadStackManager();
+    }
+
+    private TrapManager trapManager() {
+        return microVM.getTrapManager();
+    }
+
+    // Execution
 
     @Override
     public void run() {
@@ -127,6 +133,8 @@ public class InterpreterThread implements Runnable {
             getCurInst().accept(executor);
         }
     }
+
+    // Helper methods
 
     private Function getCurFunc() {
         return stack.getTop().getFunc();
@@ -151,7 +159,7 @@ public class InterpreterThread implements Runnable {
     @SuppressWarnings("unchecked")
     public <T extends ValueBox> T getValueBox(Value value) {
         if (value instanceof Constant) {
-            return (T) constantPool.getValueBox((Constant) value);
+            return (T) constantPool().getValueBox((Constant) value);
         } else {
             return (T) stack.getTop().getValueBox(value);
         }
@@ -275,8 +283,8 @@ public class InterpreterThread implements Runnable {
     private void resolvePotentiallyUndefinedFunction(Function func) {
         while (running) {
             if (!func.isDefined()) {
-                trapManager.getUndefinedFunctionHandler().onUndefinedFunction(
-                        InterpreterThread.this, func);
+                trapManager().getUndefinedFunctionHandler()
+                        .onUndefinedFunction(InterpreterThread.this, func);
             } else {
                 break;
             }
@@ -1011,7 +1019,7 @@ public class InterpreterThread implements Runnable {
         @Override
         public Void visitNew(InstNew inst) {
             Type type = inst.getAllocType();
-            long addr = memoryManager.newScalar(type);
+            long addr = mutator.newScalar(type);
             setRef(inst, addr);
             incPC();
             return null;
@@ -1021,7 +1029,7 @@ public class InterpreterThread implements Runnable {
         public Void visitNewHybrid(InstNewHybrid inst) {
             Type type = inst.getAllocType();
             long len = getInt(inst.getLength());
-            long addr = memoryManager.newHybrid(type, len);
+            long addr = mutator.newHybrid(type, len);
             setRef(inst, addr);
             incPC();
             return null;
@@ -1030,7 +1038,7 @@ public class InterpreterThread implements Runnable {
         @Override
         public Void visitAlloca(InstAlloca inst) {
             Type type = inst.getAllocType();
-            long addr = memoryManager.allocaScalar(type);
+            long addr = stack.getStackMemory().allocaScalar(type);
             setIRef(inst, 0, addr);
             incPC();
             return null;
@@ -1040,7 +1048,7 @@ public class InterpreterThread implements Runnable {
         public Void visitAllocaHybrid(InstAllocaHybrid inst) {
             Type type = inst.getAllocType();
             long len = getInt(inst.getLength());
-            long addr = memoryManager.allocaHybrid(type, len);
+            long addr = stack.getStackMemory().allocaHybrid(type, len);
             setIRef(inst, 0, addr);
             incPC();
             return null;
@@ -1131,58 +1139,60 @@ public class InterpreterThread implements Runnable {
                 long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
                 long val;
                 if (loadSize == 8) {
-                    val = isAtomic ? memorySupport.loadByteAtomic(loc)
-                            : memorySupport.loadByte(loc);
+                    val = isAtomic ? memorySupport().loadByteAtomic(loc)
+                            : memorySupport().loadByte(loc);
                 } else if (loadSize == 16) {
-                    val = isAtomic ? memorySupport.loadShortAtomic(loc)
-                            : memorySupport.loadShort(loc);
+                    val = isAtomic ? memorySupport().loadShortAtomic(loc)
+                            : memorySupport().loadShort(loc);
                 } else if (loadSize == 32) {
-                    val = isAtomic ? memorySupport.loadIntAtomic(loc)
-                            : memorySupport.loadInt(loc);
+                    val = isAtomic ? memorySupport().loadIntAtomic(loc)
+                            : memorySupport().loadInt(loc);
                 } else if (loadSize == 64) {
-                    val = isAtomic ? memorySupport.loadLongAtomic(loc)
-                            : memorySupport.loadLong(loc);
+                    val = isAtomic ? memorySupport().loadLongAtomic(loc)
+                            : memorySupport().loadLong(loc);
                 } else {
                     error("Unsupported Int length for load: " + loadSize);
                     return null;
                 }
                 setInt(inst, val);
             } else if (rt instanceof uvm.type.Float) {
-                float val = isAtomic ? memorySupport.loadFloatAtomic(loc)
-                        : memorySupport.loadFloat(loc);
+                float val = isAtomic ? memorySupport().loadFloatAtomic(loc)
+                        : memorySupport().loadFloat(loc);
                 setFloat(inst, val);
             } else if (rt instanceof uvm.type.Double) {
-                double val = isAtomic ? memorySupport.loadDoubleAtomic(loc)
-                        : memorySupport.loadDouble(loc);
+                double val = isAtomic ? memorySupport().loadDoubleAtomic(loc)
+                        : memorySupport().loadDouble(loc);
                 setDouble(inst, val);
             } else if (rt instanceof Ref || rt instanceof WeakRef) {
                 // Java never reads reference partially. Should it always be
                 // atomic?
-                long addr = isAtomic ? memorySupport.loadLongAtomic(loc)
-                        : memorySupport.loadLong(loc);
+                long addr = isAtomic ? memorySupport().loadLongAtomic(loc)
+                        : memorySupport().loadLong(loc);
                 setRef(inst, addr);
             } else if (rt instanceof IRef) {
                 if (isAtomic) {
                     error("This implementation does not support loading IRef atomically.");
                 } else {
-                    long base = memorySupport.loadLong(loc);
-                    long offset = memorySupport.loadLong(loc + 8);
+                    long base = memorySupport().loadLong(loc);
+                    long offset = memorySupport().loadLong(loc + 8);
                     setIRef(inst, base, offset);
                 }
             } else if (rt instanceof Func) {
-                long id = isAtomic ? memorySupport.loadLongAtomic(loc)
-                        : memorySupport.loadLong(loc);
-                Function func = funcSpace.getByID((int) id);
+                long id = isAtomic ? memorySupport().loadLongAtomic(loc)
+                        : memorySupport().loadLong(loc);
+                Function func = funcSpace().getByID((int) id);
                 setFunc(inst, func);
             } else if (rt instanceof uvm.type.Thread) {
-                long id = isAtomic ? memorySupport.loadLongAtomic(loc)
-                        : memorySupport.loadLong(loc);
-                InterpreterThread thr = threadManager.getThreadByID((int) id);
+                long id = isAtomic ? memorySupport().loadLongAtomic(loc)
+                        : memorySupport().loadLong(loc);
+                InterpreterThread thr = threadStackManager().getThreadByID(
+                        (int) id);
                 setThread(inst, thr);
             } else if (rt instanceof uvm.type.Stack) {
-                long id = isAtomic ? memorySupport.loadLongAtomic(loc)
-                        : memorySupport.loadLong(loc);
-                InterpreterStack sta = threadManager.getStackByID((int) id);
+                long id = isAtomic ? memorySupport().loadLongAtomic(loc)
+                        : memorySupport().loadLong(loc);
+                InterpreterStack sta = threadStackManager().getStackByID(
+                        (int) id);
                 setStack(inst, sta);
             } else {
                 error("Unsupported type to load: " + rt.getClass().getName());
@@ -1203,27 +1213,27 @@ public class InterpreterThread implements Runnable {
                 long val = getInt(inst.getNewVal());
                 if (loadSize == 8) {
                     if (isAtomic) {
-                        memorySupport.storeByteAtomic(loc, (byte) val);
+                        memorySupport().storeByteAtomic(loc, (byte) val);
                     } else {
-                        memorySupport.storeByte(loc, (byte) val);
+                        memorySupport().storeByte(loc, (byte) val);
                     }
                 } else if (loadSize == 16) {
                     if (isAtomic) {
-                        memorySupport.storeShortAtomic(loc, (short) val);
+                        memorySupport().storeShortAtomic(loc, (short) val);
                     } else {
-                        memorySupport.storeShort(loc, (short) val);
+                        memorySupport().storeShort(loc, (short) val);
                     }
                 } else if (loadSize == 32) {
                     if (isAtomic) {
-                        memorySupport.storeIntAtomic(loc, (int) val);
+                        memorySupport().storeIntAtomic(loc, (int) val);
                     } else {
-                        memorySupport.storeInt(loc, (int) val);
+                        memorySupport().storeInt(loc, (int) val);
                     }
                 } else if (loadSize == 64) {
                     if (isAtomic) {
-                        memorySupport.storeLongAtomic(loc, val);
+                        memorySupport().storeLongAtomic(loc, val);
                     } else {
-                        memorySupport.storeLong(loc, val);
+                        memorySupport().storeLong(loc, val);
                     }
                 } else {
                     error("Unsupported Int length for store: " + loadSize);
@@ -1232,25 +1242,25 @@ public class InterpreterThread implements Runnable {
             } else if (rt instanceof uvm.type.Float) {
                 float val = getFloat(inst.getNewVal());
                 if (isAtomic) {
-                    memorySupport.storeFloatAtomic(loc, val);
+                    memorySupport().storeFloatAtomic(loc, val);
                 } else {
-                    memorySupport.storeFloat(loc, val);
+                    memorySupport().storeFloat(loc, val);
                 }
             } else if (rt instanceof uvm.type.Double) {
                 double val = getDouble(inst.getNewVal());
                 if (isAtomic) {
-                    memorySupport.storeDoubleAtomic(loc, val);
+                    memorySupport().storeDoubleAtomic(loc, val);
                 } else {
-                    memorySupport.storeDouble(loc, val);
+                    memorySupport().storeDouble(loc, val);
                 }
             } else if (rt instanceof Ref || rt instanceof WeakRef) {
                 // Java never reads reference partially. Should it always be
                 // atomic?
                 long addr = getRefAddr(inst.getNewVal());
                 if (isAtomic) {
-                    memorySupport.storeLongAtomic(loc, addr);
+                    memorySupport().storeLongAtomic(loc, addr);
                 } else {
-                    memorySupport.storeLong(loc, addr);
+                    memorySupport().storeLong(loc, addr);
                 }
             } else if (rt instanceof IRef) {
                 if (isAtomic) {
@@ -1259,33 +1269,33 @@ public class InterpreterThread implements Runnable {
                     IRefBox irb = getValueBox(inst.getNewVal());
                     long base = irb.getBase();
                     long offset = irb.getOffset();
-                    memorySupport.storeLong(loc, base);
-                    memorySupport.storeLong(loc + 8, offset);
+                    memorySupport().storeLong(loc, base);
+                    memorySupport().storeLong(loc + 8, offset);
                 }
             } else if (rt instanceof Func) {
                 Function func = getFunc(inst.getNewVal());
 
                 long id = func.getID();
                 if (isAtomic) {
-                    memorySupport.storeLongAtomic(loc, id);
+                    memorySupport().storeLongAtomic(loc, id);
                 } else {
-                    memorySupport.storeLong(loc, id);
+                    memorySupport().storeLong(loc, id);
                 }
             } else if (rt instanceof uvm.type.Thread) {
                 InterpreterThread thr = getThread(inst.getNewVal());
                 long id = thr.getID();
                 if (isAtomic) {
-                    memorySupport.storeLongAtomic(loc, id);
+                    memorySupport().storeLongAtomic(loc, id);
                 } else {
-                    memorySupport.storeLong(loc, id);
+                    memorySupport().storeLong(loc, id);
                 }
             } else if (rt instanceof uvm.type.Stack) {
                 InterpreterStack sta = getStack(inst.getNewVal());
                 long id = sta.getID();
                 if (isAtomic) {
-                    memorySupport.storeLongAtomic(loc, id);
+                    memorySupport().storeLongAtomic(loc, id);
                 } else {
-                    memorySupport.storeLong(loc, id);
+                    memorySupport().storeLong(loc, id);
                 }
             } else {
                 error("Unsupported type to store: " + rt.getClass().getName());
@@ -1306,10 +1316,11 @@ public class InterpreterThread implements Runnable {
                 long desired = getInt(inst.getDesired());
                 long oldVal;
                 if (loadSize == 32) {
-                    oldVal = memorySupport.cmpXchgInt(loc, (int) expected,
+                    oldVal = memorySupport().cmpXchgInt(loc, (int) expected,
                             (int) desired);
                 } else if (loadSize == 64) {
-                    oldVal = memorySupport.cmpXchgLong(loc, expected, desired);
+                    oldVal = memorySupport()
+                            .cmpXchgLong(loc, expected, desired);
                 } else {
                     error("Unsupported Int length for cmpxchg: " + loadSize);
                     return null;
@@ -1318,8 +1329,8 @@ public class InterpreterThread implements Runnable {
             } else if (rt instanceof Ref || rt instanceof WeakRef) {
                 long expected = getRefAddr(inst.getExpected());
                 long desired = getRefAddr(inst.getDesired());
-                long oldAddr = memorySupport
-                        .cmpXchgLong(loc, expected, desired);
+                long oldAddr = memorySupport().cmpXchgLong(loc, expected,
+                        desired);
                 setRef(inst, oldAddr);
             } else {
                 error("Unsupported type to cmpxchg: " + rt.getClass().getName());
@@ -1341,37 +1352,37 @@ public class InterpreterThread implements Runnable {
                 if (loadSize == 32) {
                     switch (inst.getOptr()) {
                     case XCHG:
-                        oldVal = memorySupport.fetchXchgInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchXchgInt(loc, (int) opnd);
                         break;
                     case ADD:
-                        oldVal = memorySupport.fetchAddInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchAddInt(loc, (int) opnd);
                         break;
                     case SUB:
-                        oldVal = memorySupport.fetchSubInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchSubInt(loc, (int) opnd);
                         break;
                     case AND:
-                        oldVal = memorySupport.fetchAndInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchAndInt(loc, (int) opnd);
                         break;
                     case NAND:
-                        oldVal = memorySupport.fetchNandInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchNandInt(loc, (int) opnd);
                         break;
                     case OR:
-                        oldVal = memorySupport.fetchOrInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchOrInt(loc, (int) opnd);
                         break;
                     case XOR:
-                        oldVal = memorySupport.fetchXorInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchXorInt(loc, (int) opnd);
                         break;
                     case MAX:
-                        oldVal = memorySupport.fetchMaxInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchMaxInt(loc, (int) opnd);
                         break;
                     case MIN:
-                        oldVal = memorySupport.fetchMinInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchMinInt(loc, (int) opnd);
                         break;
                     case UMAX:
-                        oldVal = memorySupport.fetchUmaxInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchUmaxInt(loc, (int) opnd);
                         break;
                     case UMIN:
-                        oldVal = memorySupport.fetchUminInt(loc, (int) opnd);
+                        oldVal = memorySupport().fetchUminInt(loc, (int) opnd);
                         break;
                     default:
                         error("Unrecognised atomicrmw op: " + inst.getOptr());
@@ -1379,37 +1390,37 @@ public class InterpreterThread implements Runnable {
                 } else if (loadSize == 64) {
                     switch (inst.getOptr()) {
                     case XCHG:
-                        oldVal = memorySupport.fetchXchgLong(loc, opnd);
+                        oldVal = memorySupport().fetchXchgLong(loc, opnd);
                         break;
                     case ADD:
-                        oldVal = memorySupport.fetchAddLong(loc, opnd);
+                        oldVal = memorySupport().fetchAddLong(loc, opnd);
                         break;
                     case SUB:
-                        oldVal = memorySupport.fetchSubLong(loc, opnd);
+                        oldVal = memorySupport().fetchSubLong(loc, opnd);
                         break;
                     case AND:
-                        oldVal = memorySupport.fetchAndLong(loc, opnd);
+                        oldVal = memorySupport().fetchAndLong(loc, opnd);
                         break;
                     case NAND:
-                        oldVal = memorySupport.fetchNandLong(loc, opnd);
+                        oldVal = memorySupport().fetchNandLong(loc, opnd);
                         break;
                     case OR:
-                        oldVal = memorySupport.fetchOrLong(loc, opnd);
+                        oldVal = memorySupport().fetchOrLong(loc, opnd);
                         break;
                     case XOR:
-                        oldVal = memorySupport.fetchXorLong(loc, opnd);
+                        oldVal = memorySupport().fetchXorLong(loc, opnd);
                         break;
                     case MAX:
-                        oldVal = memorySupport.fetchMaxLong(loc, opnd);
+                        oldVal = memorySupport().fetchMaxLong(loc, opnd);
                         break;
                     case MIN:
-                        oldVal = memorySupport.fetchMinLong(loc, opnd);
+                        oldVal = memorySupport().fetchMinLong(loc, opnd);
                         break;
                     case UMAX:
-                        oldVal = memorySupport.fetchUmaxLong(loc, opnd);
+                        oldVal = memorySupport().fetchUmaxLong(loc, opnd);
                         break;
                     case UMIN:
-                        oldVal = memorySupport.fetchUminLong(loc, opnd);
+                        oldVal = memorySupport().fetchUminLong(loc, opnd);
                         break;
                     default:
                         error("Unrecognised atomicrmw op: " + inst.getOptr());
@@ -1430,13 +1441,13 @@ public class InterpreterThread implements Runnable {
 
         @Override
         public Void visitFence(InstFence inst) {
-            memorySupport.fence();
+            memorySupport().fence();
             incPC();
             return null;
         }
 
         private void visitAbstractTrap(AbstractTrap inst) {
-            Long excAddr = trapManager.getTrapHandler().onTrap(
+            Long excAddr = trapManager().getTrapHandler().onTrap(
                     InterpreterThread.this);
             if (excAddr == null) {
                 branchAndMovePC(inst.getNor());
@@ -1453,8 +1464,8 @@ public class InterpreterThread implements Runnable {
 
         @Override
         public Void visitWatchPoint(InstWatchPoint inst) {
-            boolean isEnabled = trapManager.isWatchpointEnabled(inst
-                    .getWatchPointId());
+            boolean isEnabled = trapManager().isWatchpointEnabled(
+                    inst.getWatchPointId());
             if (isEnabled) {
                 visitAbstractTrap(inst);
             } else {

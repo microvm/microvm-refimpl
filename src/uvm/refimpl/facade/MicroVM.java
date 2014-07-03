@@ -2,10 +2,16 @@ package uvm.refimpl.facade;
 
 import uvm.Bundle;
 import uvm.Function;
+import uvm.Namespace;
 import uvm.refimpl.itpr.ConstantPool;
+import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
+import uvm.refimpl.itpr.ThreadStackManager;
+import uvm.refimpl.itpr.TrapManager;
 import uvm.refimpl.mem.MemoryManager;
+import uvm.refimpl.mem.MemorySupport;
+import uvm.refimpl.mem.UnsafeMemorySupport;
 import uvm.util.ErrorUtils;
 
 public class MicroVM {
@@ -13,25 +19,68 @@ public class MicroVM {
     public static final long GLOBAL_SIZE = 0x100000L; // 1MiB
     public static final long STACK_SIZE = 0x1000L; // 4KiB per stack
 
-    public MemoryManager mm;
-    
-    public ConstantPool constantPool;
+    private MemorySupport memorySupport;
 
+    private Bundle globalBundle;
+
+    private ConstantPool constantPool;
+
+    private ThreadStackManager threadStackManager;
+
+    private MemoryManager memoryManager;
+
+    private TrapManager trapManager;
+
+    /**
+     * Create a new instance of Micro VM.
+     */
     public MicroVM() {
-        mm = new MemoryManager(HEAP_SIZE, GLOBAL_SIZE, STACK_SIZE);
+        memorySupport = new UnsafeMemorySupport();
+        globalBundle = new Bundle();
+        constantPool = new ConstantPool();
+        threadStackManager = new ThreadStackManager(this);
+        memoryManager = new MemoryManager(HEAP_SIZE, GLOBAL_SIZE, STACK_SIZE);
+        memorySupport = new UnsafeMemorySupport();
+        trapManager = new TrapManager(this);
     }
 
+    /**
+     * Add things from a bundle to the Micro VM.
+     */
     public void addBundle(Bundle bundle) {
-        ErrorUtils.uvmError("Not implemented");
+        globalBundle.mergeFrom(bundle);
     }
 
     public InterpreterStack newStack(Function function) {
-        ErrorUtils.uvmError("Not implemented");
-        return null;
+        return threadStackManager.newStack(function);
     }
 
     public InterpreterThread newThread(InterpreterStack stack) {
-        ErrorUtils.uvmError("Not implemented");
-        return null;
+        return threadStackManager.newThread(stack);
+    }
+
+    public MemorySupport getMemorySupport() {
+        return memorySupport;
+    }
+
+    // Getters
+    public Bundle getGlobalBundle() {
+        return globalBundle;
+    }
+
+    public ConstantPool getConstantPool() {
+        return constantPool;
+    }
+
+    public ThreadStackManager getThreadStackManager() {
+        return threadStackManager;
+    }
+
+    public MemoryManager getMemoryManager() {
+        return memoryManager;
+    }
+
+    public TrapManager getTrapManager() {
+        return trapManager;
     }
 }

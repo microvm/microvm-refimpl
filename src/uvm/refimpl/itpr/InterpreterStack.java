@@ -1,14 +1,25 @@
 package uvm.refimpl.itpr;
 
-public class InterpreterStack {
-    private int id;
+import uvm.refimpl.mem.StackMemory;
 
-    public InterpreterStack(int id) {
-        super();
-        this.id = id;
-    }
+public class InterpreterStack {
+    private final int id;
+    private final StackMemory stackMemory;
 
     private InterpreterFrame top;
+
+    public InterpreterStack(int id, StackMemory stackMemory) {
+        super();
+        this.id = id;
+        this.stackMemory = stackMemory;
+    }
+
+    public void kill() {
+        // TODO Auto-generated method stub
+
+    }
+
+    // Getters and Setters
 
     public InterpreterFrame getTop() {
         return top;
@@ -22,9 +33,8 @@ public class InterpreterStack {
         return id;
     }
 
-    public void kill() {
-        // TODO Auto-generated method stub
-        
+    public StackMemory getStackMemory() {
+        return stackMemory;
     }
 
 }

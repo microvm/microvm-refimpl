@@ -7,6 +7,15 @@ import java.util.List;
 import uvm.type.Int;
 import uvm.type.Type;
 
+/**
+ * @deprecated Much of the information (word size, pointer size, constant pool,
+ *             functions, etc.) is either implementation-dependent or bound to a
+ *             running VM. The "uvm" package only contains models for the Micro
+ *             VM IR, but not running VMs.
+ * 
+ * @see uvm.refimpl.facade.MicroVM
+ */
+@Deprecated
 public class MicroVM {
     public static final int POINTER_SIZE = 64;
 
