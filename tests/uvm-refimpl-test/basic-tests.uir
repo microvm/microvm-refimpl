@@ -36,7 +36,8 @@
 
 .funcdef @simplesum <@void (@i64 @i64)> (%from %to) {
 %entry:
-    BRANCH %head
+    //BRANCH %head
+    %starttrap = TRAP <@void> %head %head KEEPALIVE ()
 
 %head:
     %sum = PHI <@i64> { %entry: 0; %body: %sum2; }

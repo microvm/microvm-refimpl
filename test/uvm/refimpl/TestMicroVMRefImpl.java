@@ -1,11 +1,13 @@
 package uvm.refimpl;
 
 import static org.junit.Assert.*;
+import static uvm.refimpl.MicroVMHelper.*;
 
 import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import uvm.Bundle;
@@ -25,11 +27,13 @@ import uvm.ssavalue.Value;
 public class TestMicroVMRefImpl {
 
     public static MicroVM microVM;
+    public static MicroVMHelper h;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         try {
             microVM = new MicroVM();
+            h = new MicroVMHelper(microVM);
             Bundle bundle = TestingHelper
                     .parseUir("tests/uvm-refimpl-test/basic-tests.uir");
             microVM.addBundle(bundle);
@@ -56,13 +60,9 @@ public class TestMicroVMRefImpl {
 
     @Test
     public void testBinops() throws Exception {
-        Function binops = microVM.getGlobalBundle().getFuncNs()
-                .getByName("@binops");
+        Function binops = h.func("@binops");
         assertNotNull(binops);
-        InterpreterStack stack = microVM.newStack(binops);
-        InterpreterFrame top = stack.getTop();
-        ((IntBox) getValueBox(top, "%p0")).setValue(25);
-        ((IntBox) getValueBox(top, "%p1")).setValue(7);
+        InterpreterStack stack = h.makeStack(binops, IntBox(25), IntBox(7));
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
@@ -91,22 +91,25 @@ public class TestMicroVMRefImpl {
     }
 
     @Test
+    //@Ignore
     public void testSimplesum() throws InterruptedException {
-        Function simplesum = microVM.getGlobalBundle().getFuncNs()
-                .getByName("@simplesum");
+        Function simplesum = h.func("@simplesum");
         assertNotNull(simplesum);
-        InterpreterStack stack = microVM.newStack(simplesum);
-        InterpreterFrame top = stack.getTop();
-        ((IntBox) getValueBox(top, "%from")).setValue(1L);
-        ((IntBox) getValueBox(top, "%to")).setValue(1000000L);
+        InterpreterStack stack = h.makeStack(simplesum, IntBox(1L),
+                IntBox(1000000L));
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            private long timestampStart;
+            private long timestampEnd;
+
             @Override
             public Long onTrap(InterpreterThread thread) {
                 InterpreterFrame curTop = thread.getStack().getTop();
                 Instruction curInst = curTop.getCurInst();
 
-                if (curInst.getName().equals("%montrap")) {
+                if (curInst.getName().equals("%starttrap")) {
+                    timestampStart = System.currentTimeMillis();
+                } else if (curInst.getName().equals("%montrap")) {
                     List<ValueBox> keepAlives = curTop.dumpKeepAlives();
 
                     for (ValueBox vb : keepAlives) {
@@ -118,6 +121,10 @@ public class TestMicroVMRefImpl {
                     System.out.println();
 
                 } else {
+                    timestampEnd = System.currentTimeMillis();
+                    long duration = timestampEnd - timestampStart;
+
+                    System.out.format("Time: %d ms\n", duration);
                     List<ValueBox> keepAlives = curTop.dumpKeepAlives();
                     long[] expecteds = new long[] { 500000500000L };
                     long[] actuals = new long[expecteds.length];

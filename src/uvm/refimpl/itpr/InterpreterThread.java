@@ -1499,10 +1499,19 @@ public class InterpreterThread implements Runnable {
                 return null;
             }
 
-            InterpreterStack sta = microVM.newStack(func);
+            InterpreterStack sta = microVM.getThreadStackManager().newStack(
+                    func);
 
-            StackBox instBox = getValueBox(inst);
-            instBox.setStack(sta);
+            InterpreterFrame top = sta.getTop();
+            List<Parameter> vParams = func.getCFG().getParams();
+            for (int i = 0; i < vParams.size(); i++) {
+                Parameter pv = vParams.get(i);
+                ValueBox pb = top.getValueBox(pv);
+                ValueBox ab = getValueBox(inst.getArgs().get(i).getDst());
+                pb.copyValue(ab);
+            }
+
+            setStack(inst, sta);
 
             return null;
         }

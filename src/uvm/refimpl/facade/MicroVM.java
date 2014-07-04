@@ -1,17 +1,22 @@
 package uvm.refimpl.facade;
 
+import java.util.List;
+
 import uvm.Bundle;
 import uvm.Function;
 import uvm.platformsupport.Config;
 import uvm.platformsupport.MemorySupport;
 import uvm.platformsupport.ordinaryjava.UnsafeMemorySupport;
 import uvm.refimpl.itpr.ConstantPool;
+import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
 import uvm.refimpl.itpr.ThreadStackManager;
 import uvm.refimpl.itpr.TrapManager;
+import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.MemoryManager;
 import uvm.ssavalue.Constant;
+import uvm.ssavalue.Parameter;
 
 public class MicroVM {
     public static final long HEAP_SIZE = 0x400000L; // 4MiB
@@ -56,8 +61,17 @@ public class MicroVM {
         // TODO Add global memory items.
     }
 
-    public InterpreterStack newStack(Function function) {
-        return threadStackManager.newStack(function);
+    public InterpreterStack newStack(Function function, List<ValueBox> args) {
+        InterpreterStack sta = threadStackManager.newStack(function);
+        InterpreterFrame top = sta.getTop();
+        List<Parameter> vParams = function.getCFG().getParams(); 
+        for (int i=0; i<vParams.size(); i++) {
+            Parameter pv = vParams.get(i);
+            ValueBox pb = top.getValueBox(pv);
+            ValueBox ab = args.get(i);
+            pb.copyValue(ab);
+        }
+        return sta;
     }
 
     public InterpreterThread newThread(InterpreterStack stack) {
