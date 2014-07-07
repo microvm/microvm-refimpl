@@ -9,7 +9,7 @@
 
 .funcsig @noparamsnoret = @void ()
 
-.funcdef @binops <@void (@i32 @i32)> (%p0 %p1) {
+.funcdef @binops32 <@void (@i32 @i32)> (%p0 %p1) {
     %add  = ADD  <@i32> %p0 %p1
     %sub  = SUB  <@i32> %p0 %p1
     %mul  = MUL  <@i32> %p0 %p1
@@ -33,6 +33,101 @@
     ICALL @uvm.thread_exit ()
     RETVOID // unreachable
 }
+
+.funcdef @binops64 <@void (@i64 @i64)> (%p0 %p1) {
+    %add  = ADD  <@i64> %p0 %p1
+    %sub  = SUB  <@i64> %p0 %p1
+    %mul  = MUL  <@i64> %p0 %p1
+    %udiv = UDIV <@i64> %p0 %p1
+    %sdiv = SDIV <@i64> %p0 %p1
+    %urem = UREM <@i64> %p0 %p1
+    %srem = SREM <@i64> %p0 %p1
+    %shl  = SHL  <@i64> %p0 %p1
+    %lshr = LSHR <@i64> %p0 %p1
+    %ashr = ASHR <@i64> %p0 %p1
+    %and  = AND  <@i64> %p0 %p1
+    %or   = OR   <@i64> %p0 %p1
+    %xor  = XOR  <@i64> %p0 %p1
+    
+    %trap = TRAP <@void> %exit %exit KEEPALIVE (
+        %add %sub %mul %udiv %sdiv %urem %srem
+        %shl %lshr %ashr %and %or %xor
+        )
+    
+%exit:
+    ICALL @uvm.thread_exit ()
+    RETVOID // unreachable
+}
+
+.funcdef @binops_ovf <@noparamsnoret> () {
+    %add  = ADD  <@i64> 0x7fffffffffffffff 1
+    %add2 = ADD  <@i64> 0xffffffffffffffff 0x2
+    %mul  = MUL  <@i64> 1000000000000 1000000000000
+    //%udiv = UDIV  <@i64> 0x8000000000000000 2
+ 
+    %trap = TRAP <@void> %exit %exit KEEPALIVE (
+        %add %add2 %mul //%udiv
+        
+        )
+    
+%exit:
+    ICALL @uvm.thread_exit ()
+    RETVOID // unreachable
+}
+
+.funcdef @binops_f <@void (@float @float)> (%p0 %p1) {
+    %fadd = FADD <@float> %p0 %p1
+    %fsub = FSUB <@float> %p0 %p1
+    %fmul = FMUL <@float> %p0 %p1
+    %fdiv = FDIV <@float> %p0 %p1
+    %frem = FREM <@float> %p0 %p1
+    
+    %trap = TRAP <@void> %exit %exit KEEPALIVE (
+        %fadd %fsub %fmul %fdiv %frem
+        )
+    
+%exit:
+    ICALL @uvm.thread_exit ()
+    RETVOID // unreachable
+}
+
+.funcdef @binops_d <@void (@double @double)> (%p0 %p1) {
+    %fadd = FADD <@double> %p0 %p1
+    %fsub = FSUB <@double> %p0 %p1
+    %fmul = FMUL <@double> %p0 %p1
+    %fdiv = FDIV <@double> %p0 %p1
+    %frem = FREM <@double> %p0 %p1
+    
+    %trap = TRAP <@void> %exit %exit KEEPALIVE (
+        %fadd %fsub %fmul %fdiv %frem
+        )
+    
+%exit:
+    ICALL @uvm.thread_exit ()
+    RETVOID // unreachable
+}
+
+.funcdef @cmp64 <@void (@i64 @i64)> (%p0 %p1) {
+    %eq  = EQ  <@i64> %p0 %p1
+    %ne  = NE  <@i64> %p0 %p1
+    %ult = ULT <@i64> %p0 %p1
+    %ule = ULE <@i64> %p0 %p1
+    %ugt = UGT <@i64> %p0 %p1
+    %uge = UGE <@i64> %p0 %p1
+    %slt = SLT <@i64> %p0 %p1
+    %sle = SLE <@i64> %p0 %p1
+    %sgt = SGT <@i64> %p0 %p1
+    %sge = SGE <@i64> %p0 %p1
+    
+    %trap = TRAP <@void> %exit %exit KEEPALIVE (
+        %eq %ne %ult %ule %ugt %uge %slt %sle %sgt %sge
+        )
+    
+%exit:
+    ICALL @uvm.thread_exit ()
+    RETVOID // unreachable
+}
+
 
 .funcdef @simplesum <@void (@i64 @i64)> (%from %to) {
 %entry:

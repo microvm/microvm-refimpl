@@ -40,7 +40,7 @@ class IntLiteralParser extends uIRBaseVisitor<Long> {
         } else {
             text = text.substring(2); // '0x'
         }
-        return parseText(ctx.getText(), negative, 16L);
+        return parseText(text, negative, 16L);
     }
 
     private long parseText(String text, boolean negative, long base) {

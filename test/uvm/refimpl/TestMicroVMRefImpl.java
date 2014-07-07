@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import uvm.Bundle;
@@ -15,6 +14,8 @@ import uvm.CFG;
 import uvm.Function;
 import uvm.ir.text.input.TestingHelper;
 import uvm.refimpl.facade.MicroVM;
+import uvm.refimpl.itpr.DoubleBox;
+import uvm.refimpl.itpr.FloatBox;
 import uvm.refimpl.itpr.IntBox;
 import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
@@ -58,40 +59,127 @@ public class TestMicroVMRefImpl {
         return ((IntBox) box).getValue();
     }
 
+    private void assertKeepalivesInt(InterpreterThread thread, long[] expecteds) {
+        InterpreterFrame curTop = thread.getStack().getTop();
+        List<ValueBox> keepAlives = curTop.dumpKeepAlives();
+        long[] actuals = new long[keepAlives.size()];
+
+        for (int i = 0; i < keepAlives.size(); i++) {
+            ValueBox vb = keepAlives.get(i);
+            IntBox ib = (IntBox) vb;
+            long actual = ib.getValue();
+            actuals[i] = actual;
+        }
+
+        assertArrayEquals(expecteds, actuals);
+    }
+
+    private void assertKeepalivesFloat(InterpreterThread thread,
+            float[] expecteds) {
+        InterpreterFrame curTop = thread.getStack().getTop();
+        List<ValueBox> keepAlives = curTop.dumpKeepAlives();
+        float[] actuals = new float[keepAlives.size()];
+
+        for (int i = 0; i < keepAlives.size(); i++) {
+            ValueBox vb = keepAlives.get(i);
+            FloatBox ib = (FloatBox) vb;
+            float actual = ib.getValue();
+            actuals[i] = actual;
+        }
+
+        assertArrayEquals(expecteds, actuals, 0.01f);
+    }
+
+    private void assertKeepalivesDouble(InterpreterThread thread,
+            double[] expecteds) {
+        InterpreterFrame curTop = thread.getStack().getTop();
+        List<ValueBox> keepAlives = curTop.dumpKeepAlives();
+        double[] actuals = new double[keepAlives.size()];
+
+        for (int i = 0; i < keepAlives.size(); i++) {
+            ValueBox vb = keepAlives.get(i);
+            DoubleBox ib = (DoubleBox) vb;
+            double actual = ib.getValue();
+            actuals[i] = actual;
+        }
+
+        assertArrayEquals(expecteds, actuals, 0.01);
+    }
+
     @Test
     public void testBinops() throws Exception {
-        Function binops = h.func("@binops");
-        assertNotNull(binops);
-        InterpreterStack stack = h.makeStack(binops, IntBox(25), IntBox(7));
+        InterpreterStack stack32 = h.makeStack(h.func("@binops32"), IntBox(25),
+                IntBox(7));
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
             public Long onTrap(InterpreterThread thread) {
-                InterpreterFrame curTop = thread.getStack().getTop();
-                List<ValueBox> keepAlives = curTop.dumpKeepAlives();
                 long[] expecteds = new long[] { 32, 18, 175, 3, 3, 4, 4, 3200,
                         0, 0, 1, 31, 30 };
-                long[] actuals = new long[expecteds.length];
+                assertKeepalivesInt(thread, expecteds);
 
-                for (int i = 0; i < expecteds.length; i++) {
-                    ValueBox vb = keepAlives.get(i);
-                    IntBox ib = (IntBox) vb;
-                    long actual = ib.getValue();
-                    actuals[i] = actual;
-                }
+                return null;
+            }
 
-                assertArrayEquals(expecteds, actuals);
+        });
+
+        InterpreterThread thread32 = microVM.newThread(stack32);
+        thread32.join();
+
+        InterpreterStack stack64 = h.makeStack(h.func("@binops64"), IntBox(25),
+                IntBox(7));
+        InterpreterThread thread64 = microVM.newThread(stack64);
+        thread64.join();
+
+        InterpreterStack stackOvf = h.makeStack(h.func("@binops_ovf"));
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                long[] expecteds = new long[] { 0x8000000000000000L, 1L,
+                        2003764205206896640L };
+                assertKeepalivesInt(thread, expecteds);
 
                 return null;
             }
         });
 
-        InterpreterThread thread = microVM.newThread(stack);
-        thread.join();
+        InterpreterThread threadOvf = microVM.newThread(stackOvf);
+        threadOvf.join();
+
+        InterpreterStack stackF = h.makeStack(h.func("@binops_f"),
+                FloatBox(8.0f), FloatBox(2.0f));
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                float[] expecteds = new float[] { 10.0f, 6.0f, 16.0f, 4.0f,
+                        0.0f };
+                assertKeepalivesFloat(thread, expecteds);
+
+                return null;
+            }
+        });
+
+        InterpreterThread threadF = microVM.newThread(stackF);
+        threadF.join();
+
+        InterpreterStack stackD = h.makeStack(h.func("@binops_d"),
+                DoubleBox(8.0), DoubleBox(2.0));
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                double[] expecteds = new double[] { 10.0, 6.0, 16.0, 4.0, 0.0 };
+                assertKeepalivesDouble(thread, expecteds);
+
+                return null;
+            }
+        });
+
+        InterpreterThread threadD = microVM.newThread(stackD);
+        threadD.join();
     }
 
     @Test
-    //@Ignore
+    // @Ignore
     public void testSimplesum() throws InterruptedException {
         Function simplesum = h.func("@simplesum");
         assertNotNull(simplesum);
