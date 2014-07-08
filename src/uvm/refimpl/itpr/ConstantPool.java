@@ -45,7 +45,7 @@ public class ConstantPool {
         if (constant instanceof IntConstant) {
             IntConstant c = (IntConstant) constant;
             IntBox b = new IntBox();
-            b.setValue(BigInteger.valueOf(c.getValue()));
+            b.setValue(OpHelper.trunc(BigInteger.valueOf(c.getValue()), 64));
             return b;
         } else if (constant instanceof FloatConstant) {
             FloatConstant c = (FloatConstant) constant;
@@ -53,8 +53,8 @@ public class ConstantPool {
             b.setValue(c.getValue());
             return b;
         } else if (constant instanceof DoubleConstant) {
-            FloatConstant c = (FloatConstant) constant;
-            FloatBox b = new FloatBox();
+            DoubleConstant c = (DoubleConstant) constant;
+            DoubleBox b = new DoubleBox();
             b.setValue(c.getValue());
             return b;
         } else if (constant instanceof StructConstant) {

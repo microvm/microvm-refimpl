@@ -80,6 +80,7 @@ public class InterpreterFrame {
                 ValueBox fieldBox = makeTypedBox(fieldType);
                 box.addBox(fieldBox);
             }
+            return box;
         } else if (type instanceof Func) {
             return new FuncBox();
         } else if (type instanceof uvm.type.Thread) {
@@ -95,7 +96,6 @@ public class InterpreterFrame {
                     + type.getClass().getName());
             return null;
         }
-        return null;
     }
 
     public Function getFunc() {

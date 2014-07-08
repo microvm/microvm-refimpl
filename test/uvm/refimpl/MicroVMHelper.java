@@ -44,6 +44,18 @@ public class MicroVMHelper {
         return box;
     }
 
+    public static IntBox BigIntBox(BigInteger value) {
+        IntBox box = new IntBox();
+        box.setValue(value);
+        return box;
+    }
+
+    public static IntBox BigIntBox(String s, int radix) {
+        IntBox box = new IntBox();
+        box.setValue(new BigInteger(s, radix));
+        return box;
+    }
+
     public static FloatBox FloatBox(float value) {
         FloatBox box = new FloatBox();
         box.setValue(value);

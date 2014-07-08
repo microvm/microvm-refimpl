@@ -77,6 +77,7 @@ import uvm.type.Int;
 import uvm.type.Ref;
 import uvm.type.Type;
 import uvm.type.WeakRef;
+import uvm.util.ErrorUtils;
 
 public class InterpreterThread implements Runnable {
 
@@ -175,8 +176,8 @@ public class InterpreterThread implements Runnable {
     }
 
     private void error(String string) {
-        error("Function " + IdentifiedHelper.repr(getCurFunc()) + " BB "
-                + IdentifiedHelper.repr(getCurBb()) + " inst "
+        ErrorUtils.uvmError("Function " + IdentifiedHelper.repr(getCurFunc())
+                + " BB " + IdentifiedHelper.repr(getCurBb()) + " inst "
                 + IdentifiedHelper.repr(getCurInst()) + " : " + string);
     }
 
@@ -301,6 +302,7 @@ public class InterpreterThread implements Runnable {
                 .getPrevFrame()) {
             Instruction callerInst = frame.getCurInst();
             if (callerInst instanceof InstInvoke) {
+                stack.setTop(frame);
                 branchAndMovePC(((InstInvoke) callerInst).getExc(), excAddr);
                 return;
             }
@@ -822,6 +824,7 @@ public class InterpreterThread implements Runnable {
                             + " and " + IdentifiedHelper.repr(tt));
                     return null;
                 }
+                break;
             case REFCAST:
             case IREFCAST:
             case FUNCCAST: {
@@ -911,7 +914,6 @@ public class InterpreterThread implements Runnable {
             }
 
             InterpreterFrame newFrame = new InterpreterFrame(callee, prevFrame);
-            stack.setTop(newFrame);
 
             List<UseBox> args = inst.getArgs();
             List<Parameter> params = callee.getCFG().getParams();
@@ -920,6 +922,7 @@ public class InterpreterThread implements Runnable {
                 ValueBox paramBox = newFrame.getValueBox(params.get(i));
                 paramBox.copyValue(argBox);
             }
+            stack.setTop(newFrame);
         }
 
         private void visitNonTailCall(NonTailCall inst) {
@@ -1006,13 +1009,17 @@ public class InterpreterThread implements Runnable {
             int index = inst.getIndex();
             StructBox opndBox = getValueBox(inst.getOpnd());
             StructBox instBox = getValueBox(inst);
+            if (instBox == null) {
+                error("instBox is null");
+            }
             ValueBox newValBox = getValueBox(inst.getNewVal());
             int nFields = inst.getStructType().getFieldTypes().size();
             for (int i = 0; i < nFields; i++) {
+                ValueBox fieldBox = instBox.getBox(i);
                 if (i != index) {
-                    instBox.getBox(i).copyValue(opndBox.getBox(i));
+                    fieldBox.copyValue(opndBox.getBox(i));
                 } else {
-                    instBox.getBox(i).copyValue(newValBox);
+                    fieldBox.copyValue(newValBox);
                 }
             }
             incPC();
@@ -1319,11 +1326,11 @@ public class InterpreterThread implements Runnable {
                 BigInteger desired = getInt(inst.getDesired());
                 long oldVal;
                 if (loadSize == 32) {
-                    oldVal = memorySupport().cmpXchgInt(loc, expected.intValue(),
-                            desired.intValue());
+                    oldVal = memorySupport().cmpXchgInt(loc,
+                            expected.intValue(), desired.intValue());
                 } else if (loadSize == 64) {
-                    oldVal = memorySupport()
-                            .cmpXchgLong(loc, expected.longValue(), desired.longValue());
+                    oldVal = memorySupport().cmpXchgLong(loc,
+                            expected.longValue(), desired.longValue());
                 } else {
                     error("Unsupported Int length for cmpxchg: " + loadSize);
                     return null;

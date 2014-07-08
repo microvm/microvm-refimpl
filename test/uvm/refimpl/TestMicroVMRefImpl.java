@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import uvm.Bundle;
@@ -20,6 +21,7 @@ import uvm.refimpl.itpr.IntBox;
 import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
+import uvm.refimpl.itpr.RefBox;
 import uvm.refimpl.itpr.TrapHandler;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.ssavalue.Instruction;
@@ -136,7 +138,7 @@ public class TestMicroVMRefImpl {
             @Override
             public Long onTrap(InterpreterThread thread) {
                 long[] expecteds = new long[] { 0x8000000000000000L, 1L,
-                        2003764205206896640L };
+                        2003764205206896640L, 0x4000000000000000L, 2L };
                 assertKeepalivesInt(thread, expecteds);
 
                 return null;
@@ -179,7 +181,297 @@ public class TestMicroVMRefImpl {
     }
 
     @Test
-    // @Ignore
+    public void testCmp() throws Exception {
+
+        InterpreterStack stack64 = h.makeStack(h.func("@cmp64"), IntBox(25),
+                IntBox(7));
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                long[] expecteds = new long[] { 0, 1, 0, 0, 1, 1, 0, 0, 1, 1 };
+                assertKeepalivesInt(thread, expecteds);
+
+                return null;
+            }
+        });
+        InterpreterThread thread64 = microVM.newThread(stack64);
+        thread64.join();
+
+        InterpreterStack stack64_ovf = h.makeStack(h.func("@cmp64"),
+                BigIntBox("8000000000000000", 16), IntBox(0x7fffffffffffffffL));
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                long[] expecteds = new long[] { 0, 1, 0, 0, 1, 1, 1, 1, 0, 0 };
+                assertKeepalivesInt(thread, expecteds);
+
+                return null;
+            }
+        });
+        InterpreterThread thread64_ovf = microVM.newThread(stack64_ovf);
+        thread64_ovf.join();
+
+        InterpreterStack stackF = h.makeStack(h.func("@cmp_f"),
+                FloatBox(25.0F), FloatBox(7.0F));
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                long[] expecteds = new long[] { 1, 0, 1, 0, 1, 0, 0, 1, 1, 0,
+                        0, 1, 0, 0, 1, 1 };
+                assertKeepalivesInt(thread, expecteds);
+
+                return null;
+            }
+        });
+
+        InterpreterThread threadF = microVM.newThread(stackF);
+        threadF.join();
+
+        InterpreterStack stackD = h.makeStack(h.func("@cmp_d"),
+                DoubleBox(25.0), DoubleBox(7.0));
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                long[] expecteds = new long[] { 1, 0, 1, 0, 1, 0, 0, 1, 1, 0,
+                        0, 1, 0, 0, 1, 1 };
+                assertKeepalivesInt(thread, expecteds);
+
+                return null;
+            }
+        });
+
+        InterpreterThread threadD = microVM.newThread(stackD);
+        threadD.join();
+
+        InterpreterStack stackDNan = h.makeStack(h.func("@cmp_d"),
+                DoubleBox(Double.NaN), DoubleBox(7.0));
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                long[] expecteds = new long[] { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                        1, 1, 1, 1, 1, 1 };
+                assertKeepalivesInt(thread, expecteds);
+
+                return null;
+            }
+        });
+
+        InterpreterThread threadDNan = microVM.newThread(stackDNan);
+        threadDNan.join();
+    }
+
+    @Test
+    public void testSelect() throws InterruptedException {
+        InterpreterStack stack = h.makeStack(h.func("@select"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                long[] expecteds = new long[] { 2, 3 };
+                assertKeepalivesInt(thread, expecteds);
+
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+
+    }
+
+    @Test
+    public void testConv() throws InterruptedException {
+        InterpreterStack stack = h.makeStack(h.func("@conv"),
+                IntBox(0x9abcdef0L), IntBox(0x123456789abcdef0L),
+                FloatBox(42.0F), DoubleBox(42.0));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+
+                assertEquals(0x9abcdef0L, ((IntBox) kas.get(0)).getValue()
+                        .longValue());
+                assertEquals(0x9abcdef0L, ((IntBox) kas.get(1)).getValue()
+                        .longValue());
+                assertEquals(0xffffffff9abcdef0L, ((IntBox) kas.get(2))
+                        .getValue().longValue());
+
+                assertEquals(42.0F, ((FloatBox) kas.get(3)).getValue(), 0.01F);
+                assertEquals(42.0, ((DoubleBox) kas.get(4)).getValue(), 0.01);
+
+                assertEquals(42L, ((IntBox) kas.get(5)).getValue().longValue());
+                assertEquals(42L, ((IntBox) kas.get(6)).getValue().longValue());
+                assertEquals(1.3117684674637903e+18,
+                        ((DoubleBox) kas.get(7)).getValue(), 0.00001);
+                assertEquals(1.3117684674637903e+18,
+                        ((DoubleBox) kas.get(8)).getValue(), 0.00001);
+
+                assertEquals(0x4045000000000000L, ((IntBox) kas.get(9))
+                        .getValue().longValue());
+
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+
+    }
+
+    @Test
+    public void testBranch() throws InterruptedException {
+        InterpreterStack stack = h.makeStack(h.func("@branch"), IntBox(0));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                assertEquals("%traptrue", thread.getStack().getTop()
+                        .getCurInst().getName());
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+
+        InterpreterStack stack2 = h.makeStack(h.func("@branch"), IntBox(44));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                assertEquals("%trapfalse", thread.getStack().getTop()
+                        .getCurInst().getName());
+                return null;
+            }
+        });
+
+        InterpreterThread thread2 = microVM.newThread(stack2);
+        thread2.join();
+    }
+
+    @Test
+    public void testSwitchPhi() throws InterruptedException {
+        long[] vals = { 0, 1, 2, 3 };
+        String[] insts = { "%trapdef", "%trapone", "%traptwo", "%trapthree" };
+        long[] pvs = { 10, 11, 12, 13 };
+
+        for (int i = 0; i < 3; i++) {
+
+            final long val = vals[i];
+            final String inst = insts[i];
+            final long pv = pvs[i];
+
+            InterpreterStack stack = h.makeStack(h.func("@switch_phi"),
+                    IntBox(val));
+
+            microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+                @Override
+                public Long onTrap(InterpreterThread thread) {
+
+                    String instName = thread.getStack().getTop().getCurInst()
+                            .getName();
+
+                    if (instName.equals("%trapend")) {
+                        List<ValueBox> kas = thread.getStack().getTop()
+                                .dumpKeepAlives();
+
+                        assertEquals(pv, ((IntBox) kas.get(0)).getValue()
+                                .longValue());
+
+                    } else {
+                        assertEquals(inst, instName);
+                    }
+                    return null;
+                }
+            });
+
+            InterpreterThread thread = microVM.newThread(stack);
+            thread.join();
+        }
+
+    }
+
+    @Test
+    public void testCallRet() throws InterruptedException {
+
+        InterpreterStack stack = h.makeStack(h.func("@call_ret"), IntBox(3),
+                IntBox(4));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+
+                assertEquals(25L, ((IntBox) kas.get(0)).getValue().longValue());
+
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+    }
+
+    @Test
+    public void testInvokeLandingpad() throws InterruptedException {
+
+        InterpreterStack stack = h.makeStack(h.func("@invoke_landingpad"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+
+                String instName = thread.getStack().getTop().getCurInst()
+                        .getName();
+
+                if (instName.equals("%trapexc")) {
+                    List<ValueBox> kas = thread.getStack().getTop()
+                            .dumpKeepAlives();
+
+                    assertEquals(0L, ((RefBox) kas.get(0)).getAddr());
+
+                } else {
+                    fail("Reached normal destination.");
+                }
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+    }
+
+    @Test
+    public void testAggregate() throws InterruptedException {
+
+        InterpreterStack stack = h.makeStack(h.func("@aggregate"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+
+                assertEquals(2L, ((IntBox) kas.get(0)).getValue().longValue());
+                assertEquals(222L, ((IntBox) kas.get(1)).getValue().longValue());
+
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+    }
+
+    // /////////////////////// Simple sum
+
+    @Test
+    @Ignore
     public void testSimplesum() throws InterruptedException {
         Function simplesum = h.func("@simplesum");
         assertNotNull(simplesum);
