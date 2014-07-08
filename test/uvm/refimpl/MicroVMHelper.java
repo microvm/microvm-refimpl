@@ -1,8 +1,7 @@
 package uvm.refimpl;
 
-import java.util.ArrayList;
+import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.List;
 
 import uvm.Function;
 import uvm.refimpl.facade.MicroVM;
@@ -18,9 +17,6 @@ import uvm.refimpl.itpr.StackBox;
 import uvm.refimpl.itpr.StructBox;
 import uvm.refimpl.itpr.ThreadBox;
 import uvm.refimpl.itpr.ValueBox;
-import uvm.type.Int;
-import uvm.type.Ref;
-import uvm.type.Type;
 
 public class MicroVMHelper {
     private MicroVM microVM;
@@ -44,7 +40,7 @@ public class MicroVMHelper {
 
     public static IntBox IntBox(long value) {
         IntBox box = new IntBox();
-        box.setValue(value);
+        box.setValue(BigInteger.valueOf(value));
         return box;
     }
 

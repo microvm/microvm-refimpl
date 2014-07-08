@@ -1,5 +1,6 @@
 package uvm.refimpl.itpr;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
@@ -179,11 +180,11 @@ public class InterpreterThread implements Runnable {
                 + IdentifiedHelper.repr(getCurInst()) + " : " + string);
     }
 
-    private long getInt(Value opnd) {
+    private BigInteger getInt(Value opnd) {
         return ((IntBox) getValueBox(opnd)).getValue();
     }
 
-    private void setInt(Value opnd, long val) {
+    private void setInt(Value opnd, BigInteger val) {
         ((IntBox) getValueBox(opnd)).setValue(val);
     }
 
@@ -245,15 +246,11 @@ public class InterpreterThread implements Runnable {
         ((StackBox) getValueBox(opnd)).setStack(sta);
     }
 
-    private static long pu(long n, long l) {
-        return OpHelper.prepareUnsigned(n, l);
-    }
-
-    private static long ps(long n, long l) {
+    private static BigInteger ps(BigInteger n, int l) {
         return OpHelper.prepareSigned(n, l);
     }
 
-    private static long up(long n, long l) {
+    private static BigInteger up(BigInteger n, int l) {
         return OpHelper.unprepare(n, l);
     }
 
@@ -372,50 +369,50 @@ public class InterpreterThread implements Runnable {
             Type type = inst.getType();
             if (type instanceof Int) {
                 Int t = (Int) type;
-                long l = t.getSize();
-                long v1 = getInt(inst.getOp1());
-                long v2 = getInt(inst.getOp2());
-                long rv = 0;
+                int l = t.getSize();
+                BigInteger v1 = getInt(inst.getOp1());
+                BigInteger v2 = getInt(inst.getOp2());
+                BigInteger rv = BigInteger.ZERO;
 
                 switch (inst.getOptr()) {
                 case ADD:
-                    rv = up(pu(v1, l) + pu(v2, l), l);
+                    rv = up(v1.add(v2), l);
                     break;
                 case SUB:
-                    rv = up(pu(v1, l) - pu(v2, l), l);
+                    rv = up(v1.subtract(v2), l);
                     break;
                 case MUL:
-                    rv = up(pu(v1, l) * pu(v2, l), l);
+                    rv = up(v1.multiply(v2), l);
                     break;
                 case UDIV:
-                    rv = up(pu(v1, l) / pu(v2, l), l);
+                    rv = up(v1.divide(v2), l);
                     break;
                 case SDIV:
-                    rv = up(ps(v1, l) / ps(v2, l), l);
+                    rv = up(ps(v1, l).divide(ps(v2, l)), l);
                     break;
                 case UREM:
-                    rv = up(pu(v1, l) % pu(v2, l), l);
+                    rv = up(v1.remainder(v2), l);
                     break;
                 case SREM:
-                    rv = up(ps(v1, l) % ps(v2, l), l);
+                    rv = up(ps(v1, l).remainder(ps(v2, l)), l);
                     break;
                 case SHL:
-                    rv = up(pu(v1, l) << pu(v2, l), l);
+                    rv = up(v1.shiftLeft(v2.intValue()), l);
                     break;
                 case LSHR:
-                    rv = up(pu(v1, l) >>> pu(v2, l), l);
+                    rv = up(v1.shiftRight(v2.intValue()), l);
                     break;
                 case ASHR:
-                    rv = up(ps(v1, l) >> pu(v2, l), l);
+                    rv = up(ps(v1, l).shiftRight(v2.intValue()), l);
                     break;
                 case AND:
-                    rv = up(pu(v1, l) & pu(v2, l), l);
+                    rv = up(v1.and(v2), l);
                     break;
                 case OR:
-                    rv = up(pu(v1, l) | pu(v2, l), l);
+                    rv = up(v1.or(v2), l);
                     break;
                 case XOR:
-                    rv = up(pu(v1, l) ^ pu(v2, l), l);
+                    rv = up(v1.xor(v2), l);
                     break;
                 default:
                     error("Unexpected op for int binop "
@@ -490,48 +487,48 @@ public class InterpreterThread implements Runnable {
             Type type = inst.getOpndType();
             if (type instanceof Int) {
                 Int t = (Int) type;
-                long l = t.getSize();
-                long v1 = getInt(inst.getOp1());
-                long v2 = getInt(inst.getOp2());
+                int l = t.getSize();
+                BigInteger v1 = getInt(inst.getOp1());
+                BigInteger v2 = getInt(inst.getOp2());
                 boolean rv = false;
 
                 switch (inst.getOptr()) {
                 case EQ:
-                    rv = pu(v1, l) == pu(v2, l);
+                    rv = v1.equals(v2);
                     break;
                 case NE:
-                    rv = pu(v1, l) != pu(v2, l);
+                    rv = !v1.equals(v2);
                     break;
                 case ULT:
-                    rv = pu(v1, l) < pu(v2, l);
+                    rv = v1.compareTo(v2) < 0;
                     break;
                 case ULE:
-                    rv = pu(v1, l) <= pu(v2, l);
+                    rv = v1.compareTo(v2) <= 0;
                     break;
                 case UGT:
-                    rv = pu(v1, l) > pu(v2, l);
+                    rv = v1.compareTo(v2) > 0;
                     break;
                 case UGE:
-                    rv = pu(v1, l) >= pu(v2, l);
+                    rv = v1.compareTo(v2) >= 0;
                     break;
                 case SLT:
-                    rv = ps(v1, l) < ps(v2, l);
+                    rv = ps(v1, l).compareTo(ps(v2, l)) < 0;
                     break;
                 case SLE:
-                    rv = ps(v1, l) <= ps(v2, l);
+                    rv = ps(v1, l).compareTo(ps(v2, l)) <= 0;
                     break;
                 case SGT:
-                    rv = ps(v1, l) > ps(v2, l);
+                    rv = ps(v1, l).compareTo(ps(v2, l)) > 0;
                     break;
                 case SGE:
-                    rv = ps(v1, l) >= ps(v2, l);
+                    rv = ps(v1, l).compareTo(ps(v2, l)) >= 0;
                     break;
                 default:
                     error("Unexpected op for int cmp "
                             + inst.getOptr().toString());
                 }
 
-                setInt(inst, rv ? 1 : 0);
+                setInt(inst, rv ? BigInteger.ONE : BigInteger.ZERO);
             } else if (type instanceof uvm.type.Float) {
                 float v1 = getFloat(inst.getOp1());
                 float v2 = getFloat(inst.getOp2());
@@ -591,7 +588,7 @@ public class InterpreterThread implements Runnable {
                             + inst.getOptr().toString());
                 }
 
-                setInt(inst, rv ? 1 : 0);
+                setInt(inst, rv ? BigInteger.ONE : BigInteger.ZERO);
             } else if (type instanceof uvm.type.Double) {
                 double v1 = getDouble(inst.getOp1());
                 double v2 = getDouble(inst.getOp2());
@@ -651,7 +648,7 @@ public class InterpreterThread implements Runnable {
                             + inst.getOptr().toString());
                 }
 
-                setInt(inst, rv ? 1 : 0);
+                setInt(inst, rv ? BigInteger.ONE : BigInteger.ZERO);
             } else if (type instanceof Ref) {
                 long v1 = getRefAddr(inst.getOp1());
                 long v2 = getRefAddr(inst.getOp2());
@@ -669,7 +666,7 @@ public class InterpreterThread implements Runnable {
                             + inst.getOptr().toString());
                 }
 
-                setInt(inst, rv ? 1 : 0);
+                setInt(inst, rv ? BigInteger.ONE : BigInteger.ZERO);
             } else if (type instanceof IRef) {
                 long v1 = getIRefAddr(inst.getOp1());
                 long v2 = getIRefAddr(inst.getOp2());
@@ -687,7 +684,7 @@ public class InterpreterThread implements Runnable {
                             + inst.getOptr().toString());
                 }
 
-                setInt(inst, rv ? 1 : 0);
+                setInt(inst, rv ? BigInteger.ONE : BigInteger.ZERO);
             } else if (type instanceof Func || type instanceof uvm.type.Thread
                     || type instanceof uvm.type.Stack) {
                 WrapperBox<?> op1 = getValueBox(inst.getOp1());
@@ -709,7 +706,7 @@ public class InterpreterThread implements Runnable {
                             + inst.getOptr().toString());
                 }
 
-                setInt(inst, rv ? 1 : 0);
+                setInt(inst, rv ? BigInteger.ONE : BigInteger.ZERO);
             } else {
                 error("Bad type for comparison: " + type.getClass().getName());
             }
@@ -726,25 +723,25 @@ public class InterpreterThread implements Runnable {
             Value opnd = inst.getOpnd();
             switch (inst.getOptr()) {
             case TRUNC: {
-                long tl = ((Int) tt).getSize();
-                long od = getInt(opnd);
-                long rv = OpHelper.trunc(od, tl);
+                int tl = ((Int) tt).getSize();
+                BigInteger od = getInt(opnd);
+                BigInteger rv = OpHelper.trunc(od, tl);
                 setInt(inst, rv);
                 break;
             }
             case ZEXT: {
-                long fl = ((Int) ft).getSize();
-                long tl = ((Int) tt).getSize();
-                long od = getInt(opnd);
-                long rv = OpHelper.zext(od, fl, tl);
+                int fl = ((Int) ft).getSize();
+                int tl = ((Int) tt).getSize();
+                BigInteger od = getInt(opnd);
+                BigInteger rv = OpHelper.zext(od, fl, tl);
                 setInt(inst, rv);
                 break;
             }
             case SEXT: {
-                long fl = ((Int) ft).getSize();
-                long tl = ((Int) tt).getSize();
-                long od = getInt(opnd);
-                long rv = OpHelper.sext(od, fl, tl);
+                int fl = ((Int) ft).getSize();
+                int tl = ((Int) tt).getSize();
+                BigInteger od = getInt(opnd);
+                BigInteger rv = OpHelper.sext(od, fl, tl);
                 setInt(inst, rv);
                 break;
             }
@@ -762,37 +759,36 @@ public class InterpreterThread implements Runnable {
             }
             case FPTOUI:
             case FPTOSI: {
-                long tl = ((Int) tt).getSize();
-                long rv;
+                int tl = ((Int) tt).getSize();
+                long v;
                 if (ft instanceof uvm.type.Float) {
-                    rv = (long) getFloat(opnd);
+                    v = (long) getFloat(opnd);
                 } else if (ft instanceof uvm.type.Double) {
-                    rv = (long) getDouble(opnd);
+                    v = (long) getDouble(opnd);
                 } else {
                     error("Bad type for FPTOxI: " + IdentifiedHelper.repr(ft));
                     return null;
                 }
-                rv = OpHelper.truncFromLong(rv, tl);
+                BigInteger rv = OpHelper.truncFromBigInteger(
+                        BigInteger.valueOf(v), tl);
                 setInt(inst, rv);
                 break;
             }
 
             case UITOFP:
             case SITOFP: {
-                long fl = ((Int) ft).getSize();
-                long fv = getInt(opnd);
+                int fl = ((Int) ft).getSize();
+                BigInteger fv = getInt(opnd);
 
-                if (inst.getOptr() == ConvOptr.UITOFP) {
-                    fv = pu(fv, fl);
-                } else {
+                if (inst.getOptr() == ConvOptr.SITOFP) {
                     fv = ps(fv, fl);
                 }
 
                 if (tt instanceof uvm.type.Float) {
-                    float rv = (float) fv;
+                    float rv = fv.floatValue();
                     setFloat(inst, rv);
                 } else if (tt instanceof uvm.type.Double) {
-                    double rv = (double) fv;
+                    double rv = fv.doubleValue();
                     setDouble(inst, rv);
                 } else {
                     error("Bad type for xITOFP: " + IdentifiedHelper.repr(tt));
@@ -803,24 +799,24 @@ public class InterpreterThread implements Runnable {
             case BITCAST:
                 if (ft instanceof Int && ((Int) ft).getSize() == 32
                         && tt instanceof uvm.type.Float) {
-                    int fv = (int) pu(getInt(opnd), 32);
+                    int fv = getInt(opnd).intValue();
                     float rv = Float.intBitsToFloat(fv);
                     setFloat(inst, rv);
                 } else if (ft instanceof Int && ((Int) ft).getSize() == 64
                         && tt instanceof uvm.type.Double) {
-                    long fv = getInt(opnd);
+                    long fv = getInt(opnd).longValue();
                     double rv = Double.longBitsToDouble(fv);
                     setDouble(inst, rv);
                 } else if (ft instanceof uvm.type.Float && tt instanceof Int
                         && ((Int) tt).getSize() == 32) {
                     float fv = getFloat(opnd);
                     long rv = (long) (Float.floatToRawIntBits(fv));
-                    setInt(inst, rv);
+                    setInt(inst, BigInteger.valueOf(rv));
                 } else if (ft instanceof uvm.type.Double && tt instanceof Int
                         && ((Int) tt).getSize() == 64) {
                     double fv = getDouble(opnd);
                     long rv = Double.doubleToRawLongBits(fv);
-                    setInt(inst, rv);
+                    setInt(inst, BigInteger.valueOf(rv));
                 } else {
                     error("Bad type for BITCAST: " + IdentifiedHelper.repr(ft)
                             + " and " + IdentifiedHelper.repr(tt));
@@ -846,9 +842,9 @@ public class InterpreterThread implements Runnable {
 
         @Override
         public Void visitSelect(InstSelect inst) {
-            long cond = getInt(inst.getCond());
+            BigInteger cond = getInt(inst.getCond());
             ValueBox rb = getValueBox(inst);
-            if (cond == 1) {
+            if (cond.equals(BigInteger.ONE)) {
                 rb.copyValue(getValueBox(inst.getIfTrue()));
             } else {
                 rb.copyValue(getValueBox(inst.getIfFalse()));
@@ -866,8 +862,8 @@ public class InterpreterThread implements Runnable {
 
         @Override
         public Void visitBranch2(InstBranch2 inst) {
-            long cond = getInt(inst.getCond());
-            if (cond == 1) {
+            BigInteger cond = getInt(inst.getCond());
+            if (cond.equals(BigInteger.ONE)) {
                 branchAndMovePC(inst.getIfTrue());
             } else {
                 branchAndMovePC(inst.getIfFalse());
@@ -879,13 +875,12 @@ public class InterpreterThread implements Runnable {
         public Void visitSwitch(InstSwitch inst) {
             Type type = inst.getOpndType();
             if (type instanceof Int) {
-                long length = ((Int) type).getSize();
-                long opnd = OpHelper.trunc(getInt(inst.getOpnd()), length);
+                BigInteger opnd = getInt(inst.getOpnd());
                 for (Map.Entry<UseBox, BasicBlock> e : inst.getCases()
                         .entrySet()) {
                     Value caseVal = e.getKey().getDst();
-                    long c = OpHelper.trunc(getInt(caseVal), length);
-                    if (opnd == c) {
+                    BigInteger c = getInt(caseVal);
+                    if (opnd.equals(c)) {
                         branchAndMovePC(e.getValue());
                         return null;
                     }
@@ -1036,7 +1031,7 @@ public class InterpreterThread implements Runnable {
         @Override
         public Void visitNewHybrid(InstNewHybrid inst) {
             Type type = inst.getAllocType();
-            long len = getInt(inst.getLength());
+            long len = getInt(inst.getLength()).longValue();
             long addr = mutator.newHybrid(type, len);
             setRef(inst, addr);
             incPC();
@@ -1055,7 +1050,7 @@ public class InterpreterThread implements Runnable {
         @Override
         public Void visitAllocaHybrid(InstAllocaHybrid inst) {
             Type type = inst.getAllocType();
-            long len = getInt(inst.getLength());
+            long len = getInt(inst.getLength()).longValue();
             long addr = stack.getStackMemory().allocaHybrid(type, len);
             setIRef(inst, 0, addr);
             incPC();
@@ -1089,7 +1084,7 @@ public class InterpreterThread implements Runnable {
             long oldBase = oldIRef.getBase();
             long oldOffset = oldIRef.getOffset();
 
-            long index = getInt(inst.getIndex());
+            long index = getInt(inst.getIndex()).longValue();
             long fieldOffset = TypeSizes.shiftOffsetOf(inst.getReferentType()
                     .getElemType(), index);
             long newOffset = oldOffset + fieldOffset;
@@ -1104,7 +1099,7 @@ public class InterpreterThread implements Runnable {
             long oldBase = oldIRef.getBase();
             long oldOffset = oldIRef.getOffset();
 
-            long index = getInt(inst.getOffset());
+            long index = getInt(inst.getOffset()).longValue();
             long fieldOffset = TypeSizes.shiftOffsetOf(inst.getReferentType(),
                     index);
             long newOffset = oldOffset + fieldOffset;
@@ -1162,7 +1157,7 @@ public class InterpreterThread implements Runnable {
                     error("Unsupported Int length for load: " + loadSize);
                     return null;
                 }
-                setInt(inst, val);
+                setInt(inst, BigInteger.valueOf(val));
             } else if (rt instanceof uvm.type.Float) {
                 float val = isAtomic ? memorySupport().loadFloatAtomic(loc)
                         : memorySupport().loadFloat(loc);
@@ -1218,30 +1213,30 @@ public class InterpreterThread implements Runnable {
             if (rt instanceof Int) {
                 Int irt = (Int) rt;
                 long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
-                long val = getInt(inst.getNewVal());
+                BigInteger val = getInt(inst.getNewVal());
                 if (loadSize == 8) {
                     if (isAtomic) {
-                        memorySupport().storeByteAtomic(loc, (byte) val);
+                        memorySupport().storeByteAtomic(loc, val.byteValue());
                     } else {
-                        memorySupport().storeByte(loc, (byte) val);
+                        memorySupport().storeByte(loc, val.byteValue());
                     }
                 } else if (loadSize == 16) {
                     if (isAtomic) {
-                        memorySupport().storeShortAtomic(loc, (short) val);
+                        memorySupport().storeShortAtomic(loc, val.shortValue());
                     } else {
-                        memorySupport().storeShort(loc, (short) val);
+                        memorySupport().storeShort(loc, val.shortValue());
                     }
                 } else if (loadSize == 32) {
                     if (isAtomic) {
-                        memorySupport().storeIntAtomic(loc, (int) val);
+                        memorySupport().storeIntAtomic(loc, val.intValue());
                     } else {
-                        memorySupport().storeInt(loc, (int) val);
+                        memorySupport().storeInt(loc, val.intValue());
                     }
                 } else if (loadSize == 64) {
                     if (isAtomic) {
-                        memorySupport().storeLongAtomic(loc, val);
+                        memorySupport().storeLongAtomic(loc, val.longValue());
                     } else {
-                        memorySupport().storeLong(loc, val);
+                        memorySupport().storeLong(loc, val.longValue());
                     }
                 } else {
                     error("Unsupported Int length for store: " + loadSize);
@@ -1320,20 +1315,20 @@ public class InterpreterThread implements Runnable {
             if (rt instanceof Int) {
                 Int irt = (Int) rt;
                 long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
-                long expected = getInt(inst.getExpected());
-                long desired = getInt(inst.getDesired());
+                BigInteger expected = getInt(inst.getExpected());
+                BigInteger desired = getInt(inst.getDesired());
                 long oldVal;
                 if (loadSize == 32) {
-                    oldVal = memorySupport().cmpXchgInt(loc, (int) expected,
-                            (int) desired);
+                    oldVal = memorySupport().cmpXchgInt(loc, expected.intValue(),
+                            desired.intValue());
                 } else if (loadSize == 64) {
                     oldVal = memorySupport()
-                            .cmpXchgLong(loc, expected, desired);
+                            .cmpXchgLong(loc, expected.longValue(), desired.longValue());
                 } else {
                     error("Unsupported Int length for cmpxchg: " + loadSize);
                     return null;
                 }
-                setInt(inst, oldVal);
+                setInt(inst, BigInteger.valueOf(oldVal));
             } else if (rt instanceof Ref || rt instanceof WeakRef) {
                 long expected = getRefAddr(inst.getExpected());
                 long desired = getRefAddr(inst.getDesired());
@@ -1355,7 +1350,7 @@ public class InterpreterThread implements Runnable {
             if (rt instanceof Int) {
                 Int irt = (Int) rt;
                 long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
-                long opnd = getInt(inst.getOpnd());
+                long opnd = getInt(inst.getOpnd()).longValue();
                 long oldVal = 0;
                 if (loadSize == 32) {
                     switch (inst.getOptr()) {
@@ -1437,7 +1432,7 @@ public class InterpreterThread implements Runnable {
                     error("Unsupported Int length for atomicrmw: " + loadSize);
                     return null;
                 }
-                setInt(inst, oldVal);
+                setInt(inst, BigInteger.valueOf(oldVal));
             } else {
                 error("Unsupported type to atomicrmw: "
                         + rt.getClass().getName());

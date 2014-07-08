@@ -1,5 +1,6 @@
 package uvm.refimpl.itpr;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,7 +45,7 @@ public class ConstantPool {
         if (constant instanceof IntConstant) {
             IntConstant c = (IntConstant) constant;
             IntBox b = new IntBox();
-            b.setValue(c.getValue());
+            b.setValue(BigInteger.valueOf(c.getValue()));
             return b;
         } else if (constant instanceof FloatConstant) {
             FloatConstant c = (FloatConstant) constant;

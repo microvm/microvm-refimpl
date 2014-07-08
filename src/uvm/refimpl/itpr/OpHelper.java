@@ -1,55 +1,54 @@
 package uvm.refimpl.itpr;
 
+import java.math.BigInteger;
+
 public class OpHelper {
-    public static long mask(long n) {
-        if (n >= 64) {
-            return -1;
+    public static BigInteger mask(int n) {
+        return BigInteger.ONE.shiftLeft(n).subtract(BigInteger.ONE);
+    }
+
+    // Trunc/ext from BigInteger
+
+    public static BigInteger truncFromBigInteger(BigInteger n, int len) {
+        return n.and(mask(len));
+    }
+
+    public static BigInteger zextToBigInteger(BigInteger n, int len) {
+        return n.and(mask(len));
+    }
+
+    public static BigInteger sextToBigInteger(BigInteger n, int len) {
+        boolean bit = n.testBit(len - 1);
+        if (bit) {
+            return n.or(mask(len - 1).not());
         } else {
-            return (1L << n) - 1;
+            return n.and(mask(len - 1));
         }
     }
 
     // Prepare integers for binop or cmp
-    public static long prepareUnsigned(long n, long len) {
-        return truncFromLong(n, len);
+    public static BigInteger prepareUnsigned(BigInteger n, int len) {
+        return truncFromBigInteger(n, len);
     }
 
-    public static long prepareSigned(long n, long len) {
-        return sextToLong(truncFromLong(n, len), len);
+    public static BigInteger prepareSigned(BigInteger n, int len) {
+        return sextToBigInteger(truncFromBigInteger(n, len), len);
     }
 
-    public static long unprepare(long n, long len) {
-        return truncFromLong(n, len);
-    }
-
-    // Truncate and extend
-
-    // From/to long
-    public static long truncFromLong(long n, long toLen) {
-        return n & mask(toLen);
-    }
-
-    public static long zextToLong(long n, long fromLen) {
-        return truncFromLong(n, fromLen);
-    }
-
-    public static long sextToLong(long n, long fromLen) {
-        long sign = n & (1 << (fromLen - 1));
-        long mask = ~(sign - 1); // 00100000 -> 00011111 -> 11100000
-                                 // 00000000 -> 11111111 -> 00000000
-        return n | mask;
+    public static BigInteger unprepare(BigInteger n, int len) {
+        return truncFromBigInteger(n, len);
     }
 
     // From one size to another size
-    public static long trunc(long n, long toLen) {
-        return truncFromLong(n, toLen);
+    public static BigInteger trunc(BigInteger n, int toLen) {
+        return truncFromBigInteger(n, toLen);
     }
 
-    public static long zext(long n, long fromLen, long toLen) {
-        return truncFromLong(n, fromLen);
+    public static BigInteger zext(BigInteger n, int fromLen, int toLen) {
+        return truncFromBigInteger(n, fromLen);
     }
 
-    public static long sext(long n, long fromLen, long toLen) {
-        return truncFromLong(sextToLong(n, fromLen), toLen);
+    public static BigInteger sext(BigInteger n, int fromLen, int toLen) {
+        return truncFromBigInteger(sextToBigInteger(n, fromLen), toLen);
     }
 }

@@ -56,7 +56,7 @@ public class TestMicroVMRefImpl {
 
     private long getInt(InterpreterFrame frame, String name) {
         ValueBox box = getValueBox(frame, name);
-        return ((IntBox) box).getValue();
+        return ((IntBox) box).getValue().longValue();
     }
 
     private void assertKeepalivesInt(InterpreterThread thread, long[] expecteds) {
@@ -67,7 +67,7 @@ public class TestMicroVMRefImpl {
         for (int i = 0; i < keepAlives.size(); i++) {
             ValueBox vb = keepAlives.get(i);
             IntBox ib = (IntBox) vb;
-            long actual = ib.getValue();
+            long actual = ib.getValue().longValue();
             actuals[i] = actual;
         }
 
@@ -202,7 +202,7 @@ public class TestMicroVMRefImpl {
 
                     for (ValueBox vb : keepAlives) {
                         IntBox ib = (IntBox) vb;
-                        long actual = ib.getValue();
+                        long actual = ib.getValue().longValue();
                         System.out.print(actual);
                         System.out.print(" ");
                     }
@@ -220,7 +220,7 @@ public class TestMicroVMRefImpl {
                     for (int i = 0; i < expecteds.length; i++) {
                         ValueBox vb = keepAlives.get(i);
                         IntBox ib = (IntBox) vb;
-                        long actual = ib.getValue();
+                        long actual = ib.getValue().longValue();
                         actuals[i] = actual;
                     }
                     System.out.println(actuals[0]);

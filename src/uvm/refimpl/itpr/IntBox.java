@@ -1,13 +1,15 @@
 package uvm.refimpl.itpr;
 
-public class IntBox extends ValueBox {
-    private long value = 0;
+import java.math.BigInteger;
 
-    public long getValue() {
+public class IntBox extends ValueBox {
+    private BigInteger value = BigInteger.ZERO;
+
+    public BigInteger getValue() {
         return value;
     }
 
-    public void setValue(long value) {
+    public void setValue(BigInteger value) {
         this.value = value;
     }
 
