@@ -1,13 +1,20 @@
 package uvm.refimpl.mem;
 
 import uvm.type.Array;
+import uvm.type.Hybrid;
 import uvm.type.Struct;
 import uvm.type.Type;
 
 public class TypeSizes {
 
-    private static SizeOf SIZE_OF = new SizeOf();
-    private static AlignOf ALIGN_OF = new AlignOf();
+    public static final long GC_HEADER_SIZE_SCALAR = 8;
+    public static final long GC_HEADER_SIZE_HYBRID = 16;
+
+    public static final long GC_HEADER_OFFSET_TAG = -8;
+    public static final long GC_HEADER_OFFSET_HYBRID_LENGTH = -16;
+
+    private static final SizeOf SIZE_OF = new SizeOf();
+    private static final AlignOf ALIGN_OF = new AlignOf();
 
     public static long sizeOf(Type ty) {
         return ty.accept(SIZE_OF);
@@ -15,6 +22,21 @@ public class TypeSizes {
 
     public static long alignOf(Type ty) {
         return ty.accept(ALIGN_OF);
+    }
+
+    public static long hybridSizeOf(Hybrid type, long len) {
+        long fixedSize = sizeOf(type.getFixedPart());
+        long varAlign = alignOf(type.getVarPart());
+        long varSize = shiftOffsetOf(type.getVarPart(), len);
+        long size = alignUp(fixedSize, varAlign) + varSize;
+        return size;
+    }
+
+    public static long hybridAlignOf(Hybrid type, long len) {
+        long fixedAlign = alignOf(type.getFixedPart());
+        long varAlign = alignOf(type.getVarPart());
+        long align = Math.max(fixedAlign, varAlign);
+        return align;
     }
 
     public static long fieldOffsetOf(Struct structType, int index) {
@@ -48,6 +70,15 @@ public class TypeSizes {
             i <<= 1;
         }
         return i;
+    }
+
+    public static long intBitsToBytes(long n) {
+        long p2 = nextPowOfTwo(n);
+        if (p2 < 8) {
+            return 1;
+        } else {
+            return p2 / 8;
+        }
     }
 
     public static long alignUp(long n, long alignment) {

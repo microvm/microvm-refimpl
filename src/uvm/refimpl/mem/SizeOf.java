@@ -28,7 +28,7 @@ public class SizeOf implements TypeVisitor<Long> {
 
     @Override
     public Long visitInt(Int type) {
-        return TypeSizes.nextPowOfTwo(type.getSize());
+        return TypeSizes.intBitsToBytes(type.getSize());
     }
 
     @Override

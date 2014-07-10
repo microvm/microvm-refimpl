@@ -72,6 +72,7 @@ import uvm.ssavalue.UseBox;
 import uvm.ssavalue.Value;
 import uvm.ssavalue.ValueVisitor;
 import uvm.type.Func;
+import uvm.type.Hybrid;
 import uvm.type.IRef;
 import uvm.type.Int;
 import uvm.type.Ref;
@@ -1037,7 +1038,7 @@ public class InterpreterThread implements Runnable {
 
         @Override
         public Void visitNewHybrid(InstNewHybrid inst) {
-            Type type = inst.getAllocType();
+            Hybrid type = inst.getAllocType();
             long len = getInt(inst.getLength()).longValue();
             long addr = mutator.newHybrid(type, len);
             setRef(inst, addr);
@@ -1056,7 +1057,7 @@ public class InterpreterThread implements Runnable {
 
         @Override
         public Void visitAllocaHybrid(InstAllocaHybrid inst) {
-            Type type = inst.getAllocType();
+            Hybrid type = inst.getAllocType();
             long len = getInt(inst.getLength()).longValue();
             long addr = stack.getStackMemory().allocaHybrid(type, len);
             setIRef(inst, 0, addr);

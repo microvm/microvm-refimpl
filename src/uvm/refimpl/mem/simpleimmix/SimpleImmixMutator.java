@@ -1,5 +1,7 @@
 package uvm.refimpl.mem.simpleimmix;
 
+import uvm.refimpl.mem.Heap;
+import uvm.refimpl.mem.MemConstants;
 import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.util.ErrorUtils;
@@ -9,10 +11,10 @@ public class SimpleImmixMutator extends Mutator {
     public long curBlockAddr;
     public long cursor;
     public long limit;
-    private SimpleImmixHeap heap;
+    private Heap heap;
     private SimpleImmixSpace space;
 
-    public SimpleImmixMutator(SimpleImmixHeap simpleImmixHeap,
+    public SimpleImmixMutator(Heap simpleImmixHeap,
             SimpleImmixSpace simpleImmixSpace) {
         this.heap = simpleImmixHeap;
         this.space = simpleImmixSpace;
@@ -29,29 +31,30 @@ public class SimpleImmixMutator extends Mutator {
         return heap.getGlobalPauseFlag();
     }
 
-    public long alloc(long size, long align, long tag) {
-        align = align < SimpleImmixHeap.GC_HEADER_SIZE_BYTES ? SimpleImmixHeap.GC_HEADER_SIZE_BYTES
+    @Override
+    public long alloc(long size, long align, long headerSize) {
+        System.out.format("alloc(%d, %d, %d)\n", size, align, headerSize);
+        align = align < MemConstants.WORD_SIZE_BYTES ? MemConstants.WORD_SIZE_BYTES
                 : align;
 
         while (true) {
             long gcStart = TypeSizes.alignUp(cursor, align);
-            long userStart = TypeSizes.alignUp(gcStart
-                    + SimpleImmixHeap.GC_HEADER_SIZE_BYTES, align);
+            long userStart = TypeSizes.alignUp(gcStart + headerSize, align);
             long userEnd = userStart + size;
             if (userEnd >= limit) {
                 if (userEnd - gcStart > SimpleImmixSpace.BLOCK_SIZE) {
                     ErrorUtils.uvmError("Object too big: "
                             + (userEnd - gcStart));
                 }
+                System.out.println("Getting new block...");
                 getNewBlock();
                 continue;
             } else {
                 cursor = userEnd;
-                heap.memorySupport.storeLongAtomic(userStart
-                        - SimpleImmixHeap.GC_HEADER_SIZE_BYTES, tag);
 
                 return userStart;
             }
         }
     }
+
 }

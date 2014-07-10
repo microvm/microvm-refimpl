@@ -6,7 +6,6 @@ import uvm.Bundle;
 import uvm.Function;
 import uvm.platformsupport.Config;
 import uvm.platformsupport.MemorySupport;
-import uvm.platformsupport.ordinaryjava.UnsafeMemorySupport;
 import uvm.refimpl.itpr.ConstantPool;
 import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
@@ -39,7 +38,7 @@ public class MicroVM {
      * Create a new instance of Micro VM.
      */
     public MicroVM() {
-        memorySupport = new UnsafeMemorySupport();
+        memorySupport = Config.MEMORY_SUPPORT;
         globalBundle = new Bundle();
         constantPool = new ConstantPool();
         threadStackManager = new ThreadStackManager(this);

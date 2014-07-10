@@ -468,6 +468,27 @@ public class TestMicroVMRefImpl {
         thread.join();
     }
 
+    @Test
+    public void testAllocs() throws InterruptedException {
+        InterpreterStack stack = h.makeStack(h.func("@allocs"), IntBox(10L));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+
+                fail("Not implemented yet.");
+
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+    }
+
     // /////////////////////// Simple sum
 
     @Test

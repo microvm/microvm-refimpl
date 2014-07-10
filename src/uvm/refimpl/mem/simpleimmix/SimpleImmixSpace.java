@@ -1,6 +1,10 @@
 package uvm.refimpl.mem.simpleimmix;
 
 import static uvm.util.ErrorUtils.uvmError;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import uvm.refimpl.mem.Heap;
 import uvm.refimpl.mem.Space;
 
 /**
@@ -16,16 +20,16 @@ public class SimpleImmixSpace extends Space {
 
     public static final long BLOCK_SIZE = 32768;
 
-    public SimpleImmixHeap heap;
+    public Heap heap;
 
-    public long nBlocks;
+    public int nBlocks;
 
     public boolean[] blockMarks;
-    public long[] freeList;
-    public long nFree;
-    public long pageCursor;
+    public int[] freeList;
+    public int maxFree;
+    public AtomicInteger pageCursor;
 
-    public SimpleImmixSpace(SimpleImmixHeap heap, String name, long begin,
+    public SimpleImmixSpace(Heap heap, String name, long begin,
             long extend) {
         super(name, begin, extend);
         this.heap = heap;
@@ -37,16 +41,19 @@ public class SimpleImmixSpace extends Space {
             uvmError("space size should be a multiple of BLOCK_SIZE "
                     + BLOCK_SIZE);
         }
-        nBlocks = extend / BLOCK_SIZE;
-        blockMarks = new boolean[(int) nBlocks];
-        freeList = new long[(int) nBlocks];
-        nFree = nBlocks;
-        pageCursor = 0L;
+        nBlocks = (int) (extend / BLOCK_SIZE);
+        blockMarks = new boolean[nBlocks];
+        freeList = new int[nBlocks];
+        for (int i = 0; i < nBlocks; i++) {
+            freeList[i] = i;
+        }
+        maxFree = nBlocks;
+        pageCursor = new AtomicInteger(0);
 
     }
 
-    public long getBlockAddr(long pageNum) {
-        return begin + BLOCK_SIZE * pageNum;
+    public long getBlockAddr(int pageNum) {
+        return begin + BLOCK_SIZE * (long) pageNum;
     }
 
     public long getBlock() {
@@ -60,27 +67,22 @@ public class SimpleImmixSpace extends Space {
             }
 
             // Otherwise trigger the GC and wait for the GC to complete.
-            heap.triggerAndWaitForGC();
+            System.out.println("No blocks. Trigger GC.");
+            heap.mutatorTriggerAndWaitForGCEnd();
         }
     }
 
     private long tryGetBlock() {
-        long myCursor;
+        int myCursor;
 
         // Does not really need lock. An atomic getAndInc will suffice.
-        heap.lock.lock();
-        try {
-            myCursor = pageCursor;
-            pageCursor++;
-        } finally {
-            heap.lock.unlock();
+        myCursor = pageCursor.getAndIncrement();
+
+        if (myCursor >= maxFree) {
+            return 0L;
         }
 
-        if (myCursor >= nFree) {
-            return -1;
-        }
-
-        long pageNum = freeList[(int) myCursor];
+        int pageNum = freeList[myCursor];
 
         long blockAddr = getBlockAddr(pageNum);
 

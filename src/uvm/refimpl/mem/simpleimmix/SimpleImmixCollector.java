@@ -1,38 +1,35 @@
 package uvm.refimpl.mem.simpleimmix;
 
+import uvm.refimpl.mem.Heap;
 import uvm.util.ErrorUtils;
 
 public class SimpleImmixCollector implements Runnable {
 
-    private SimpleImmixHeap heap;
+    private Heap heap;
 
-    public SimpleImmixCollector(SimpleImmixHeap heap) {
+    public SimpleImmixCollector(Heap heap) {
         this.heap = heap;
     }
 
     @Override
     public void run() {
         while (true) {
-            park();
-            collect();
-        }
-
-    }
-
-    private void park() {
-        heap.lock.lock();
-        while (heap.liveMutators == 0
-                || heap.mutatorsStopped != heap.liveMutators) {
             try {
-                heap.gcCanStart.await();
+                park();
             } catch (InterruptedException e) {
                 break;
             }
+            collect();
         }
-        heap.lock.unlock();
+        System.out.println("GC loop quitted upon interruption");
+    }
+
+    private void park() throws InterruptedException {
+        heap.collectorWaitForGCStart();
     }
 
     private void collect() {
+        heap.untriggerGC();
         ErrorUtils.uvmError("Collection not implemented.");
     }
 
