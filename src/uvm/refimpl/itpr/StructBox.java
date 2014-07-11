@@ -14,6 +14,10 @@ public class StructBox extends ValueBox {
         boxes.add(box);
     }
 
+    public int size() {
+        return boxes.size();
+    }
+
     @Override
     public void copyValue(ValueBox _that) {
         StructBox that = (StructBox) _that;

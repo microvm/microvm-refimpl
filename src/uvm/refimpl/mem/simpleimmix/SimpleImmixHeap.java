@@ -1,9 +1,6 @@
 package uvm.refimpl.mem.simpleimmix;
 
-import java.util.concurrent.locks.ReentrantLock;
-
 import uvm.refimpl.mem.Heap;
-import uvm.refimpl.mem.Mutator;
 
 /**
  * A heap which uses the simplified Immix GC algorithm.
@@ -11,6 +8,7 @@ import uvm.refimpl.mem.Mutator;
  * 
  */
 public class SimpleImmixHeap extends Heap {
+    private SimpleImmixSpace space;
     private SimpleImmixCollector collector;
     private Thread collectorThread;
 
@@ -19,32 +17,39 @@ public class SimpleImmixHeap extends Heap {
 
         space = new SimpleImmixSpace(this, "SimpleImmixSpace", begin, size);
 
-        lock = new ReentrantLock();
-        gcCanStart = lock.newCondition();
-        gcFinished = lock.newCondition();
-
-        liveMutators = 0;
-        mutatorsStopped = 0;
-        isDoingGC = false;
-
-        globalPauseFlag = false;
-
         collector = new SimpleImmixCollector(this);
         collectorThread = new Thread(collector);
         collectorThread.setDaemon(true);
         collectorThread.start();
     }
 
-    public Mutator makeMutator() {
-        Mutator mutator;
+    @Override
+    public SimpleImmixMutator makeMutator() {
+        SimpleImmixMutator mutator;
         lock.lock();
         try {
-            liveMutators++;
-            mutator = new SimpleImmixMutator(this, (SimpleImmixSpace) space);
+            mutator = new SimpleImmixMutator(this, space);
         } finally {
             lock.unlock();
         }
         return mutator;
+    }
+
+    public long getBlock() {
+        lock.lock();
+        try {
+            while (true) {
+                long addr = space.tryGetBlock();
+
+                if (addr != 0L) {
+                    return addr;
+                }
+
+                mutatorTriggerAndWaitForGCEnd();
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
 }

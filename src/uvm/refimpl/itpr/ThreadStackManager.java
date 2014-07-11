@@ -2,7 +2,6 @@ package uvm.refimpl.itpr;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import uvm.Function;
 import uvm.refimpl.facade.MicroVM;
@@ -13,13 +12,13 @@ public class ThreadStackManager {
 
     private MicroVM microVM;
 
+    private Map<Integer, InterpreterStack> stackRegistry = new HashMap<Integer, InterpreterStack>();
+    private Map<Integer, InterpreterThread> threadRegistry = new HashMap<Integer, InterpreterThread>();
+
     public ThreadStackManager(MicroVM microVM) {
         super();
         this.microVM = microVM;
     }
-
-    private Map<Integer, InterpreterStack> stackRegistry = new HashMap<Integer, InterpreterStack>();
-    private Map<Integer, InterpreterThread> threadRegistry = new HashMap<Integer, InterpreterThread>();
 
     public InterpreterStack getStackByID(int id) {
         return stackRegistry.get(id);
@@ -29,16 +28,16 @@ public class ThreadStackManager {
         return threadRegistry.get(id);
     }
 
-    private AtomicInteger nextStackID = new AtomicInteger(1);
+    private int nextStackID = 1;
 
     private int makeStackID() {
-        return nextStackID.getAndIncrement();
+        return nextStackID++;
     }
 
-    private AtomicInteger nextThreadID = new AtomicInteger(1);
+    private int nextThreadID = 1;
 
     private int makeThreadID() {
-        return nextThreadID.getAndIncrement();
+        return nextThreadID++;
     }
 
     public InterpreterStack newStack(Function function) {
@@ -54,10 +53,30 @@ public class ThreadStackManager {
     public InterpreterThread newThread(InterpreterStack stack) {
         Mutator mutator = microVM.getMemoryManager().makeMutator();
         int id = makeThreadID();
-        InterpreterThread thr = new InterpreterThread(id, microVM,
-                stack, mutator);
+        InterpreterThread thr = new InterpreterThread(id, microVM, stack,
+                mutator);
         threadRegistry.put(id, thr);
         thr.start();
+
         return thr;
+    }
+
+    public void joinAll() {
+        boolean someRunning;
+        do {
+            someRunning = false;
+            for (InterpreterThread thr2 : threadRegistry.values()) {
+                thr2.step();
+                someRunning = someRunning || thr2.isRunning();
+            }
+        } while (someRunning);
+    }
+
+    public void joinThread(InterpreterThread thr) {
+        while (thr.isRunning()) {
+            for (InterpreterThread thr2 : threadRegistry.values()) {
+                thr2.step();
+            }
+        }
     }
 }

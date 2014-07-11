@@ -1,6 +1,5 @@
 package uvm.refimpl.mem.simpleimmix;
 
-import uvm.refimpl.mem.Heap;
 import uvm.refimpl.mem.MemConstants;
 import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.TypeSizes;
@@ -11,24 +10,18 @@ public class SimpleImmixMutator extends Mutator {
     public long curBlockAddr;
     public long cursor;
     public long limit;
-    private Heap heap;
-    private SimpleImmixSpace space;
+    private SimpleImmixHeap heap;
 
-    public SimpleImmixMutator(Heap simpleImmixHeap,
+    public SimpleImmixMutator(SimpleImmixHeap simpleImmixHeap,
             SimpleImmixSpace simpleImmixSpace) {
         this.heap = simpleImmixHeap;
-        this.space = simpleImmixSpace;
         getNewBlock();
     }
 
     private void getNewBlock() {
-        curBlockAddr = space.getBlock();
+        curBlockAddr = heap.getBlock();
         cursor = curBlockAddr;
         limit = curBlockAddr + SimpleImmixSpace.BLOCK_SIZE;
-    }
-
-    public boolean getGlobalPauseFlag() {
-        return heap.getGlobalPauseFlag();
     }
 
     @Override

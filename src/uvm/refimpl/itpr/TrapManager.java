@@ -30,6 +30,8 @@ public class TrapManager {
     }
 
     public void newWatchpoint(int id) {
+        // TODO µVM semantic: if a watchpoint is enabled and new µVM-IR code
+        // contains the same watchpoint, should it be enabled in the beginning?
         watchpointEnabled.put(id, false);
     }
 

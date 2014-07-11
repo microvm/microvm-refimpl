@@ -80,7 +80,7 @@ import uvm.type.Type;
 import uvm.type.WeakRef;
 import uvm.util.ErrorUtils;
 
-public class InterpreterThread implements Runnable {
+public class InterpreterThread {
 
     private int id;
 
@@ -98,16 +98,12 @@ public class InterpreterThread implements Runnable {
 
     private Mutator mutator;
 
-    private Thread vmThread;
-
     public InterpreterThread(int id, MicroVM microVM, InterpreterStack stack,
             Mutator mutator) {
         this.id = id;
         this.microVM = microVM;
         this.stack = stack;
         this.mutator = mutator;
-
-        vmThread = new Thread(this);
     }
 
     // Resource getters
@@ -134,9 +130,8 @@ public class InterpreterThread implements Runnable {
 
     // Execution
 
-    @Override
-    public void run() {
-        while (running) {
+    public void step() {
+        if (running) {
             getCurInst().accept(executor);
         }
     }
@@ -1588,15 +1583,18 @@ public class InterpreterThread implements Runnable {
     }
 
     public void start() {
-        vmThread.start();
     }
 
-    public void join() throws InterruptedException {
-        vmThread.join();
+    public void join() {
+        threadStackManager().joinThread(this);
     }
 
     public void exit() {
         running = false;
+    }
+
+    public boolean isRunning() {
+        return running;
     }
 
 }

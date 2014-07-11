@@ -1,9 +1,6 @@
 package uvm.refimpl.mem.simpleimmix;
 
-import static uvm.util.ErrorUtils.uvmError;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
+import static uvm.util.ErrorUtils.*;
 import uvm.refimpl.mem.Heap;
 import uvm.refimpl.mem.Space;
 
@@ -27,10 +24,9 @@ public class SimpleImmixSpace extends Space {
     public boolean[] blockMarks;
     public int[] freeList;
     public int maxFree;
-    public AtomicInteger pageCursor;
+    public int pageCursor;
 
-    public SimpleImmixSpace(Heap heap, String name, long begin,
-            long extend) {
+    public SimpleImmixSpace(Heap heap, String name, long begin, long extend) {
         super(name, begin, extend);
         this.heap = heap;
 
@@ -48,35 +44,25 @@ public class SimpleImmixSpace extends Space {
             freeList[i] = i;
         }
         maxFree = nBlocks;
-        pageCursor = new AtomicInteger(0);
+        pageCursor = 0;
 
     }
 
+    /**
+     * Page index to address. No side-effect.
+     */
     public long getBlockAddr(int pageNum) {
         return begin + BLOCK_SIZE * (long) pageNum;
     }
 
-    public long getBlock() {
-        while (true) {
-            // Try to get a block, may fail.
-            long myBlock = tryGetBlock();
-
-            // If successful, return.
-            if (myBlock != 0) {
-                return myBlock;
-            }
-
-            // Otherwise trigger the GC and wait for the GC to complete.
-            System.out.println("No blocks. Trigger GC.");
-            heap.mutatorTriggerAndWaitForGCEnd();
-        }
-    }
-
-    private long tryGetBlock() {
-        int myCursor;
-
-        // Does not really need lock. An atomic getAndInc will suffice.
-        myCursor = pageCursor.getAndIncrement();
+    /**
+     * Get a new block. Not thread safe. Must synchronise on heap.lock.
+     * 
+     * @return A block address, or 0 if no pages available.
+     */
+    public long tryGetBlock() {
+        int myCursor = pageCursor;
+        pageCursor++;
 
         if (myCursor >= maxFree) {
             return 0L;
@@ -88,5 +74,4 @@ public class SimpleImmixSpace extends Space {
 
         return blockAddr;
     }
-
 }

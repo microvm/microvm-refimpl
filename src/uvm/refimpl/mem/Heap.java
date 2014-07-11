@@ -2,22 +2,28 @@ package uvm.refimpl.mem;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import uvm.util.ErrorUtils;
 
-public class Heap {
-
-    protected Space space;
+public abstract class Heap {
     protected Lock lock;
     protected Condition gcCanStart;
     protected Condition gcFinished;
-    protected int liveMutators;
-    protected int mutatorsStopped;
-    protected boolean isDoingGC;
-    protected volatile boolean globalPauseFlag;
+
+    protected static final int MUTATOR_RUNNING = 0;
+    protected static final int DOING_GC = 1;
+
+    protected int gcState;
 
     public Heap() {
         super();
+
+        lock = new ReentrantLock();
+        gcCanStart = lock.newCondition();
+        gcFinished = lock.newCondition();
+
+        gcState = MUTATOR_RUNNING;
     }
 
     public void mutatorTriggerAndWaitForGCEnd() {
@@ -31,32 +37,28 @@ public class Heap {
 
     }
 
-    public void mutatorWaitForGCEnd() {
+    private void triggerGC() {
         lock.lock();
         try {
-            mutatorsStopped += 1;
-            if (mutatorsStopped == liveMutators) {
-                gcCanStart.signal();
-            }
-
-            while (isDoingGC) {
-                try {
-                    gcFinished.await();
-                } catch (InterruptedException e) {
-                    // Do nothing
-                }
-            }
-            mutatorsStopped -= 1;
+            assert (gcState == MUTATOR_RUNNING);
+            gcState = DOING_GC;
+            gcCanStart.signalAll();
         } finally {
             lock.unlock();
         }
     }
 
-    private void triggerGC() {
+    private void mutatorWaitForGCEnd() {
         lock.lock();
         try {
-            isDoingGC = true;
-            globalPauseFlag = true;
+            while (gcState != MUTATOR_RUNNING) {
+                try {
+                    gcFinished.await();
+                } catch (InterruptedException e) {
+                    ErrorUtils
+                            .uvmError("Interrupted while waiting for GC. Stop.");
+                }
+            }
         } finally {
             lock.unlock();
         }
@@ -65,28 +67,26 @@ public class Heap {
     public void untriggerGC() {
         lock.lock();
         try {
-            isDoingGC = false;
-            globalPauseFlag = false;
+            assert (gcState == DOING_GC);
+            gcState = MUTATOR_RUNNING;
+            gcFinished.signalAll();
         } finally {
             lock.unlock();
         }
     }
 
-    public boolean getGlobalPauseFlag() {
-        return globalPauseFlag;
-    }
-
-    public void collectorWaitForGCStart() throws InterruptedException {
+    public void collectorWaitForGCStart() {
         lock.lock();
-        while (liveMutators == 0 || mutatorsStopped != liveMutators) {
-            gcCanStart.await();
+        while (gcState != DOING_GC) {
+            try {
+                gcCanStart.await();
+            } catch (InterruptedException e) {
+                ErrorUtils.uvmError("GC thread is interrupted.");
+            }
         }
         lock.unlock();
     }
 
-    public void setOutOfMemory() {
-        ErrorUtils.uvmError("Not implemented");
-
-    }
+    public abstract Mutator makeMutator();
 
 }

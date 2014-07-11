@@ -479,6 +479,8 @@ public class TestMicroVMRefImpl {
                 List<ValueBox> kas = thread.getStack().getTop()
                         .dumpKeepAlives();
 
+                printStackTrace(thread.getStack());
+                thread.exit();
                 fail("Not implemented yet.");
 
                 return null;
