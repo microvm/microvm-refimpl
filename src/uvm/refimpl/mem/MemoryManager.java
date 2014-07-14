@@ -3,6 +3,7 @@ package uvm.refimpl.mem;
 import java.util.ArrayList;
 import java.util.List;
 
+import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.mem.simpleimmix.SimpleImmixHeap;
 
 public class MemoryManager {
@@ -18,12 +19,13 @@ public class MemoryManager {
 
     private long stackBegin;
 
-    public MemoryManager(long heapSize, long globalSize, long stackSize) {
+    public MemoryManager(long heapSize, long globalSize, long stackSize,
+            MicroVM microVM) {
         this.heapSize = heapSize;
         this.globalSize = globalSize;
         this.stackSize = stackSize;
 
-        heap = new SimpleImmixHeap(MEMORY_BEGIN, heapSize);
+        heap = new SimpleImmixHeap(MEMORY_BEGIN, heapSize, microVM);
         global = new GlobalMemory(MEMORY_BEGIN + heapSize, globalSize);
         stackBegin = MEMORY_BEGIN + heapSize + globalSize;
     }
@@ -41,5 +43,15 @@ public class MemoryManager {
 
         StackMemory stackMemory = new StackMemory(myStackBegin, stackSize);
         return stackMemory;
+    }
+
+    // Getters and setters
+
+    public SimpleImmixHeap getHeap() {
+        return heap;
+    }
+
+    public GlobalMemory getGlobal() {
+        return global;
     }
 }

@@ -1,5 +1,6 @@
 package uvm.refimpl.facade;
 
+import java.util.Collections;
 import java.util.List;
 
 import uvm.Bundle;
@@ -18,9 +19,9 @@ import uvm.ssavalue.Constant;
 import uvm.ssavalue.Parameter;
 
 public class MicroVM {
-    public static final long HEAP_SIZE = 0x400000L; // 4MiB
-    public static final long GLOBAL_SIZE = 0x100000L; // 1MiB
-    public static final long STACK_SIZE = 0x1000L; // 4KiB per stack
+    public static final long DEFAULT_HEAP_SIZE = 0x400000L; // 4MiB
+    public static final long DEFAULT_GLOBAL_SIZE = 0x100000L; // 1MiB
+    public static final long DEFAULT_STACK_SIZE = 0x1000L; // 4KiB per stack
 
     private MemorySupport memorySupport;
 
@@ -34,15 +35,21 @@ public class MicroVM {
 
     private TrapManager trapManager;
 
+    private MicroVMClient client;
+
+    public MicroVM() {
+        this(DEFAULT_HEAP_SIZE, DEFAULT_GLOBAL_SIZE, DEFAULT_STACK_SIZE);
+    }
+
     /**
      * Create a new instance of Micro VM.
      */
-    public MicroVM() {
+    public MicroVM(long heapSize, long globalSize, long stackSize) {
         memorySupport = Config.MEMORY_SUPPORT;
         globalBundle = new Bundle();
         constantPool = new ConstantPool();
         threadStackManager = new ThreadStackManager(this);
-        memoryManager = new MemoryManager(HEAP_SIZE, GLOBAL_SIZE, STACK_SIZE);
+        memoryManager = new MemoryManager(heapSize, globalSize, stackSize, this);
         memorySupport = Config.MEMORY_SUPPORT;
         trapManager = new TrapManager(this);
     }
@@ -52,19 +59,19 @@ public class MicroVM {
      */
     public void addBundle(Bundle bundle) {
         globalBundle.mergeFrom(bundle);
-        
-        for(Constant constant : bundle.getGlobalValueNs().getObjects()) {
+
+        for (Constant constant : bundle.getGlobalValueNs().getObjects()) {
             constantPool.addConstant(constant);
         }
-        
+
         // TODO Add global memory items.
     }
 
     public InterpreterStack newStack(Function function, List<ValueBox> args) {
         InterpreterStack sta = threadStackManager.newStack(function);
         InterpreterFrame top = sta.getTop();
-        List<Parameter> vParams = function.getCFG().getParams(); 
-        for (int i=0; i<vParams.size(); i++) {
+        List<Parameter> vParams = function.getCFG().getParams();
+        for (int i = 0; i < vParams.size(); i++) {
             Parameter pv = vParams.get(i);
             ValueBox pb = top.getValueBox(pv);
             ValueBox ab = args.get(i);
@@ -100,5 +107,21 @@ public class MicroVM {
 
     public TrapManager getTrapManager() {
         return trapManager;
+    }
+
+    public MicroVMClient getClient() {
+        return client;
+    }
+
+    public void setClient(MicroVMClient client) {
+        this.client = client;
+    }
+
+    public List<Long> extraRoots() {
+        if (client != null) {
+            return client.extraRoots();
+        } else {
+            return Collections.emptyList();
+        }
     }
 }

@@ -20,6 +20,14 @@ public class ThreadStackManager {
         this.microVM = microVM;
     }
 
+    public Map<Integer, InterpreterStack> getStackRegistry() {
+        return this.stackRegistry;
+    }
+
+    public Map<Integer, InterpreterThread> getThreadRegistry() {
+        return threadRegistry;
+    }
+
     public InterpreterStack getStackByID(int id) {
         return stackRegistry.get(id);
     }
@@ -79,4 +87,5 @@ public class ThreadStackManager {
             }
         }
     }
+
 }

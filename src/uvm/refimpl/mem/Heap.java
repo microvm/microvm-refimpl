@@ -7,7 +7,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import uvm.util.ErrorUtils;
 
 public abstract class Heap {
-    protected Lock lock;
+    protected Lock lock; // Used to communicate between the mutator and the collector.
     protected Condition gcCanStart;
     protected Condition gcFinished;
 

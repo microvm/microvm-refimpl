@@ -17,14 +17,18 @@ public class SimpleImmixSpace extends Space {
 
     public static final long BLOCK_SIZE = 32768;
 
+    public static final int BLOCK_MARKED = 0x1;
+    public static final int BLOCK_RESERVED = 0x2;
+
     public Heap heap;
 
     public int nBlocks;
 
-    public boolean[] blockMarks;
-    public int[] freeList;
-    public int maxFree;
-    public int pageCursor;
+    public int[] blockFlags; // for GC marking. maps block index -> flag
+    
+    public int[] freeList; // a list of all indices of free blocks
+    public int freeListValidCount; // number of valid items in freeList
+    public int nextFree; // index into freeList, the next page to get
 
     public SimpleImmixSpace(Heap heap, String name, long begin, long extend) {
         super(name, begin, extend);
@@ -38,13 +42,13 @@ public class SimpleImmixSpace extends Space {
                     + BLOCK_SIZE);
         }
         nBlocks = (int) (extend / BLOCK_SIZE);
-        blockMarks = new boolean[nBlocks];
+        blockFlags = new int[nBlocks];
         freeList = new int[nBlocks];
         for (int i = 0; i < nBlocks; i++) {
             freeList[i] = i;
         }
-        maxFree = nBlocks;
-        pageCursor = 0;
+        freeListValidCount = nBlocks;
+        nextFree = 0;
 
     }
 
@@ -56,22 +60,51 @@ public class SimpleImmixSpace extends Space {
     }
 
     /**
-     * Get a new block. Not thread safe. Must synchronise on heap.lock.
+     * Get a new block. Automatically reserve that block.
      * 
      * @return A block address, or 0 if no pages available.
      */
     public long tryGetBlock() {
-        int myCursor = pageCursor;
-        pageCursor++;
+        int myCursor = nextFree;
+        nextFree++;
 
-        if (myCursor >= maxFree) {
+        if (myCursor >= freeListValidCount) {
             return 0L;
         }
 
-        int pageNum = freeList[myCursor];
+        int blockNum = freeList[myCursor];
+        reserve(blockNum);
 
-        long blockAddr = getBlockAddr(pageNum);
+        long blockAddr = getBlockAddr(blockNum);
 
         return blockAddr;
+    }
+
+    private void reserve(int pageNum) {
+        blockFlags[pageNum] |= BLOCK_RESERVED;
+    }
+
+    public int objRefToBlockIndex(long objRef) {
+        long blockBegin = objRef & ~(BLOCK_SIZE - 1);
+        /*
+         * NOTE: My SimpleImmixMutator refuses to fill up a block to exactly its
+         * upper-bound, in which case if the last object is a "void", its header
+         * will occupy the last word in the block, but the the objRef appears to
+         * be the beginning of the next block. This has plagued Rifat, but I
+         * cheated by avoiding the problem in the allocator.
+         */
+
+        long blockIndex = (blockBegin - begin) / BLOCK_SIZE;
+
+        return (int) blockIndex;
+    }
+
+    public void markBlockByIndex(int index) {
+        blockFlags[index] |= BLOCK_MARKED;
+    }
+
+    public void markBlockByObjRef(long objRef) {
+        int blockIndex = objRefToBlockIndex(objRef);
+        markBlockByIndex(blockIndex);
     }
 }

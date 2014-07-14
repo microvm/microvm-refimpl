@@ -5,6 +5,28 @@ import uvm.type.Hybrid;
 import uvm.type.Struct;
 import uvm.type.Type;
 
+/**
+ * Responsible for object layout.
+ * <p>
+ * Scalar object:
+ * <pre>
+ *   1bit     1bit    30bits   32bits  
+ * +-------+--------+--------+---------+--------------
+ * |            header (8bytes)        | payload... 
+ * | moved | marked | unused | type ID |
+ * +-------+--------+--------+---------+--------------
+ * ^objref-8bytes                      ^ objref
+ * </pre>
+ * Hybrid:
+ * <pre>
+ *    8 bytes           8 bytes
+ * +-----------------+-----------------+------------+--------------
+ * | var part length |  header         | fixed part | var part
+ * |                 |  same as scalar |            |
+ * +-----------------+-----------------+------------+--------------
+ * ^objref-16bytes  ^objref-8bytes    ^ objref
+ * </pre>
+ */
 public class TypeSizes {
 
     public static final long GC_HEADER_SIZE_SCALAR = 8;

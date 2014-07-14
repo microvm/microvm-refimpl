@@ -1,9 +1,6 @@
 package uvm.refimpl.mem;
 
-
 public abstract class Collector implements Runnable {
-
-    protected Heap heap;
 
     public Collector() {
         super();
@@ -18,8 +15,10 @@ public abstract class Collector implements Runnable {
     }
 
     private void park() {
-        heap.collectorWaitForGCStart();
+        getHeap().collectorWaitForGCStart();
     }
+
+    protected abstract Heap getHeap();
 
     protected abstract void collect();
 
