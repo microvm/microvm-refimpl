@@ -12,6 +12,7 @@ import uvm.Bundle;
 import uvm.ir.text.input.TestingHelper;
 import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.facade.MicroVMClient;
+import uvm.refimpl.mem.ObjectMarker;
 import uvm.type.Hybrid;
 import uvm.type.Int;
 import uvm.type.Struct;
@@ -63,29 +64,29 @@ public class TestSimpleImmixHeap {
         Hybrid ca = (Hybrid) bundle.getTypeNs().getByName("@hCharArray");
 
         final long unitLen = 4096;
-        final int units = 400;
+        final int units = 120;
         final long[] as = new long[units];
+        final int keepOnly = 10;
 
         microVM.setClient(new MicroVMClient() {
             @Override
-            public List<Long> extraRoots() {
-                ArrayList<Long> ls = new ArrayList<Long>();
-                int j = 0;
-                for (int i = units / 2; i < units; i++) {
-                    if (as[j] != 0) {
-                        ls.add(as[j]);
-                    }
-                    j++;
+            public void markExternalRoots(ObjectMarker marker) {
+                for (int i = 0; i < units; i++) {
+                    marker.markObjRef(as[i]);
                 }
-                return ls;
             }
-
         });
 
         for (int i = 0; i < units; i++) {
             long a = mutator.newHybrid(ca, unitLen);
             as[i] = a;
             System.out.format("as[%d] = %d\n", i, a);
+            int forget = i - keepOnly;
+            if (forget >= 0) {
+                long b = as[forget];
+                System.out.format("forget as[%d] = %d\n", forget, b);
+                as[forget] = 0;
+            }
         }
     }
 }

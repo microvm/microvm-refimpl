@@ -15,11 +15,12 @@ public class SimpleImmixMutator extends Mutator {
     public SimpleImmixMutator(SimpleImmixHeap simpleImmixHeap,
             SimpleImmixSpace simpleImmixSpace) {
         this.heap = simpleImmixHeap;
+        this.curBlockAddr = 0L;
         getNewBlock();
     }
 
     private void getNewBlock() {
-        curBlockAddr = heap.getBlock();
+        curBlockAddr = heap.getBlock(curBlockAddr);
         cursor = curBlockAddr;
         limit = curBlockAddr + SimpleImmixSpace.BLOCK_SIZE;
     }
@@ -41,6 +42,7 @@ public class SimpleImmixMutator extends Mutator {
                 }
                 System.out.println("Getting new block...");
                 getNewBlock();
+                System.out.println("got new block.");
                 continue;
             } else {
                 cursor = userEnd;

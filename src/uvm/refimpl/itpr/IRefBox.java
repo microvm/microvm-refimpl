@@ -1,6 +1,6 @@
 package uvm.refimpl.itpr;
 
-public class IRefBox extends ValueBox {
+public class IRefBox extends ValueBox implements HasObjRef {
     private long base;
     private long offset;
 
@@ -29,5 +29,15 @@ public class IRefBox extends ValueBox {
         IRefBox that = (IRefBox) _that;
         this.base = that.getBase();
         this.offset = that.getOffset();
+    }
+
+    @Override
+    public long getObjRef() {
+        return getBase();
+    }
+
+    @Override
+    public void setObjRef(long objRef) {
+        setBase(objRef);
     }
 }

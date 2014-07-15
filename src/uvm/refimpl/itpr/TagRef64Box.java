@@ -1,6 +1,6 @@
 package uvm.refimpl.itpr;
 
-public class TagRef64Box extends ValueBox {
+public class TagRef64Box extends ValueBox implements HasObjRef {
     public static final int FP_KIND = 0;
     public static final int INT_KIND = 1;
     public static final int REF_KIND = 2;
@@ -57,5 +57,19 @@ public class TagRef64Box extends ValueBox {
         this.fpVal = that.fpVal;
         this.intVal = that.intVal;
         this.refAddr = that.refAddr;
+    }
+
+    @Override
+    public long getObjRef() {
+        if (kind == REF_KIND) {
+            return getRef();
+        } else {
+            return 0;
+        }
+    }
+
+    @Override
+    public void setObjRef(long objRef) {
+        setRef(objRef);
     }
 }

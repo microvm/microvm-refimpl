@@ -30,9 +30,9 @@ public class SimpleImmixHeap extends Heap {
         return mutator;
     }
 
-    public long getBlock() {
+    public long getBlock(long oldBlockAddr) {
         while (true) {
-            long addr = space.tryGetBlock();
+            long addr = space.tryGetBlock(oldBlockAddr);
 
             if (addr != 0L) {
                 return addr;

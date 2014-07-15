@@ -1,6 +1,6 @@
 package uvm.refimpl.itpr;
 
-public class RefBox extends ValueBox {
+public class RefBox extends ValueBox implements HasObjRef {
     private long addr;
 
     public long getAddr() {
@@ -14,6 +14,16 @@ public class RefBox extends ValueBox {
     @Override
     public void copyValue(ValueBox that) {
         this.addr = ((RefBox) that).getAddr();
+    }
+
+    @Override
+    public long getObjRef() {
+        return getAddr();
+    }
+
+    @Override
+    public void setObjRef(long objRef) {
+        setAddr(objRef);
     }
 
 }

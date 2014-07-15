@@ -1,7 +1,7 @@
 package uvm.refimpl.facade;
 
-import java.util.List;
+import uvm.refimpl.mem.ObjectMarker;
 
 public interface MicroVMClient {
-    List<Long> extraRoots();
+    void markExternalRoots(ObjectMarker marker);
 }

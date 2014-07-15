@@ -15,6 +15,7 @@ import uvm.refimpl.itpr.ThreadStackManager;
 import uvm.refimpl.itpr.TrapManager;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.MemoryManager;
+import uvm.refimpl.mem.ObjectMarker;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.Parameter;
 
@@ -117,11 +118,7 @@ public class MicroVM {
         this.client = client;
     }
 
-    public List<Long> extraRoots() {
-        if (client != null) {
-            return client.extraRoots();
-        } else {
-            return Collections.emptyList();
-        }
+    public void clientMark(ObjectMarker marker) {
+        client.markExternalRoots(marker);
     }
 }

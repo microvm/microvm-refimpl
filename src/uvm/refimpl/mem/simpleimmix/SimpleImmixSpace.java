@@ -25,7 +25,7 @@ public class SimpleImmixSpace extends Space {
     public int nBlocks;
 
     public int[] blockFlags; // for GC marking. maps block index -> flag
-    
+
     public int[] freeList; // a list of all indices of free blocks
     public int freeListValidCount; // number of valid items in freeList
     public int nextFree; // index into freeList, the next page to get
@@ -64,12 +64,17 @@ public class SimpleImmixSpace extends Space {
      * 
      * @return A block address, or 0 if no pages available.
      */
-    public long tryGetBlock() {
+    public long tryGetBlock(long oldBlockAddr) {
         int myCursor = nextFree;
         nextFree++;
 
         if (myCursor >= freeListValidCount) {
             return 0L;
+        }
+
+        if (oldBlockAddr != 0) {
+            int oldBlockNum = blockAddrToBlockIndex(oldBlockAddr);
+            unreserve(oldBlockNum);
         }
 
         int blockNum = freeList[myCursor];
@@ -84,8 +89,12 @@ public class SimpleImmixSpace extends Space {
         blockFlags[pageNum] |= BLOCK_RESERVED;
     }
 
+    private void unreserve(int pageNum) {
+        blockFlags[pageNum] &= ~BLOCK_RESERVED;
+    }
+
     public int objRefToBlockIndex(long objRef) {
-        long blockBegin = objRef & ~(BLOCK_SIZE - 1);
+        long blockAddr = objRef & ~(BLOCK_SIZE - 1);
         /*
          * NOTE: My SimpleImmixMutator refuses to fill up a block to exactly its
          * upper-bound, in which case if the last object is a "void", its header
@@ -94,9 +103,13 @@ public class SimpleImmixSpace extends Space {
          * cheated by avoiding the problem in the allocator.
          */
 
-        long blockIndex = (blockBegin - begin) / BLOCK_SIZE;
+        int blockIndex = blockAddrToBlockIndex(blockAddr);
 
-        return (int) blockIndex;
+        return blockIndex;
+    }
+
+    public int blockAddrToBlockIndex(long blockAddr) {
+        return (int) ((blockAddr - begin) / BLOCK_SIZE);
     }
 
     public void markBlockByIndex(int index) {
@@ -106,5 +119,31 @@ public class SimpleImmixSpace extends Space {
     public void markBlockByObjRef(long objRef) {
         int blockIndex = objRefToBlockIndex(objRef);
         markBlockByIndex(blockIndex);
+        System.out.format("Marked block %d\n", blockIndex);
+    }
+
+    public void collectBlocks() {
+        int newNFree = 0;
+        for (int i = 0; i < nBlocks; i++) {
+            int flag = blockFlags[i];
+            int bits = (flag & (BLOCK_MARKED | BLOCK_RESERVED));
+            if (bits == 0) {
+                freeList[newNFree] = i;
+                newNFree++;
+            } else {
+                System.out.format(
+                        "Block %d is not freed because flag bits is %x\n", i,
+                        bits);
+            }
+            flag &= ~BLOCK_MARKED;
+            blockFlags[i] = flag;
+        }
+        freeListValidCount = newNFree;
+        System.out.print("New freelist:");
+        for (int i = 0; i < freeListValidCount; i++) {
+            System.out.print(" " + freeList[i]);
+        }
+        System.out.println();
+        nextFree = 0;
     }
 }
