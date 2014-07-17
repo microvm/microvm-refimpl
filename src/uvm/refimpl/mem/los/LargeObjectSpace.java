@@ -1,11 +1,12 @@
 package uvm.refimpl.mem.los;
 
+import static uvm.platformsupport.Config.*;
 import uvm.refimpl.mem.MemUtils;
 import uvm.refimpl.mem.Space;
 import uvm.refimpl.mem.TypeSizes;
+import uvm.refimpl.mem.simpleimmix.SimpleImmixHeap;
 import uvm.refimpl.mem.simpleimmix.SimpleImmixSpace;
 import uvm.util.ErrorUtils;
-import static uvm.platformsupport.Config.MEMORY_SUPPORT;
 
 /**
  * A mark-sweep freelist-based space to allocate large objects. An object always
@@ -23,7 +24,7 @@ import static uvm.platformsupport.Config.MEMORY_SUPPORT;
  * Objects in this space are never moved.
  */
 public class LargeObjectSpace extends Space {
-    public static final long BLOCK_SIZE = SimpleImmixSpace.BLOCK_SIZE;
+    public static final long BLOCK_SIZE = SimpleImmixSpace.BLOCK_SIZE / 4;
 
     private static final long OFFSET_PREV = 0;
 
@@ -32,17 +33,20 @@ public class LargeObjectSpace extends Space {
 
     private static final long MARK_BIT = 0x1;
 
+    private SimpleImmixHeap heap;
     private FreeList freeList;
 
     private long head; // Head of the linked list of all live objects. 0 if
                        // there is no live object.
 
-    public LargeObjectSpace(String name, long begin, long extend) {
+    public LargeObjectSpace(SimpleImmixHeap heap, String name, long begin,
+            long extend) {
         super(name, begin, extend);
         ErrorUtils.uvmAssert(extend % BLOCK_SIZE == 0, String.format(
                 "extend %d should be a multiple of BLOCK_SIZE %d", extend,
                 BLOCK_SIZE));
 
+        this.heap = heap;
         freeList = new FreeList((int) (extend / BLOCK_SIZE));
         head = 0;
     }
@@ -59,18 +63,27 @@ public class LargeObjectSpace extends Space {
         }
 
         int iBlocks = (int) nBlocks;
-        int blockIndex = freeList.allocate(iBlocks);
+        int blockIndex = -1;
+        for (int tries = 0; tries < 2; tries++) {
+            blockIndex = freeList.allocate(iBlocks);
+            if (blockIndex == -1 && tries == 0) {
+                heap.mutatorTriggerAndWaitForGCEnd();
+            } else {
+                break;
+            }
+        }
 
         if (blockIndex == -1) {
-            ErrorUtils
-                    .uvmError("Out of memory when allocating large object of size: "
+            System.out
+                    .println("Out of memory when allocating large object of size: "
                             + totalSize);
+            System.exit(0);
             return 0; // unreachable
         }
 
         long blockAddr = blockIndexToBlockAddr(blockIndex);
-        long regionEnd = blockAddr + nBlocks * BLOCK_SIZE;
-        MemUtils.zeroRegion(blockAddr, regionEnd);
+        long regionSize = nBlocks * BLOCK_SIZE;
+        MemUtils.zeroRegion(blockAddr, regionSize);
 
         link(blockAddr);
 
@@ -78,23 +91,43 @@ public class LargeObjectSpace extends Space {
         return objRef;
     }
 
-    public void collect() {
+    public void markBlockByObjRef(long objRef) {
+        long blockAddr = objRefToBlockAddr(objRef);
+        System.out.printf("LOS: marking block addr %d for obj %d...\n",
+                blockAddr, objRef);
+        markBlock(blockAddr);
+    }
+
+    public boolean collect() {
+        System.out.printf("LOS: Start collecting...\n");
+
         if (head == 0) {
-            return;
+            System.out.printf("LOS: not iterating because head == 0\n");
+            return false;
         }
 
+        boolean anyDeallocated = false;
         long curBlock = head;
         long lastBlock = getPrev(curBlock);
         long nextBlock = getNext(curBlock);
 
+        System.out.printf("LOS: Begin iteration from %d to %d\n", curBlock,
+                lastBlock);
+
         while (true) {
+            System.out.printf("LOS: Visiting block %d..\n", curBlock);
             long mark = getBlockMark(curBlock);
             if (mark != MARK_BIT) {
+                System.out.printf("LOS: Deallocating block addr %d...\n",
+                        curBlock);
                 dealloc(curBlock);
+                anyDeallocated = true;
             } else {
+                System.out.printf("LOS: Block addr %d contains live object.\n",
+                        curBlock);
                 unmarkBlock(curBlock);
             }
-            
+
             if (curBlock == lastBlock) {
                 break;
             } else {
@@ -102,6 +135,7 @@ public class LargeObjectSpace extends Space {
                 nextBlock = getNext(curBlock);
             }
         }
+        return anyDeallocated;
 
     }
 
@@ -136,11 +170,6 @@ public class LargeObjectSpace extends Space {
 
     public int blockAddrToBlockIndex(long blockAddr) {
         return (int) ((blockAddr - begin) / BLOCK_SIZE);
-    }
-
-    public void markBlockByObjRef(long objRef) {
-        long blockAddr = objRefToBlockIndex(objRef);
-        markBlock(blockAddr);
     }
 
     private void markBlock(long blockAddr) {

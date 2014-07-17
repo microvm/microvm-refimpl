@@ -22,7 +22,7 @@ public class SimpleImmixHeap extends Heap {
 
         space = new SimpleImmixSpace(this, "SimpleImmixSpace", begin, size / 2);
 
-        los = new LargeObjectSpace("Large object space", mid, size / 2);
+        los = new LargeObjectSpace(this, "Large object space", mid, size / 2);
 
         collector = new SimpleImmixCollector(this, space, los, microVM);
         collectorThread = new Thread(collector);
@@ -46,6 +46,10 @@ public class SimpleImmixHeap extends Heap {
 
             mutatorTriggerAndWaitForGCEnd();
         }
+    }
+
+    public void returnBlock(long blockAddr) {
+        space.returnBlock(blockAddr);
     }
 
     public long allocLargeObject(long size, long align, long headerSize) {

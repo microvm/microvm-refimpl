@@ -61,7 +61,13 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
         System.out.println("Marked. Collecting blocks....");
 
-        collectBlocks();
+        boolean anyMemoryRecycled = collectBlocks();
+
+        if (!anyMemoryRecycled) {
+            ErrorUtils
+                    .uvmError("Out of memory because the GC failed to recycle any memory.");
+            System.exit(1);
+        }
 
         System.out.println("Blocks collected. Unmarking....");
 
@@ -121,9 +127,11 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         }
     }
 
-    private void collectBlocks() {
-        space.collectBlocks();
-        los.collect();
+    private boolean collectBlocks() {
+        boolean anyMemoryRecycled = false;
+        anyMemoryRecycled = space.collectBlocks() || anyMemoryRecycled;
+        anyMemoryRecycled = los.collect() || anyMemoryRecycled;
+        return anyMemoryRecycled;
     }
 
     private boolean clearMark(long objRef) {

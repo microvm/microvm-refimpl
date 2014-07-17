@@ -127,9 +127,9 @@ public class FreeList {
      */
     private void deallocAndMerge(int usedStart) {
         int thisStart = usedStart;
-        int thisSize = getSize(usedStart);
-        int thisLeft = usedStart - 1;
-        int thisRight = usedStart + thisSize;
+        int thisSize = getSize(thisStart);
+        int thisLeft = thisStart - 1;
+        int thisRight = thisStart + thisSize;
 
         int newStart;
         int newEnd;

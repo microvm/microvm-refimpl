@@ -42,4 +42,5 @@ public abstract class Mutator {
         return objAddr;
     }
 
+    public abstract void close();
 }

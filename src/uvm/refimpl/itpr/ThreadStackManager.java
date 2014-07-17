@@ -75,7 +75,7 @@ public class ThreadStackManager {
             someRunning = false;
             for (InterpreterThread thr2 : threadRegistry.values()) {
                 thr2.step();
-                someRunning = someRunning || thr2.isRunning();
+                someRunning = thr2.isRunning() || someRunning;
             }
         } while (someRunning);
     }

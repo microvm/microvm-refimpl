@@ -1,7 +1,6 @@
 package uvm.refimpl.mem.simpleimmix;
 
 import static uvm.util.ErrorUtils.*;
-import uvm.refimpl.mem.Heap;
 import uvm.refimpl.mem.MemUtils;
 import uvm.refimpl.mem.Space;
 
@@ -21,7 +20,7 @@ public class SimpleImmixSpace extends Space {
     public static final int BLOCK_MARKED = 0x1;
     public static final int BLOCK_RESERVED = 0x2;
 
-    public Heap heap;
+    public SimpleImmixHeap heap;
 
     public int nBlocks;
 
@@ -31,7 +30,8 @@ public class SimpleImmixSpace extends Space {
     public int freeListValidCount; // number of valid items in freeList
     public int nextFree; // index into freeList, the next block to get
 
-    public SimpleImmixSpace(Heap heap, String name, long begin, long extend) {
+    public SimpleImmixSpace(SimpleImmixHeap heap, String name, long begin,
+            long extend) {
         super(name, begin, extend);
         this.heap = heap;
 
@@ -75,8 +75,7 @@ public class SimpleImmixSpace extends Space {
         reserve(blockNum);
 
         long blockAddr = blockIndexToBlockAddr(blockNum);
-        long blockEnd = blockAddr + BLOCK_SIZE;
-        MemUtils.zeroRegion(blockAddr, blockEnd);
+        MemUtils.zeroRegion(blockAddr, BLOCK_SIZE);
 
         return blockAddr;
     }
@@ -122,7 +121,7 @@ public class SimpleImmixSpace extends Space {
         System.out.format("Marked block %d\n", blockIndex);
     }
 
-    public void collectBlocks() {
+    public boolean collectBlocks() {
         int newNFree = 0;
         for (int i = 0; i < nBlocks; i++) {
             int flag = blockFlags[i];
@@ -145,5 +144,12 @@ public class SimpleImmixSpace extends Space {
         }
         System.out.println();
         nextFree = 0;
+
+        return newNFree > 0;
+    }
+
+    public void returnBlock(long blockAddr) {
+        int blockNum = blockAddrToBlockIndex(blockAddr);
+        unreserve(blockNum);
     }
 }

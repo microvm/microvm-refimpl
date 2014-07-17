@@ -119,6 +119,8 @@ public class MicroVM {
     }
 
     public void clientMark(ObjectMarker marker) {
-        client.markExternalRoots(marker);
+        if (client != null) {
+            client.markExternalRoots(marker);
+        }
     }
 }

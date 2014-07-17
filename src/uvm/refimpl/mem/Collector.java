@@ -8,9 +8,15 @@ public abstract class Collector implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
-            park();
-            collect();
+        try {
+            while (true) {
+                park();
+                collect();
+            }
+        } catch (Exception e) {
+            System.err.println("Error thrown from collection thread.");
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 

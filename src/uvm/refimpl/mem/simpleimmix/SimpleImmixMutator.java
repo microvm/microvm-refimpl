@@ -50,4 +50,9 @@ public class SimpleImmixMutator extends Mutator {
         }
     }
 
+    @Override
+    public void close() {
+        heap.returnBlock(curBlockAddr);
+    }
+
 }
