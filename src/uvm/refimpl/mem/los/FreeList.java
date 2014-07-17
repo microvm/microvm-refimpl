@@ -3,6 +3,8 @@ package uvm.refimpl.mem.los;
 import uvm.util.ErrorUtils;
 
 public class FreeList {
+    private static final boolean DEBUG = false;
+
     private int nUnits;
 
     private boolean isUsed[];
@@ -11,7 +13,7 @@ public class FreeList {
     private int next[];
     private int size[];
 
-    private int head; // first free region.
+    private int head; // point to any free region
 
     public FreeList(int nUnits) {
         this.nUnits = nUnits;
@@ -24,16 +26,10 @@ public class FreeList {
         ErrorUtils.uvmAssert(nUnits > 1,
                 "Why use such a small \"large\" object space?");
 
-        isUsed[0] = false;
-        isMulti[0] = true;
-        prev[0] = -1;
-        next[0] = -1;
-        size[0] = nUnits;
-        isUsed[nUnits - 1] = false;
-        isMulti[nUnits - 1] = true;
-        size[nUnits - 1] = nUnits;
+        head = -1;
 
-        head = 0;
+        setSizeAndIsUsed(0, nUnits, false);
+        link(0);
     }
 
     /**
@@ -72,17 +68,21 @@ public class FreeList {
      * @return the index of the first unit of the region, or -1 if not found.
      */
     private int firstFit(int requiredSize) {
-        if (requiredSize == 1) {
-            return head;
-        }
 
-        for (int cur = head; cur != -1; cur = next[cur]) {
-            if (isMulti[cur] && size[cur] <= requiredSize) {
-                return cur;
-            }
-        }
+        if (head == -1) {
+            return -1;
+        } else {
+            int cur = head;
 
-        return -1;
+            do {
+                if (getSize(cur) >= requiredSize) {
+                    return cur;
+                }
+                cur = next[cur];
+            } while (cur != head);
+
+            return -1;
+        }
     }
 
     /**
@@ -95,60 +95,27 @@ public class FreeList {
      *            size (in units) of allocation
      */
     private void allocInto(int freeStart, int allocSize) {
-        int thisPrev = prev[freeStart];
-        int thisNext = next[freeStart];
-        int thisSize = size[freeStart];
+        int thisStart = freeStart;
+        debugLog("Allocate %d units into %d...\n", allocSize,
+                thisStart);
+        int thisPrev = prev[thisStart];
+        int thisNext = next[thisStart];
+        int thisSize = getSize(thisStart);
 
-        isUsed[freeStart] = true;
-        if (allocSize == 1) {
-            isMulti[freeStart] = false;
-        } else {
-            isMulti[freeStart] = true;
-            size[freeStart] = allocSize;
-            int newUsedLast = freeStart + allocSize - 1;
-            isUsed[newUsedLast] = true;
-            isMulti[newUsedLast] = true;
-            size[newUsedLast] = allocSize;
-        }
+        debugLog("thisPrev = %d\n", thisPrev);
+        debugLog("thisNext = %d\n", thisNext);
+        debugLog("thisSize = %d\n", thisSize);
+
+        unlink(thisStart);
+
+        setSizeAndIsUsed(thisStart, allocSize, true);
 
         int newFreeSize = thisSize - allocSize;
         if (newFreeSize > 0) {
-            int newFreeStart = freeStart + allocSize;
-            isUsed[newFreeStart] = false;
-            if (newFreeSize == 1) {
-                isMulti[newFreeStart] = false;
-            } else {
-                isMulti[newFreeStart] = true;
-                size[newFreeStart] = newFreeSize;
-                int newLast = newFreeStart + newFreeSize - 1;
-                isUsed[newLast] = false;
-                isMulti[newLast] = true;
-                size[newLast] = newFreeSize;
-            }
+            int newFreeStart = thisStart + allocSize;
+            setSizeAndIsUsed(newFreeStart, newFreeSize, false);
 
-            prev[newFreeStart] = thisPrev;
-            next[newFreeStart] = thisNext;
-
-            if (thisPrev != -1) {
-                next[thisPrev] = newFreeStart;
-            }
-            if (thisNext != -1) {
-                prev[thisNext] = newFreeStart;
-            }
-
-            if (head == freeStart) {
-                head = newFreeStart;
-            }
-        } else {
-            if (thisPrev != -1) {
-                next[thisPrev] = thisNext;
-            }
-            if (thisNext != -1) {
-                prev[thisNext] = thisPrev;
-            }
-            if (head == freeStart) {
-                head = -1;
-            }
+            link(newFreeStart);
         }
     }
 
@@ -160,44 +127,118 @@ public class FreeList {
      *            the first unit of the used region.
      */
     private void deallocAndMerge(int usedStart) {
+        int thisStart = usedStart;
         int thisSize = getSize(usedStart);
-
         int thisLeft = usedStart - 1;
-        int newStart = thisLeft == -1 || isUsed[thisLeft] ? usedStart
-                : usedStart - getSize(thisLeft);
-
         int thisRight = usedStart + thisSize;
-        int newEnd = thisRight == nUnits || isUsed[thisRight] ? thisRight
-                : thisRight + size[thisRight];
 
-        isUsed[newStart] = false;
-        int newSize = newEnd - newStart;
-        if (newSize == 1) {
-            isMulti[newStart] = false;
+        int newStart;
+        int newEnd;
+
+        if (thisLeft == -1 || isUsed[thisLeft]) {
+            newStart = thisStart;
         } else {
-            isMulti[newStart] = true;
-            size[newStart] = newSize;
-            int newLast = newEnd - 1;
-            isUsed[newLast] = false;
-            isMulti[newLast] = true;
-            size[newLast] = newSize;
+            newStart = getStartFromLast(thisLeft);
+            unlink(newStart);
         }
 
-        if (head == -1 || head == usedStart) {
-            head = newStart;
+        if (thisRight == nUnits || isUsed[thisRight]) {
+            newEnd = thisRight;
+        } else {
+            newEnd = thisRight + getSize(thisRight);
+            unlink(thisRight);
         }
+
+        int newSize = newEnd - newStart;
+        setSizeAndIsUsed(newStart, newSize, false);
+        link(newStart);
+    }
+
+    private void link(int st) {
+        if (head == -1) {
+            head = st;
+            prev[st] = next[st] = st;
+        } else {
+            prev[st] = prev[head];
+            next[st] = head;
+            next[prev[head]] = st;
+            prev[head] = st;
+        }
+    }
+
+    private void unlink(int st) {
+        if (next[st] == st) {
+            head = -1;
+        } else {
+            head = next[st];
+            prev[head] = prev[st];
+            next[prev[st]] = head;
+        }
+    }
+
+    private int getStartFromLast(int last) {
+        return last - getSize(last) + 1;
     }
 
     /**
      * Get the size of a region
      * 
-     * @param i
+     * @param regionStartOrLast
      *            the first or the last block of a region
      * @return the size of the region
      */
-    private int getSize(int i) {
-        boolean thisMulti = isMulti[i];
-        int thisSize = thisMulti ? size[i] : 1;
+    private int getSize(int regionStartOrLast) {
+        boolean thisMulti = isMulti[regionStartOrLast];
+        int thisSize = thisMulti ? size[regionStartOrLast] : 1;
         return thisSize;
+    }
+
+    /**
+     * Set the size of a region. Updates both isMulti and size and updates both
+     * ends if multi.
+     * 
+     * @param regionStart
+     *            The first block of a region
+     * @param sz
+     *            the size of the region.
+     */
+    private void setSizeAndIsUsed(int regionStart, int sz, boolean used) {
+        if (sz == 1) {
+            isUsed[regionStart] = used;
+            isMulti[regionStart] = false;
+        } else {
+            isUsed[regionStart] = used;
+            isMulti[regionStart] = true;
+            size[regionStart] = sz;
+            int regionLast = regionStart + sz - 1;
+            isUsed[regionLast] = used;
+            isMulti[regionLast] = true;
+            size[regionLast] = sz;
+        }
+    }
+
+    public void debugPrintList() {
+        debugLog("head=%d\n", head);
+        int multiSkipTo = 0;
+        for (int i = 0; i < nUnits; i++) {
+            String multiSkip;
+            if (i < multiSkipTo - 1) {
+                multiSkip = " SKIPPED";
+            } else {
+                multiSkip = "";
+            }
+            debugLog("%d [%s%s] %d (%d %d)%s\n", i, isUsed[i] ? "U"
+                    : " ", isMulti[i] ? "m" : " ", size[i], prev[i], next[i],
+                    multiSkip);
+            if (i >= multiSkipTo && isMulti[i]) {
+                multiSkipTo = i + size[i];
+            }
+        }
+    }
+
+    private void debugLog(String fmt, Object... args) {
+        if (DEBUG) {
+            System.out.printf(fmt, args);
+        }
     }
 }
