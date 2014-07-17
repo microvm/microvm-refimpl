@@ -6,15 +6,14 @@ import java.util.Map;
 
 import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.itpr.HasObjRef;
-import uvm.refimpl.itpr.IRefBox;
 import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
-import uvm.refimpl.itpr.RefBox;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.AddressQueue;
 import uvm.refimpl.mem.Collector;
 import uvm.refimpl.mem.ObjectMarker;
 import uvm.refimpl.mem.TypeSizes;
+import uvm.refimpl.mem.los.LargeObjectSpace;
 import uvm.type.Array;
 import uvm.type.Hybrid;
 import uvm.type.IRef;
@@ -23,17 +22,20 @@ import uvm.type.Struct;
 import uvm.type.TagRef64;
 import uvm.type.Type;
 import uvm.type.WeakRef;
+import uvm.util.ErrorUtils;
 
 public class SimpleImmixCollector extends Collector implements Runnable {
 
     private SimpleImmixHeap heap;
     private SimpleImmixSpace space;
+    private LargeObjectSpace los;
     private MicroVM microVM;
 
     public SimpleImmixCollector(SimpleImmixHeap heap, SimpleImmixSpace space,
-            MicroVM microVM) {
+            LargeObjectSpace los, MicroVM microVM) {
         this.heap = heap;
         this.space = space;
+        this.los = los;
         this.microVM = microVM;
     }
 
@@ -102,7 +104,16 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
         if (!wasMarked) {
             System.out.format("Newly marked %d\n", addr);
-            space.markBlockByObjRef(addr);
+
+            if (space.isInSpace(addr)) {
+                space.markBlockByObjRef(addr);
+            } else if (los.isInSpace(addr)) {
+                los.markBlockByObjRef(addr);
+            } else {
+                ErrorUtils.uvmError(String.format(
+                        "Object ref %d not in any space: \n", addr));
+                return false; // Unreachable
+            }
 
             return true;
         } else {
@@ -112,6 +123,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
     private void collectBlocks() {
         space.collectBlocks();
+        los.collect();
     }
 
     private boolean clearMark(long objRef) {

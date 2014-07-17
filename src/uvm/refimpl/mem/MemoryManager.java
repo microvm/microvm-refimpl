@@ -17,8 +17,6 @@ public class MemoryManager {
     private final GlobalMemory global;
     private final List<StackMemory> stacks = new ArrayList<StackMemory>();
 
-    private long stackBegin;
-
     public MemoryManager(long heapSize, long globalSize, long stackSize,
             MicroVM microVM) {
         this.heapSize = heapSize;
@@ -27,7 +25,6 @@ public class MemoryManager {
 
         heap = new SimpleImmixHeap(MEMORY_BEGIN, heapSize, microVM);
         global = new GlobalMemory(MEMORY_BEGIN + heapSize, globalSize);
-        stackBegin = MEMORY_BEGIN + heapSize + globalSize;
     }
 
     public Mutator makeMutator() {
@@ -35,14 +32,8 @@ public class MemoryManager {
     }
 
     public StackMemory makeStackMemory() {
-        long myStackBegin;
-        synchronized (this) {
-            myStackBegin = stackBegin;
-            stackBegin += stackSize;
-        }
-
-        StackMemory stackMemory = new StackMemory(myStackBegin, stackSize);
-        return stackMemory;
+        // TODO: Implement it.
+        return null;
     }
 
     // Getters and setters

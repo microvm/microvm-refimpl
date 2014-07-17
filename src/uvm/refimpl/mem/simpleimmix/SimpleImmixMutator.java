@@ -3,7 +3,6 @@ package uvm.refimpl.mem.simpleimmix;
 import uvm.refimpl.mem.MemConstants;
 import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.TypeSizes;
-import uvm.util.ErrorUtils;
 
 public class SimpleImmixMutator extends Mutator {
 
@@ -37,8 +36,7 @@ public class SimpleImmixMutator extends Mutator {
             long userEnd = userStart + size;
             if (userEnd >= limit) {
                 if (userEnd - gcStart > SimpleImmixSpace.BLOCK_SIZE) {
-                    ErrorUtils.uvmError("Object too big: "
-                            + (userEnd - gcStart));
+                    return heap.allocLargeObject(size, align, headerSize);
                 }
                 System.out.println("Getting new block...");
                 getNewBlock();

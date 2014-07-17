@@ -96,8 +96,7 @@ public class FreeList {
      */
     private void allocInto(int freeStart, int allocSize) {
         int thisStart = freeStart;
-        debugLog("Allocate %d units into %d...\n", allocSize,
-                thisStart);
+        debugLog("Allocate %d units into %d...\n", allocSize, thisStart);
         int thisPrev = prev[thisStart];
         int thisNext = next[thisStart];
         int thisSize = getSize(thisStart);
@@ -159,20 +158,23 @@ public class FreeList {
             head = st;
             prev[st] = next[st] = st;
         } else {
-            prev[st] = prev[head];
+            int last = prev[head];
+            prev[st] = last;
             next[st] = head;
-            next[prev[head]] = st;
+            next[last] = st;
             prev[head] = st;
         }
     }
 
     private void unlink(int st) {
-        if (next[st] == st) {
+        int nxt = next[st];
+        if (nxt == st) {
             head = -1;
         } else {
-            head = next[st];
-            prev[head] = prev[st];
-            next[prev[st]] = head;
+            int prv = prev[st];
+            next[prv] = nxt;
+            prev[nxt] = prv;
+            head = nxt;
         }
     }
 
@@ -227,8 +229,8 @@ public class FreeList {
             } else {
                 multiSkip = "";
             }
-            debugLog("%d [%s%s] %d (%d %d)%s\n", i, isUsed[i] ? "U"
-                    : " ", isMulti[i] ? "m" : " ", size[i], prev[i], next[i],
+            debugLog("%d [%s%s] %d (%d %d)%s\n", i, isUsed[i] ? "U" : " ",
+                    isMulti[i] ? "m" : " ", size[i], prev[i], next[i],
                     multiSkip);
             if (i >= multiSkipTo && isMulti[i]) {
                 multiSkipTo = i + size[i];

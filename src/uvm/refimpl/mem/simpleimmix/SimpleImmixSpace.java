@@ -2,6 +2,7 @@ package uvm.refimpl.mem.simpleimmix;
 
 import static uvm.util.ErrorUtils.*;
 import uvm.refimpl.mem.Heap;
+import uvm.refimpl.mem.MemUtils;
 import uvm.refimpl.mem.Space;
 
 /**
@@ -28,7 +29,7 @@ public class SimpleImmixSpace extends Space {
 
     public int[] freeList; // a list of all indices of free blocks
     public int freeListValidCount; // number of valid items in freeList
-    public int nextFree; // index into freeList, the next page to get
+    public int nextFree; // index into freeList, the next block to get
 
     public SimpleImmixSpace(Heap heap, String name, long begin, long extend) {
         super(name, begin, extend);
@@ -53,16 +54,9 @@ public class SimpleImmixSpace extends Space {
     }
 
     /**
-     * Page index to address. No side-effect.
-     */
-    public long getBlockAddr(int pageNum) {
-        return begin + BLOCK_SIZE * (long) pageNum;
-    }
-
-    /**
      * Get a new block. Automatically reserve that block.
      * 
-     * @return A block address, or 0 if no pages available.
+     * @return A block address, or 0 if no blocks are available.
      */
     public long tryGetBlock(long oldBlockAddr) {
         int myCursor = nextFree;
@@ -80,17 +74,19 @@ public class SimpleImmixSpace extends Space {
         int blockNum = freeList[myCursor];
         reserve(blockNum);
 
-        long blockAddr = getBlockAddr(blockNum);
+        long blockAddr = blockIndexToBlockAddr(blockNum);
+        long blockEnd = blockAddr + BLOCK_SIZE;
+        MemUtils.zeroRegion(blockAddr, blockEnd);
 
         return blockAddr;
     }
 
-    private void reserve(int pageNum) {
-        blockFlags[pageNum] |= BLOCK_RESERVED;
+    private void reserve(int blockNum) {
+        blockFlags[blockNum] |= BLOCK_RESERVED;
     }
 
-    private void unreserve(int pageNum) {
-        blockFlags[pageNum] &= ~BLOCK_RESERVED;
+    private void unreserve(int blockNum) {
+        blockFlags[blockNum] &= ~BLOCK_RESERVED;
     }
 
     public int objRefToBlockIndex(long objRef) {
@@ -106,6 +102,10 @@ public class SimpleImmixSpace extends Space {
         int blockIndex = blockAddrToBlockIndex(blockAddr);
 
         return blockIndex;
+    }
+
+    public long blockIndexToBlockAddr(int blockIndex) {
+        return begin + BLOCK_SIZE * (long) blockIndex;
     }
 
     public int blockAddrToBlockIndex(long blockAddr) {

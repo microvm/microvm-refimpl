@@ -2,6 +2,7 @@ package uvm.refimpl.mem.simpleimmix;
 
 import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.mem.Heap;
+import uvm.refimpl.mem.los.LargeObjectSpace;
 
 /**
  * A heap which uses the simplified Immix GC algorithm.
@@ -11,14 +12,19 @@ public class SimpleImmixHeap extends Heap {
     private SimpleImmixCollector collector;
     private Thread collectorThread;
     private MicroVM microVM;
+    private LargeObjectSpace los;
 
     public SimpleImmixHeap(long begin, long size, MicroVM microVM) {
         super();
         this.microVM = microVM;
 
-        space = new SimpleImmixSpace(this, "SimpleImmixSpace", begin, size);
+        long mid = begin + size / 2;
 
-        collector = new SimpleImmixCollector(this, space, microVM);
+        space = new SimpleImmixSpace(this, "SimpleImmixSpace", begin, size / 2);
+
+        los = new LargeObjectSpace("Large object space", mid, size / 2);
+
+        collector = new SimpleImmixCollector(this, space, los, microVM);
         collectorThread = new Thread(collector);
         collectorThread.setDaemon(true);
         collectorThread.start();
@@ -40,6 +46,10 @@ public class SimpleImmixHeap extends Heap {
 
             mutatorTriggerAndWaitForGCEnd();
         }
+    }
+
+    public long allocLargeObject(long size, long align, long headerSize) {
+        return los.alloc(size, align, headerSize);
     }
 
 }
