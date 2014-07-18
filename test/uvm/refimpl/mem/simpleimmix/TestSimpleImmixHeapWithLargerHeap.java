@@ -11,7 +11,7 @@ import uvm.Bundle;
 import uvm.ir.text.input.TestingHelper;
 import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.facade.MicroVMClient;
-import uvm.refimpl.mem.ObjectMarker;
+import uvm.refimpl.mem.scanning.ObjectMarker;
 import uvm.type.Hybrid;
 import uvm.type.Int;
 import uvm.type.Struct;

@@ -1,10 +1,11 @@
 package uvm.refimpl.mem.simpleimmix;
 
+import uvm.refimpl.mem.Allocator;
 import uvm.refimpl.mem.MemConstants;
 import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.TypeSizes;
 
-public class SimpleImmixMutator extends Mutator {
+public class SimpleImmixMutator extends Mutator implements Allocator {
 
     public long curBlockAddr;
     public long cursor;
@@ -50,7 +51,6 @@ public class SimpleImmixMutator extends Mutator {
         }
     }
 
-    @Override
     public void close() {
         heap.returnBlock(curBlockAddr);
     }

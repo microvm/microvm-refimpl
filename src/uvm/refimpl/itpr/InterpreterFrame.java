@@ -31,6 +31,7 @@ public class InterpreterFrame {
     private int curInstIndex;
 
     private InterpreterFrame prevFrame;
+    private long savedStackPointer;
 
     public InterpreterFrame(Function func, InterpreterFrame prev) {
         this.func = func;
@@ -40,6 +41,7 @@ public class InterpreterFrame {
         this.curInstIndex = 0;
 
         this.prevFrame = prev;
+        this.savedStackPointer = 0;
 
         makeBoxes();
     }
@@ -133,6 +135,14 @@ public class InterpreterFrame {
 
     public InterpreterFrame getPrevFrame() {
         return prevFrame;
+    }
+
+    public long getSavedStackPointer() {
+        return savedStackPointer;
+    }
+
+    public void setSavedStackPointer(long savedStackPointer) {
+        this.savedStackPointer = savedStackPointer;
     }
 
     public ValueBox getValueBox(Value value) {

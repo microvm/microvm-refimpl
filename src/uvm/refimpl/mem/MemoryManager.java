@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uvm.refimpl.facade.MicroVM;
+import uvm.refimpl.itpr.MicroVMInternalTypes;
 import uvm.refimpl.mem.simpleimmix.SimpleImmixHeap;
 
 public class MemoryManager {
@@ -14,17 +15,25 @@ public class MemoryManager {
     private final long stackSize;
 
     private final SimpleImmixHeap heap;
-    private final GlobalMemory global;
+    private final GlobalMemory globalMemory;
     private final List<StackMemory> stacks = new ArrayList<StackMemory>();
+
+    private final Mutator internalMutator;
+
+    private MicroVM microVM;
 
     public MemoryManager(long heapSize, long globalSize, long stackSize,
             MicroVM microVM) {
         this.heapSize = heapSize;
         this.globalSize = globalSize;
         this.stackSize = stackSize;
+        this.microVM = microVM;
 
         heap = new SimpleImmixHeap(MEMORY_BEGIN, heapSize, microVM);
-        global = new GlobalMemory(MEMORY_BEGIN + heapSize, globalSize);
+        globalMemory = new GlobalMemory(MEMORY_BEGIN + heapSize, globalSize,
+                microVM);
+
+        internalMutator = heap.makeMutator();
     }
 
     public Mutator makeMutator() {
@@ -32,8 +41,10 @@ public class MemoryManager {
     }
 
     public StackMemory makeStackMemory() {
-        // TODO: Implement it.
-        return null;
+        long objRef = internalMutator.newHybrid(
+                MicroVMInternalTypes.BYTE_ARRAY_TYPE, stackSize);
+        StackMemory stackMemory = new StackMemory(objRef, stackSize, microVM);
+        return stackMemory;
     }
 
     // Getters and setters
@@ -42,7 +53,7 @@ public class MemoryManager {
         return heap;
     }
 
-    public GlobalMemory getGlobal() {
-        return global;
+    public GlobalMemory getGlobalMemory() {
+        return globalMemory;
     }
 }

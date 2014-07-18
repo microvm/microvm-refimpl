@@ -1,30 +1,19 @@
 package uvm.refimpl.mem;
 
-import uvm.refimpl.mem.bumppointer.RewindableBumpPointerSpace;
-import uvm.type.Type;
+import uvm.refimpl.facade.MicroVM;
+import uvm.refimpl.mem.bumppointer.RewindableBumpPointerAllocator;
 
-public class StackMemory {
+public class StackMemory extends RewindableBumpPointerAllocator {
 
-    private long begin;
-    private long size;
+    private long stackObjRef;
 
-    private RewindableBumpPointerSpace space;
-
-    public StackMemory(long begin, long size) {
-        this.begin = begin;
-        this.size = size;
-
-        this.space = new RewindableBumpPointerSpace("StackSpace", begin, size);
+    public StackMemory(long stackObjRef, long extend, MicroVM microVM) {
+        super(stackObjRef, extend, microVM);
+        this.stackObjRef = stackObjRef;
     }
 
-    public long allocaScalar(Type type) {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    public long allocaHybrid(Type type, long len) {
-        // TODO Auto-generated method stub
-        return 0;
+    public long getStackObjRef() {
+        return stackObjRef;
     }
 
 }

@@ -12,22 +12,12 @@ public abstract class Mutator {
 
     public abstract long alloc(long size, long align, long headerSize);
 
-    public void postAllocScalar(long addr, long tag) {
-        MEMORY_SUPPORT.storeLong(addr + TypeSizes.GC_HEADER_OFFSET_TAG, tag);
-    }
-
-    public void postAllocHybrid(long addr, long tag, long len) {
-        postAllocScalar(addr, tag);
-        MEMORY_SUPPORT.storeLong(addr
-                + TypeSizes.GC_HEADER_OFFSET_HYBRID_LENGTH, len);
-    }
-
     public long newScalar(Type type) {
         long tag = type.getID();
         long size = TypeSizes.sizeOf(type);
         long align = TypeSizes.alignOf(type);
         long objAddr = alloc(size, align, TypeSizes.GC_HEADER_SIZE_SCALAR);
-        postAllocScalar(objAddr, tag);
+        HeaderUtils.postAllocScalar(objAddr, tag);
 
         return objAddr;
     }
@@ -37,7 +27,27 @@ public abstract class Mutator {
         long size = TypeSizes.hybridSizeOf(type, len);
         long align = TypeSizes.hybridAlignOf(type, len);
         long objAddr = alloc(size, align, TypeSizes.GC_HEADER_SIZE_HYBRID);
-        postAllocHybrid(objAddr, tag, len);
+        HeaderUtils.postAllocHybrid(objAddr, tag, len);
+
+        return objAddr;
+    }
+
+    public long allocaScalar(StackMemory sm, Type type) {
+        long tag = type.getID();
+        long size = TypeSizes.sizeOf(type);
+        long align = TypeSizes.alignOf(type);
+        long objAddr = sm.alloc(size, align, TypeSizes.GC_HEADER_SIZE_SCALAR);
+        HeaderUtils.postAllocScalar(objAddr, tag);
+
+        return objAddr;
+    }
+
+    public long allocaHybrid(StackMemory sm, Hybrid type, long len) {
+        long tag = type.getID();
+        long size = TypeSizes.hybridSizeOf(type, len);
+        long align = TypeSizes.hybridAlignOf(type, len);
+        long objAddr = sm.alloc(size, align, TypeSizes.GC_HEADER_SIZE_HYBRID);
+        HeaderUtils.postAllocHybrid(objAddr, tag, len);
 
         return objAddr;
     }

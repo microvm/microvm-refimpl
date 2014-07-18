@@ -2,6 +2,8 @@ package uvm.refimpl;
 
 import static org.junit.Assert.*;
 
+import java.math.BigInteger;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -20,16 +22,16 @@ public class TestTrunc {
 
     @Test
     public void test() {
-        assertEquals(0x7FFFFFFFFFFFFFFFL, OpHelper.mask(63));
-        
-        for(long i=0; i<128; i++) {
-            System.out.format("%d %x\n", i, (11L<<i));
-        }
-        
-        System.out.println(1L<<64);
-        System.out.println((1L<<64)-1);
+        assertEquals(BigInteger.valueOf(0x7FFFFFFFFFFFFFFFL), OpHelper.mask(63));
 
-        assertEquals(-1L, OpHelper.mask(64));
+        for (long i = 0; i < 128; i++) {
+            System.out.format("%d %x\n", i, (11L << i));
+        }
+
+        System.out.println(1L << 64);
+        System.out.println((1L << 64) - 1);
+
+        assertEquals(new BigInteger("ffffffffffffffff", 16), OpHelper.mask(64));
     }
 
 }

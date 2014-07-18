@@ -11,17 +11,11 @@ import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.AddressQueue;
 import uvm.refimpl.mem.Collector;
-import uvm.refimpl.mem.ObjectMarker;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.refimpl.mem.los.LargeObjectSpace;
-import uvm.type.Array;
-import uvm.type.Hybrid;
-import uvm.type.IRef;
-import uvm.type.Ref;
-import uvm.type.Struct;
-import uvm.type.TagRef64;
-import uvm.type.Type;
-import uvm.type.WeakRef;
+import uvm.refimpl.mem.scanning.MemoryDataScanner;
+import uvm.refimpl.mem.scanning.ObjectMarker;
+import uvm.refimpl.mem.scanning.RefFieldHandler;
 import uvm.util.ErrorUtils;
 
 public class SimpleImmixCollector extends Collector implements Runnable {
@@ -152,12 +146,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         }
     }
 
-    interface RefFieldHandler {
-        public boolean handle(boolean fromClient, HasObjRef fromBox,
-                long fromObj, long fromIRef, long toObj);
-    }
-
-    class AllScanner implements ObjectMarker {
+    class AllScanner implements ObjectMarker, RefFieldHandler {
         private RefFieldHandler handler;
 
         private AddressQueue queue = new AddressQueue();
@@ -183,7 +172,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
         @Override
         public void markObjRef(long objRef) {
-            handleMaybeEnqueue(true, null, 0, 0, objRef);
+            handle(true, null, 0, 0, objRef);
         }
 
         private void traceGlobal() {
@@ -199,8 +188,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
                     for (ValueBox vb : fra.getValueDict().values()) {
                         if (vb instanceof HasObjRef) {
                             HasObjRef rvb = (HasObjRef) vb;
-                            handleMaybeEnqueue(false, rvb, 0, 0,
-                                    rvb.getObjRef());
+                            handle(false, rvb, 0, 0, rvb.getObjRef());
                         }
                     }
                 }
@@ -212,74 +200,19 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         private void doTransitiveClosure() {
             while (!queue.isEmpty()) {
                 long objRef = queue.pollFirst();
-                long tagAddr = objRef + TypeSizes.GC_HEADER_OFFSET_TAG;
-                long tag = MEMORY_SUPPORT.loadLong(tagAddr);
-                int typeID = (int) (tag & 0x00000000ffffffffL);
-                Type type = microVM.getGlobalBundle().getTypeNs()
-                        .getByID(typeID);
-                scanField(type, objRef, objRef);
+                MemoryDataScanner.scanMemoryData(objRef, objRef, microVM, this);
             }
         }
 
-        private void scanField(Type type, long objRef, long iRef) {
-            if (type instanceof Ref || type instanceof IRef
-                    || type instanceof WeakRef) {
-                long toObj = MEMORY_SUPPORT.loadLong(iRef);
-                handleMaybeEnqueue(false, null, objRef, iRef, toObj);
-            } else if (type instanceof Struct) {
-                Struct sTy = (Struct) type;
-                long fieldAddr = iRef;
-                for (Type fieldTy : sTy.getFieldTypes()) {
-                    long fieldAlign = TypeSizes.alignOf(fieldTy);
-                    fieldAddr = TypeSizes.alignUp(fieldAddr, fieldAlign);
-                    scanField(fieldTy, objRef, fieldAddr);
-                    fieldAddr += TypeSizes.sizeOf(fieldTy);
-                }
-            } else if (type instanceof Array) {
-                Array aTy = (Array) type;
-                Type elemTy = aTy.getElemType();
-                long elemSize = TypeSizes.sizeOf(elemTy);
-                long elemAlign = TypeSizes.alignOf(elemTy);
-                long elemAddr = iRef;
-                for (int i = 0; i < aTy.getLength(); i++) {
-                    scanField(elemTy, objRef, elemAddr);
-                    elemAddr = TypeSizes
-                            .alignUp(elemAddr + elemSize, elemAlign);
-                }
-            } else if (type instanceof Hybrid) {
-                Hybrid hTy = (Hybrid) type;
-                Type fixedTy = hTy.getFixedPart();
-                Type varTy = hTy.getVarPart();
-                long fixedSize = TypeSizes.sizeOf(fixedTy);
-                long fixedAlign = TypeSizes.alignOf(fixedTy);
-                long varSize = TypeSizes.sizeOf(varTy);
-                long varAlign = TypeSizes.alignOf(varTy);
-                long curAddr = iRef;
-
-                long varLength = MEMORY_SUPPORT.loadLong(iRef
-                        + TypeSizes.GC_HEADER_OFFSET_HYBRID_LENGTH);
-
-                scanField(fixedTy, objRef, curAddr);
-                curAddr = TypeSizes.alignUp(curAddr + fixedSize, fixedAlign);
-
-                for (long i = 0; i < varLength; i++) {
-                    scanField(varTy, objRef, curAddr);
-                    curAddr = TypeSizes.alignUp(curAddr + varSize, varAlign);
-                }
-            } else if (type instanceof TagRef64) {
-                // TODO: Despite not implemented now, it should be traced only
-                // if
-                // its tag indicates it is a reference.
-            }
-        }
-
-        private void handleMaybeEnqueue(boolean fromClient, HasObjRef fromBox,
+        @Override
+        public boolean handle(boolean fromClient, HasObjRef fromBox,
                 long fromObj, long fromIRef, long toObj) {
             boolean toEnqueue = handler.handle(fromClient, fromBox, fromObj,
                     fromIRef, toObj);
             if (toEnqueue) {
                 queue.add(toObj);
             }
+            return toEnqueue;
         }
 
     }
