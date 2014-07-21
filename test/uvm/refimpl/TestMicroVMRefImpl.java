@@ -4,7 +4,9 @@ import static org.junit.Assert.*;
 import static uvm.platformsupport.Config.*;
 import static uvm.refimpl.MicroVMHelper.*;
 
+import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -14,6 +16,7 @@ import org.junit.Test;
 import uvm.Bundle;
 import uvm.CFG;
 import uvm.Function;
+import uvm.IdentifiedHelper;
 import uvm.ir.text.input.TestingHelper;
 import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.itpr.DoubleBox;
@@ -119,7 +122,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 long[] expecteds = new long[] { 32, 18, 175, 3, 3, 4, 4, 3200,
                         0, 0, 1, 31, 30 };
                 assertKeepalivesInt(thread, expecteds);
@@ -140,7 +143,7 @@ public class TestMicroVMRefImpl {
         InterpreterStack stackOvf = h.makeStack(h.func("@binops_ovf"));
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 long[] expecteds = new long[] { 0x8000000000000000L, 1L,
                         2003764205206896640L, 0x4000000000000000L, 2L };
                 assertKeepalivesInt(thread, expecteds);
@@ -156,7 +159,7 @@ public class TestMicroVMRefImpl {
                 FloatBox(8.0f), FloatBox(2.0f));
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 float[] expecteds = new float[] { 10.0f, 6.0f, 16.0f, 4.0f,
                         0.0f };
                 assertKeepalivesFloat(thread, expecteds);
@@ -172,7 +175,7 @@ public class TestMicroVMRefImpl {
                 DoubleBox(8.0), DoubleBox(2.0));
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 double[] expecteds = new double[] { 10.0, 6.0, 16.0, 4.0, 0.0 };
                 assertKeepalivesDouble(thread, expecteds);
 
@@ -191,7 +194,7 @@ public class TestMicroVMRefImpl {
                 IntBox(7));
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 long[] expecteds = new long[] { 0, 1, 0, 0, 1, 1, 0, 0, 1, 1 };
                 assertKeepalivesInt(thread, expecteds);
 
@@ -205,7 +208,7 @@ public class TestMicroVMRefImpl {
                 BigIntBox("8000000000000000", 16), IntBox(0x7fffffffffffffffL));
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 long[] expecteds = new long[] { 0, 1, 0, 0, 1, 1, 1, 1, 0, 0 };
                 assertKeepalivesInt(thread, expecteds);
 
@@ -219,7 +222,7 @@ public class TestMicroVMRefImpl {
                 FloatBox(25.0F), FloatBox(7.0F));
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 long[] expecteds = new long[] { 1, 0, 1, 0, 1, 0, 0, 1, 1, 0,
                         0, 1, 0, 0, 1, 1 };
                 assertKeepalivesInt(thread, expecteds);
@@ -235,7 +238,7 @@ public class TestMicroVMRefImpl {
                 DoubleBox(25.0), DoubleBox(7.0));
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 long[] expecteds = new long[] { 1, 0, 1, 0, 1, 0, 0, 1, 1, 0,
                         0, 1, 0, 0, 1, 1 };
                 assertKeepalivesInt(thread, expecteds);
@@ -251,7 +254,7 @@ public class TestMicroVMRefImpl {
                 DoubleBox(Double.NaN), DoubleBox(7.0));
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 long[] expecteds = new long[] { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
                         1, 1, 1, 1, 1, 1 };
                 assertKeepalivesInt(thread, expecteds);
@@ -270,7 +273,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 long[] expecteds = new long[] { 2, 3 };
                 assertKeepalivesInt(thread, expecteds);
 
@@ -291,7 +294,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 List<ValueBox> kas = thread.getStack().getTop()
                         .dumpKeepAlives();
 
@@ -330,7 +333,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 assertEquals("%traptrue", thread.getStack().getTop()
                         .getCurInst().getName());
                 return null;
@@ -344,7 +347,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 assertEquals("%trapfalse", thread.getStack().getTop()
                         .getCurInst().getName());
                 return null;
@@ -372,7 +375,8 @@ public class TestMicroVMRefImpl {
 
             microVM.getTrapManager().setTrapHandler(new TrapHandler() {
                 @Override
-                public Long onTrap(InterpreterThread thread) {
+                public Long onTrap(InterpreterThread thread,
+                        ValueBox trapValueBox) {
 
                     String instName = thread.getStack().getTop().getCurInst()
                             .getName();
@@ -405,7 +409,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
 
                 List<ValueBox> kas = thread.getStack().getTop()
                         .dumpKeepAlives();
@@ -427,7 +431,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
 
                 String instName = thread.getStack().getTop().getCurInst()
                         .getName();
@@ -456,7 +460,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
 
                 List<ValueBox> kas = thread.getStack().getTop()
                         .dumpKeepAlives();
@@ -478,7 +482,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 List<ValueBox> kas = thread.getStack().getTop()
                         .dumpKeepAlives();
 
@@ -520,7 +524,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 List<ValueBox> kas = thread.getStack().getTop()
                         .dumpKeepAlives();
 
@@ -560,7 +564,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 List<ValueBox> kas = thread.getStack().getTop()
                         .dumpKeepAlives();
 
@@ -603,7 +607,7 @@ public class TestMicroVMRefImpl {
 
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 List<ValueBox> kas = thread.getStack().getTop()
                         .dumpKeepAlives();
 
@@ -665,6 +669,119 @@ public class TestMicroVMRefImpl {
         thread.join();
     }
 
+    @Test
+    public void testWatchPoint() throws InterruptedException {
+        microVM.getTrapManager().newWatchpoint(42);
+
+        InterpreterStack stack = h.makeStack(h.func("@watchpointtest"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+                assertEquals("%trapdis", thread.getStack().getTop()
+                        .getCurInst().getName());
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+
+        microVM.getTrapManager().enableWatchpoint(42);
+
+        stack = h.makeStack(h.func("@watchpointtest"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+
+                String trapName = thread.getStack().getTop().getCurInst()
+                        .getName();
+                if (trapName.equals("%wp")) {
+                    ((IntBox) trapValueBox).setValue(BigInteger.valueOf(99));
+                } else {
+                    assertEquals("%trapena", trapName);
+                    List<ValueBox> kas = thread.getStack().getTop()
+                            .dumpKeepAlives();
+                    long ka0 = ((IntBox) kas.get(0)).getValue().longValue();
+                    assertEquals(99L, ka0);
+                }
+                return null;
+            }
+        });
+
+        thread = microVM.newThread(stack);
+        thread.join();
+
+        stack = h.makeStack(h.func("@watchpointtest"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+
+                String trapName = thread.getStack().getTop().getCurInst()
+                        .getName();
+                if (trapName.equals("%wp")) {
+                    return 0L;
+                } else {
+                    assertEquals("%trapena", trapName);
+                    List<ValueBox> kas = thread.getStack().getTop()
+                            .dumpKeepAlives();
+                    long ka0 = ((RefBox) kas.get(0)).getAddr();
+                    assertEquals(0L, ka0);
+                }
+                return null;
+            }
+        });
+
+        thread = microVM.newThread(stack);
+        thread.join();
+    }
+
+    @Test
+    public void testSwapStack() throws InterruptedException {
+
+        InterpreterStack stack = h.makeStack(h.func("@testswapstack"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+
+            private long expValue = 0L;
+
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+                long value = ((IntBox) kas.get(0)).getValue().longValue();
+                long shouldStop = ((IntBox) kas.get(1)).getValue().longValue();
+
+                System.out.format("TRAP: Expect %d, seen %d, shouldStop=%d\n",
+                        expValue, value, shouldStop);
+
+                if (expValue < 3) {
+                    assertEquals(expValue, value);
+                    assertEquals(0, shouldStop);
+                    expValue++;
+                } else {
+                    assertEquals(1, shouldStop);
+                }
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        while (thread.isRunning()) {
+            System.out.format(
+                    "%s: %s: %s\n",
+                    thread.getStack().getID(),
+                    IdentifiedHelper.repr(thread.getStack().getTop()
+                            .getCurInst()), thread.getStack().getTop()
+                            .getCurInst().getClass().getName());
+
+            thread.step();
+        }
+
+    }
+
     // /////////////////////// Simple sum
 
     @Test
@@ -680,7 +797,7 @@ public class TestMicroVMRefImpl {
             private long timestampEnd;
 
             @Override
-            public Long onTrap(InterpreterThread thread) {
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
                 InterpreterFrame curTop = thread.getStack().getTop();
                 Instruction curInst = curTop.getCurInst();
 

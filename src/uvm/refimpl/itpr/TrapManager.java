@@ -1,6 +1,7 @@
 package uvm.refimpl.itpr;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import uvm.refimpl.facade.MicroVM;
 
@@ -11,7 +12,7 @@ public class TrapManager {
 
     private UndefinedFunctionHanlder undefinedFunctionHandler;
 
-    private HashMap<Integer, Boolean> watchpointEnabled;
+    private Map<Integer, Boolean> watchpointEnabled = new HashMap<Integer, Boolean>();
 
     public TrapManager(MicroVM microVM) {
         this.microVM = microVM;

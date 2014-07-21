@@ -9,5 +9,5 @@ public interface TrapHandler {
      * @return null if return normally. Otherwise return a boxed Long containing
      *         the address of the exception.
      */
-    Long onTrap(InterpreterThread thread);
+    Long onTrap(InterpreterThread thread, ValueBox trapValue);
 }

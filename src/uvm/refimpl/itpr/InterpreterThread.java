@@ -1399,7 +1399,7 @@ public class InterpreterThread {
 
         private void visitAbstractTrap(AbstractTrap inst) {
             Long excAddr = trapManager().getTrapHandler().onTrap(
-                    InterpreterThread.this);
+                    InterpreterThread.this, getValueBox(inst));
             if (excAddr == null) {
                 branchAndMovePC(inst.getNor());
             } else {
@@ -1456,6 +1456,7 @@ public class InterpreterThread {
 
             setStack(inst, sta);
 
+            incPC();
             return null;
         }
 
@@ -1465,10 +1466,19 @@ public class InterpreterThread {
             if (!running) {
                 return null;
             }
-            if (excAddr == null) {
-                incPC();
+            if (inst.getIFunc().getID() == IFuncFactory.IFUNC__UVM__SWAP_STACK
+                    || inst.getIFunc().getID() == IFuncFactory.IFUNC__UVM__SWAP_AND_KILL) {
+                /*
+                 * These two intrinsic functions have unusual control flows:
+                 * they jumps to another stack. The PC of the previous stack is
+                 * already handled in the intrinsic function handlers.
+                 */
             } else {
-                unwindStack(excAddr);
+                if (excAddr == null) {
+                    incPC();
+                } else {
+                    unwindStack(excAddr);
+                }
             }
             return null;
         }
@@ -1479,10 +1489,17 @@ public class InterpreterThread {
             if (!running) {
                 return null;
             }
-            if (excAddr == null) {
-                branchAndMovePC(inst.getNor());
+            if (inst.getIFunc().getID() == IFuncFactory.IFUNC__UVM__SWAP_STACK
+                    || inst.getIFunc().getID() == IFuncFactory.IFUNC__UVM__SWAP_AND_KILL) {
+                // These two intrinsic functions should use ICALL instead of
+                // IINVOKE
+                error("Use ICALL to call @uvm.swap_stack or @uvm.swap_and_kill");
             } else {
-                branchAndMovePC(inst.getExc(), excAddr);
+                if (excAddr == null) {
+                    branchAndMovePC(inst.getNor());
+                } else {
+                    branchAndMovePC(inst.getExc(), excAddr);
+                }
             }
             return null;
         }
@@ -1500,6 +1517,7 @@ public class InterpreterThread {
         }
         case IFuncFactory.IFUNC__UVM__SWAP_STACK: {
             InterpreterStack sta = getStack(args.get(0).getDst());
+            incPC();
             swapStack(sta);
             break;
         }
@@ -1516,7 +1534,11 @@ public class InterpreterThread {
             break;
         }
         case IFuncFactory.IFUNC__UVM__THREAD_EXIT: {
-            running = false;
+            InterpreterThread.this.exit();
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__CURRENT_STACK: {
+            setStack(inst, stack);
             break;
         }
         default: {
@@ -1536,6 +1558,8 @@ public class InterpreterThread {
 
     public void exit() {
         running = false;
+        stack.kill();
+        mutator.close();
     }
 
     public boolean isRunning() {

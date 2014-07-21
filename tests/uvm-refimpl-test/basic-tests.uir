@@ -487,6 +487,90 @@
     ICALL @uvm.thread_exit ()
     THROW @NULLREF
 }
+
+.funcdef @watchpointtest <@noparamsnoret> () {
+    BRANCH %head
+    
+%head:
+    %wp = WATCHPOINT 42 <@i64> %dis %ena %enaexc KEEPALIVE ()
+
+%dis:
+    %trapdis = TRAP <@void> %exit %exit KEEPALIVE ()
+
+%ena:
+    %trapena = TRAP <@void> %exit %exit KEEPALIVE (%wp)
+
+%enaexc:
+    %exc = LANDINGPAD
+    %trapena = TRAP <@void> %exit %exit KEEPALIVE (%exc)
+
+%exit:
+    ICALL @uvm.thread_exit ()
+    THROW @NULLREF
+}
+
+.funcdef @testswapstack <@noparamsnoret> () {
+    %valueret = ALLOCA <@i64>
+    %shouldstop = ALLOCA <@i64> // initially zeroed
+    %myself = ALLOCA <@stack>
+    
+    %iter = NEWSTACK <@itersig> @rangeiter (3 %myself %valueret %shouldstop)
+    
+    %thisstack = ICALL @uvm.current_stack ()
+    STORE <@stack> %myself %thisstack
+    ICALL @uvm.swap_stack (%iter)
+    BRANCH %head
+    
+%head:
+    %value = LOAD <@i64> %valueret
+    %stop  = LOAD <@i64> %shouldstop
+    TRAP <@void> %head2 %head2 KEEPALIVE (%value %stop)
+
+%head2:
+    %eq = EQ <@i64> %stop 0
+    BRANCH2 %eq %body %exit
+
+%body:
+    ICALL @uvm.swap_stack (%iter)
+    BRANCH %head
+
+%exit:
+    ICALL @uvm.thread_exit ()
+    THROW @NULLREF
+}
+
+.typedef @irefi64 = iref<@i64>
+
+.typedef @irefstack = iref<@stack>
+
+.funcsig @itersig = @void (@i64 @irefstack @irefi64 @irefi64)
+
+.funcdef @rangeiter <@itersig> (%n %srciref %valueret %shouldstop) {
+%entry:
+    %src = LOAD <@stack> %srciref
+    
+    BRANCH %head
+
+%head:
+    %i = PHI <@i64> {
+        %entry: 0;
+        %body: %i2;
+        }
+    %lt = SLT <@i64> %i %n
+    BRANCH2 %lt %body %exit
+    
+%body:
+    STORE <@i64> %valueret %i
+    ICALL @uvm.swap_stack (%src)
+    %i2 = ADD <@i64> %i 1
+    BRANCH %head
+
+%exit:
+    STORE <@i64> %shouldstop 1
+    ICALL @uvm.swap_and_kill (%src)
+    THROW @NULLREF // unreachable
+}
+
 ///////////////////////// Simple sum
 
 .funcdef @simplesum <@void (@i64 @i64)> (%from %to) {
