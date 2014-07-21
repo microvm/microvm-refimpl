@@ -1,6 +1,7 @@
 package uvm.refimpl;
 
 import static org.junit.Assert.*;
+import static uvm.platformsupport.Config.*;
 import static uvm.refimpl.MicroVMHelper.*;
 
 import java.util.List;
@@ -17,6 +18,8 @@ import uvm.ir.text.input.TestingHelper;
 import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.itpr.DoubleBox;
 import uvm.refimpl.itpr.FloatBox;
+import uvm.refimpl.itpr.FuncBox;
+import uvm.refimpl.itpr.IRefBox;
 import uvm.refimpl.itpr.IntBox;
 import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
@@ -24,6 +27,7 @@ import uvm.refimpl.itpr.InterpreterThread;
 import uvm.refimpl.itpr.RefBox;
 import uvm.refimpl.itpr.TrapHandler;
 import uvm.refimpl.itpr.ValueBox;
+import uvm.refimpl.mem.TypeSizes;
 import uvm.ssavalue.Instruction;
 import uvm.ssavalue.Value;
 
@@ -475,16 +479,186 @@ public class TestMicroVMRefImpl {
         microVM.getTrapManager().setTrapHandler(new TrapHandler() {
             @Override
             public Long onTrap(InterpreterThread thread) {
-
                 List<ValueBox> kas = thread.getStack().getTop()
                         .dumpKeepAlives();
 
-                printStackTrace(thread.getStack());
-                thread.exit();
-                fail("Not implemented yet.");
+                long addrNew = ((RefBox) kas.get(0)).getAddr();
+                long addrNewHybrid = ((RefBox) kas.get(1)).getAddr();
+                long addrAlloca = ((IRefBox) kas.get(2)).getAddr();
+                long addrAllocaHybrid = ((IRefBox) kas.get(3)).getAddr();
+
+                int tidNew = getTID(addrNew);
+                int tidNewHybrid = getTID(addrNewHybrid);
+                int tidAlloca = getTID(addrAlloca);
+                int tidAllocaHybrid = getTID(addrAllocaHybrid);
+
+                // How can I check if an address is in heap or stack when stacks
+                // are byte arrays in the LOS?
+
+                assertEquals(h.type("@StructBar").getID(), tidNew);
+                assertEquals(h.type("@hCharArray").getID(), tidNewHybrid);
+                assertEquals(h.type("@StructBar").getID(), tidAlloca);
+                assertEquals(h.type("@hCharArray").getID(), tidAllocaHybrid);
 
                 return null;
             }
+
+            private int getTID(long addr) {
+                long tag = MEMORY_SUPPORT.loadLong(addr
+                        + TypeSizes.GC_HEADER_OFFSET_TAG);
+                return (int) (tag & 0xffffffffl);
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+    }
+
+    @Test
+    public void testMemAddressing() throws InterruptedException {
+        InterpreterStack stack = h.makeStack(h.func("@memAddressing"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+
+                long addrBarRef = ((RefBox) kas.get(0)).getAddr();
+                long addrBarIRef = ((IRefBox) kas.get(1)).getAddr();
+                long addrBar3 = ((IRefBox) kas.get(2)).getAddr();
+                long addrBazIRef = ((IRefBox) kas.get(3)).getAddr();
+                long addrBaz3 = ((IRefBox) kas.get(4)).getAddr();
+                long addrBaz6 = ((IRefBox) kas.get(5)).getAddr();
+                long addrJaRef = ((RefBox) kas.get(6)).getAddr();
+                long addrJaIRef = ((IRefBox) kas.get(7)).getAddr();
+                long addrJaFix = ((IRefBox) kas.get(8)).getAddr();
+                long addrJaVar = ((IRefBox) kas.get(9)).getAddr();
+
+                assertEquals(addrBarRef, addrBarIRef);
+                assertEquals(addrBarRef + 14L, addrBar3);
+
+                assertEquals(addrBazIRef + 6L, addrBaz3);
+                assertEquals(addrBazIRef + 12L, addrBaz6);
+
+                assertEquals(addrJaRef, addrJaIRef);
+                assertEquals(addrJaIRef, addrJaFix);
+                assertEquals(addrJaIRef + 4L, addrJaVar);
+
+                return null;
+            }
+
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+    }
+
+    @Test
+    public void testMemAccessing() throws InterruptedException {
+        InterpreterStack stack = h.makeStack(h.func("@memAccessing"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+
+                long vr = ((RefBox) kas.get(0)).getAddr();
+                long vir = ((IRefBox) kas.get(1)).getAddr();
+                long l8 = ((IntBox) kas.get(2)).getValue().longValue();
+                long l16 = ((IntBox) kas.get(3)).getValue().longValue();
+                long l32 = ((IntBox) kas.get(4)).getValue().longValue();
+                long l64 = ((IntBox) kas.get(5)).getValue().longValue();
+                float lf = ((FloatBox) kas.get(6)).getValue();
+                double ld = ((DoubleBox) kas.get(7)).getValue();
+                long lr = ((RefBox) kas.get(8)).getAddr();
+                long lir = ((IRefBox) kas.get(9)).getAddr();
+                long lwr = ((RefBox) kas.get(10)).getAddr();
+                Function lfunc = ((FuncBox) kas.get(11)).getFunc();
+
+                assertEquals(41L, l8);
+                assertEquals(42L, l16);
+                assertEquals(43L, l32);
+                assertEquals(44L, l64);
+                assertEquals(45.0f, lf, 0.001f);
+                assertEquals(46.0d, ld, 0.001d);
+                assertEquals(vr, lr);
+                assertEquals(vir, lir);
+                assertEquals(vr, lwr);
+                assertEquals(h.func("@memAccessing"), lfunc);
+
+                return null;
+            }
+
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+    }
+
+    @Test
+    public void testMemAccessingAtomic() throws InterruptedException {
+        InterpreterStack stack = h.makeStack(h.func("@memAccessingAtomic"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread) {
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+
+                long vr = ((RefBox) kas.get(0)).getAddr();
+                long vr2 = ((RefBox) kas.get(1)).getAddr();
+                long vr3 = ((RefBox) kas.get(2)).getAddr();
+                long cx32_1 = ((IntBox) kas.get(3)).getValue().longValue();
+                long cx32_2 = ((IntBox) kas.get(4)).getValue().longValue();
+                long cx64_1 = ((IntBox) kas.get(5)).getValue().longValue();
+                long cx64_2 = ((IntBox) kas.get(6)).getValue().longValue();
+                long l32 = ((IntBox) kas.get(7)).getValue().longValue();
+                long l64 = ((IntBox) kas.get(8)).getValue().longValue();
+                long cxr_1 = ((RefBox) kas.get(9)).getAddr();
+                long cxr_2 = ((RefBox) kas.get(10)).getAddr();
+                long lr = ((RefBox) kas.get(11)).getAddr();
+
+                assertEquals(43L, cx32_1);
+                assertEquals(53L, cx32_2);
+                assertEquals(44L, cx64_1);
+                assertEquals(54L, cx64_2);
+                assertEquals(53L, l32);
+                assertEquals(54L, l64);
+                assertEquals(vr, cxr_1);
+                assertEquals(vr2, cxr_2);
+                assertEquals(vr2, lr);
+
+                long rmw0 = ((IntBox) kas.get(12)).getValue().longValue();
+                long rmw1 = ((IntBox) kas.get(13)).getValue().longValue();
+                long rmw2 = ((IntBox) kas.get(14)).getValue().longValue();
+                long rmw3 = ((IntBox) kas.get(15)).getValue().longValue();
+                long rmw4 = ((IntBox) kas.get(16)).getValue().longValue();
+                long rmw5 = ((IntBox) kas.get(17)).getValue().longValue();
+                long rmw6 = ((IntBox) kas.get(18)).getValue().longValue();
+                long rmw7 = ((IntBox) kas.get(19)).getValue().longValue();
+                long rmw8 = ((IntBox) kas.get(20)).getValue().longValue();
+                long rmw9 = ((IntBox) kas.get(21)).getValue().longValue();
+                long rmwA = ((IntBox) kas.get(22)).getValue().longValue();
+                long l64_2 = ((IntBox) kas.get(23)).getValue().longValue();
+
+                assertEquals(1, rmw0);
+                assertEquals(0x55ab, rmw1);
+                assertEquals(0x55ae, rmw2);
+                assertEquals(0x55aa, rmw3);
+                assertEquals(0x500a, rmw4);
+                assertEquals(~0x500a, rmw5);
+                assertEquals(~0x000a, rmw6);
+                assertEquals(~0x55a0, rmw7);
+                assertEquals(-0x7fffffffffffffdel, rmw8);
+                assertEquals(42, rmw9);
+                assertEquals(11, rmwA);
+                assertEquals(0xffffffffffffffdel, l64_2);
+
+                return null;
+            }
+
         });
 
         InterpreterThread thread = microVM.newThread(stack);

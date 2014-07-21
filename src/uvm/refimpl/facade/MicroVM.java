@@ -22,9 +22,9 @@ import uvm.ssavalue.Parameter;
 import uvm.type.Type;
 
 public class MicroVM {
-    public static final long DEFAULT_HEAP_SIZE = 0x400000L; // 4MiB
-    public static final long DEFAULT_GLOBAL_SIZE = 0x100000L; // 1MiB
-    public static final long DEFAULT_STACK_SIZE = 0x1000L; // 4KiB per stack
+    public static final long DEFAULT_HEAP_SIZE = 4 * 1024 * 1024; // 4MiB
+    public static final long DEFAULT_GLOBAL_SIZE = 1 * 1024 * 1024; // 1MiB
+    public static final long DEFAULT_STACK_SIZE = 63 * 1024L; // 60KiB per stack
 
     private Bundle globalBundle;
 
@@ -47,7 +47,7 @@ public class MicroVM {
      */
     public MicroVM(long heapSize, long globalSize, long stackSize) {
         globalBundle = new Bundle();
-        constantPool = new ConstantPool();
+        constantPool = new ConstantPool(this);
         threadStackManager = new ThreadStackManager(this);
         memoryManager = new MemoryManager(heapSize, globalSize, stackSize, this);
         trapManager = new TrapManager(this);

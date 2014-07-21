@@ -22,6 +22,7 @@ import uvm.refimpl.itpr.ThreadBox;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.itpr.VoidBox;
 import uvm.ssavalue.Value;
+import uvm.type.Type;
 
 public class MicroVMHelper {
     private MicroVM microVM;
@@ -29,6 +30,14 @@ public class MicroVMHelper {
     public MicroVMHelper(MicroVM microVM) {
         super();
         this.microVM = microVM;
+    }
+
+    public Type type(int tid) {
+        return microVM.getGlobalBundle().getTypeNs().getByID(tid);
+    }
+
+    public Type type(String tName) {
+        return microVM.getGlobalBundle().getTypeNs().getByName(tName);
     }
 
     public Function func(int fid) {

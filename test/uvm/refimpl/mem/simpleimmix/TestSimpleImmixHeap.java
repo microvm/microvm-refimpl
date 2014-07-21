@@ -2,9 +2,6 @@ package uvm.refimpl.mem.simpleimmix;
 
 import static org.junit.Assert.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;

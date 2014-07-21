@@ -4,7 +4,10 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
+import uvm.GlobalData;
 import uvm.IdentifiedHelper;
+import uvm.refimpl.facade.MicroVM;
+import uvm.refimpl.mem.GlobalMemory;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.DoubleConstant;
 import uvm.ssavalue.FloatConstant;
@@ -22,7 +25,10 @@ import uvm.util.ErrorUtils;
 public class ConstantPool {
     private Map<Constant, ValueBox> boxes = new HashMap<Constant, ValueBox>();
 
-    public ConstantPool() {
+    private MicroVM microVM;
+
+    public ConstantPool(MicroVM microVM) {
+        this.microVM = microVM;
     }
 
     public void addConstant(Constant constant) {
@@ -100,8 +106,15 @@ public class ConstantPool {
             b.setFunc(c.getFunction());
             return b;
         } else if (constant instanceof GlobalDataConstant) {
-            ErrorUtils.uvmError("TODO: Needs GlobalMemory implementation");
-            return null;
+            GlobalMemory globalMemory = microVM.getMemoryManager()
+                    .getGlobalMemory();
+            GlobalData globalData = ((GlobalDataConstant) constant)
+                    .getGlobalData();
+            long addr = globalMemory.getGlobalDataIRef(globalData);
+            IRefBox b = new IRefBox();
+            b.setBase(0);
+            b.setOffset(addr);
+            return b;
         } else {
             ErrorUtils.uvmError("Unexpected constant type "
                     + constant.getClass().getName());

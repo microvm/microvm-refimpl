@@ -1,7 +1,9 @@
 package uvm.ssavalue;
 
 import uvm.OpCode;
+import uvm.type.Ref;
 import uvm.type.Type;
+import uvm.type.WeakRef;
 
 /**
  * Load from a memory location.
@@ -22,6 +24,11 @@ public class InstLoad extends Instruction {
      * The reference to load from.
      */
     private UseBox location;
+    
+    /**
+     * The type of this instruction, may be Ref if referentType is WeakRef
+     */
+    private Type type;
 
     public InstLoad() {
         super();
@@ -48,6 +55,13 @@ public class InstLoad extends Instruction {
 
     public void setReferentType(Type referentType) {
         this.referentType = referentType;
+        if (referentType instanceof WeakRef) {
+            Ref type = new Ref();
+            type.setReferenced(referentType);
+            this.type = type;
+        } else {
+            this.type = referentType;
+        }
     }
 
     public Value getLocation() {
@@ -66,7 +80,7 @@ public class InstLoad extends Instruction {
 
     @Override
     public Type getType() {
-        return referentType;
+        return type;
     }
 
     @Override
