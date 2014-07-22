@@ -281,8 +281,8 @@ public class InterpreterThread {
     private void resolvePotentiallyUndefinedFunction(Function func) {
         while (running) {
             if (!func.isDefined()) {
-                trapManager().getUndefinedFunctionHandler()
-                        .onUndefinedFunction(InterpreterThread.this, func);
+                microVM.getClient().onUndefinedFunction(InterpreterThread.this,
+                        func);
             } else {
                 break;
             }
@@ -1398,8 +1398,8 @@ public class InterpreterThread {
         }
 
         private void visitAbstractTrap(AbstractTrap inst) {
-            Long excAddr = trapManager().getTrapHandler().onTrap(
-                    InterpreterThread.this, getValueBox(inst));
+            Long excAddr = microVM.getClient().onTrap(InterpreterThread.this,
+                    getValueBox(inst));
             if (excAddr == null) {
                 branchAndMovePC(inst.getNor());
             } else {

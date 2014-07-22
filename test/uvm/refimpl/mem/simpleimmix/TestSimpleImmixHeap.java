@@ -8,9 +8,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import uvm.Bundle;
+import uvm.Function;
 import uvm.ir.text.input.TestingHelper;
+import uvm.refimpl.DumbClient;
 import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.facade.MicroVMClient;
+import uvm.refimpl.itpr.InterpreterThread;
+import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.scanning.ObjectMarker;
 import uvm.type.Hybrid;
 import uvm.type.Int;
@@ -21,15 +25,34 @@ public class TestSimpleImmixHeap {
     private static final long BEGIN = 0x100000;
     private static final long SIZE = 0x20000;
 
-    public static MicroVM microVM;
-    public static Bundle bundle;
-    public static SimpleImmixHeap heap;
-    public static SimpleImmixMutator mutator;
+    private static MicroVM microVM;
+    private static MicroVMClient client = new DumbClient() {
+        @Override
+        public void markExternalRoots(ObjectMarker marker) {
+            testMarker.markExternalRoots(marker);
+        }
+    };
+    private static Bundle bundle;
+    private static SimpleImmixHeap heap;
+    private static SimpleImmixMutator mutator;
+
+    private static interface Marker {
+        public void markExternalRoots(ObjectMarker marker);
+    }
+
+    private static Marker testMarker;
+
+    private static Marker DO_NOTHING_MARKER = new Marker() {
+        @Override
+        public void markExternalRoots(ObjectMarker marker) {
+        }
+    };
 
     @BeforeClass
     public static void setUpClass() throws Exception {
         try {
             microVM = new MicroVM(256 * 1024, 32 * 1024, 32 * 1024);
+            microVM.setClient(client);
             bundle = TestingHelper
                     .parseUir("tests/uvm-refimpl-test/primitives.uir");
             microVM.addBundle(bundle);
@@ -43,13 +66,13 @@ public class TestSimpleImmixHeap {
     @Before
     public void setUp() {
         mutator = heap.makeMutator();
+        testMarker = DO_NOTHING_MARKER;
     }
 
     @After
     public void cleanUp() {
         mutator.close();
 
-        microVM.setClient(null);
         microVM.getMemoryManager().getHeap().mutatorTriggerAndWaitForGCEnd();
     }
 
@@ -58,6 +81,8 @@ public class TestSimpleImmixHeap {
         Int i64 = (Int) bundle.getTypeNs().getByName("@i64");
         Struct structFoo = (Struct) bundle.getTypeNs().getByName("@StructFoo");
         Hybrid ca = (Hybrid) bundle.getTypeNs().getByName("@hCharArray");
+
+        testMarker = DO_NOTHING_MARKER;
 
         long a1 = mutator.newScalar(structFoo);
         long a2 = mutator.newScalar(i64);
@@ -79,14 +104,14 @@ public class TestSimpleImmixHeap {
         final long[] as = new long[units];
         final int keepOnly = 10;
 
-        microVM.setClient(new MicroVMClient() {
+        testMarker = new Marker() {
             @Override
             public void markExternalRoots(ObjectMarker marker) {
                 for (int i = 0; i < units; i++) {
                     marker.markObjRef(as[i]);
                 }
             }
-        });
+        };
 
         for (int i = 0; i < units; i++) {
             long a = mutator.newHybrid(ca, unitLen);
@@ -109,14 +134,14 @@ public class TestSimpleImmixHeap {
         final int units = 3;
         final long[] as = new long[units];
 
-        microVM.setClient(new MicroVMClient() {
+        testMarker = new Marker() {
             @Override
             public void markExternalRoots(ObjectMarker marker) {
                 for (int i = 0; i < units; i++) {
                     marker.markObjRef(as[i]);
                 }
             }
-        });
+        };
 
         for (int i = 0; i < units; i++) {
             long a = mutator.newHybrid(ca, unitLen);
@@ -124,14 +149,14 @@ public class TestSimpleImmixHeap {
             System.out.format("as[%d] = %d\n", i, a);
         }
 
-        microVM.setClient(new MicroVMClient() {
+        testMarker = new Marker() {
             @Override
             public void markExternalRoots(ObjectMarker marker) {
                 for (int i = 0; i < 1; i++) {
                     marker.markObjRef(as[i]);
                 }
             }
-        });
+        };
 
         System.out.format("Allocating a relatively larger object...\n");
         long lo = mutator.newHybrid(ca, 70000);
