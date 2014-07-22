@@ -11,6 +11,7 @@ import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.AddressQueue;
 import uvm.refimpl.mem.Collector;
+import uvm.refimpl.mem.StackMemory;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.refimpl.mem.los.LargeObjectSpace;
 import uvm.refimpl.mem.scanning.MemoryDataScanner;
@@ -146,7 +147,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         }
     }
 
-    class AllScanner implements ObjectMarker, RefFieldHandler {
+    class AllScanner implements RefFieldHandler {
         private RefFieldHandler handler;
 
         private AddressQueue queue = new AddressQueue();
@@ -161,39 +162,60 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         }
 
         private void traceRoots() {
+            System.out.println("Tracing external roots...");
             traceExternal();
+            System.out.println("Tracing globals...");
             traceGlobal();
+            System.out.println("Tracing stacks...");
             traceStacks();
         }
 
         private void traceExternal() {
-            microVM.clientMark(this);
+            microVM.clientMark(externalMarker);
         }
 
-        @Override
-        public void markObjRef(long objRef) {
-            handle(true, null, 0, 0, objRef);
-        }
+        private ObjectMarker externalMarker = new ObjectMarker() {
+
+            @Override
+            public void markObjRef(long objRef) {
+                handle(true, null, 0, 0, objRef);
+            }
+        };
 
         private void traceGlobal() {
-            // TODO Implement bump pointer space for global and stack
+            microVM.getMemoryManager().getGlobalMemory().getAllocator()
+                    .traverseFields(this);
         }
 
         private void traceStacks() {
             Map<Integer, InterpreterStack> sr = microVM.getThreadStackManager()
                     .getStackRegistry();
             for (InterpreterStack sta : sr.values()) {
-                for (InterpreterFrame fra = sta.getTop(); fra != null; fra = fra
-                        .getPrevFrame()) {
-                    for (ValueBox vb : fra.getValueDict().values()) {
-                        if (vb instanceof HasObjRef) {
-                            HasObjRef rvb = (HasObjRef) vb;
-                            handle(false, rvb, 0, 0, rvb.getObjRef());
+                if (sta.getState() != InterpreterStack.DEAD) {
+                    System.out.format("Tracing stack %d for registers...\n",
+                            sta.getID());
+                    for (InterpreterFrame fra = sta.getTop(); fra != null; fra = fra
+                            .getPrevFrame()) {
+                        for (ValueBox vb : fra.getValueDict().values()) {
+                            if (vb instanceof HasObjRef) {
+                                HasObjRef rvb = (HasObjRef) vb;
+                                handle(false, rvb, 0, 0, rvb.getObjRef());
+                            }
                         }
                     }
-                }
 
-                // TODO Also trace alloca memory
+                    System.out.format(
+                            "Tracing stack %d memory chunk in LOS...\n",
+                            sta.getID());
+
+                    StackMemory stackMemory = sta.getStackMemory();
+                    long stackMemObjAddr = stackMemory.getStackObjRef();
+                    handle(false, null, 0, 0, stackMemObjAddr);
+                    System.out.format("Tracing stack %d for allocas...\n",
+                            sta.getID());
+
+                    stackMemory.traverseFields(this);
+                }
             }
         }
 

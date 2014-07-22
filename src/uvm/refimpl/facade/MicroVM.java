@@ -98,7 +98,6 @@ public class MicroVM {
     }
 
     public void clientMark(ObjectMarker marker) {
-        System.out.println(client);
         client.markExternalRoots(marker);
     }
 
@@ -128,7 +127,6 @@ public class MicroVM {
     }
 
     public void setClient(MicroVMClient client) {
-        System.out.println("Client set to: "+client);
         this.client = client;
     }
 

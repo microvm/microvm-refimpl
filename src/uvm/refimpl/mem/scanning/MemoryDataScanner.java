@@ -27,6 +27,7 @@ public class MemoryDataScanner {
         if (type instanceof Ref || type instanceof IRef
                 || type instanceof WeakRef) {
             long toObj = MEMORY_SUPPORT.loadLong(iRef);
+            System.out.format("Field %d -> %d\n", iRef, toObj);
             handler.handle(false, null, objRef, iRef, toObj);
         } else if (type instanceof Struct) {
             Struct sTy = (Struct) type;

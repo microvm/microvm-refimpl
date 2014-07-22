@@ -1,5 +1,7 @@
 package uvm.refimpl.mem;
 
+import static uvm.platformsupport.Config.*;
+
 import java.util.HashMap;
 import java.util.Map;
 
