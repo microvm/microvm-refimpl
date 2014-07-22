@@ -571,6 +571,85 @@
     THROW @NULLREF // unreachable
 }
 
+.const @I64_100 <@i64> = 100
+.const @I64_50 <@i64> = 50
+.const @I64_0 <@i64> = 0
+.typedef @LongAry = hybrid <@void @i64>
+
+.funcdef @testmultithreading <@noparamsnoret> () {
+%entry:
+    %ary_r = NEWHYBRID <@LongAry> @I64_100
+    %ary_ir = GETIREF <@LongAry> %ary_r
+    %ary0_ir = GETVARPARTIREF <@LongAry> %ary_ir
+    BRANCH %head
+
+%head:
+    %i = PHI <@i64> { %entry: 0; %body: %i2; }
+    %cmp = SLT <@i64> %i @I64_100
+    BRANCH2 %cmp %body %next
+
+%body:
+    %aryi_ir = SHIFTIREF <@i64> %ary0_ir %i
+    STORE <@i64> %aryi_ir %i
+    %i2 = ADD <@i64> %i 1
+    BRANCH %head
+    
+%next:
+    %result0 = ALLOCA <@i64>
+    %sta0 = NEWSTACK <@summingslavesig> @summingslave (%ary0_ir @I64_50 %result0)
+    %result1 = ALLOCA <@i64>
+    %ary50_ir = SHIFTIREF <@i64> %ary0_ir @I64_50
+    %sta1 = NEWSTACK <@summingslavesig> @summingslave (%ary50_ir @I64_50 %result1)
+    
+    %thr0 = ICALL @uvm.new_thread (%sta0)
+    %thr1 = ICALL @uvm.new_thread (%sta1)
+    
+    BRANCH %wait0
+
+%wait0:
+    %res0val = LOAD SEQ_CST <@i64> %result0
+    %cz0 = EQ <@i64> %res0val @I64_0
+    BRANCH2 %cz0 %wait0 %wait1
+    
+%wait1:
+    %res1val = LOAD SEQ_CST <@i64> %result1
+    %cz1 = EQ <@i64> %res1val @I64_0
+    BRANCH2 %cz1 %wait1 %getresult
+    
+%getresult:
+    %sum = ADD <@i64> %res0val %res1val
+    TRAP <@void> %exit %exit KEEPALIVE (%sum)
+    
+%exit:
+    ICALL @uvm.thread_exit ()
+    THROW @NULLREF
+}
+
+.funcsig @summingslavesig = @void (@irefi64 @i64 @irefi64)
+
+.funcdef @summingslave <@summingslavesig> (%ary %sz %result) {
+%entry:
+    BRANCH %head
+    
+%head:
+    %sum = PHI <@i64> { %entry: 0; %body: %sum2; }
+    %i = PHI <@i64> { %entry: 0; %body: %i2; }
+    %cmp = SLT <@i64> %i %sz
+    BRANCH2 %cmp %body %exit
+
+%body:
+    %curptr = SHIFTIREF <@i64> %ary %i
+    %curnum = LOAD <@i64> %curptr
+    %sum2 = ADD <@i64> %sum %curnum
+    %i2 = ADD <@i64> %i 1
+    BRANCH %head
+
+%exit:
+    STORE SEQ_CST <@i64> %result %sum
+    ICALL @uvm.thread_exit ()
+    THROW @NULLREF
+}
+
 ///////////////////////// Simple sum
 
 .funcdef @simplesum <@void (@i64 @i64)> (%from %to) {

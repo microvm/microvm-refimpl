@@ -1,5 +1,6 @@
 package uvm.refimpl.itpr;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,7 +74,9 @@ public class ThreadStackManager {
         boolean someRunning;
         do {
             someRunning = false;
-            for (InterpreterThread thr2 : threadRegistry.values()) {
+            ArrayList<InterpreterThread> curThreads = new ArrayList<InterpreterThread>(
+                    threadRegistry.values());
+            for (InterpreterThread thr2 : curThreads) {
                 thr2.step();
                 someRunning = thr2.isRunning() || someRunning;
             }
@@ -82,7 +85,9 @@ public class ThreadStackManager {
 
     public void joinThread(InterpreterThread thr) {
         while (thr.isRunning()) {
-            for (InterpreterThread thr2 : threadRegistry.values()) {
+            ArrayList<InterpreterThread> curThreads = new ArrayList<InterpreterThread>(
+                    threadRegistry.values());
+            for (InterpreterThread thr2 : curThreads) {
                 thr2.step();
             }
         }

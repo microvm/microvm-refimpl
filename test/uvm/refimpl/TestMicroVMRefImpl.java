@@ -6,7 +6,6 @@ import static uvm.refimpl.MicroVMHelper.*;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,6 +27,7 @@ import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
 import uvm.refimpl.itpr.RefBox;
+import uvm.refimpl.itpr.ThreadStackManager;
 import uvm.refimpl.itpr.TrapHandler;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.TypeSizes;
@@ -779,6 +779,29 @@ public class TestMicroVMRefImpl {
 
             thread.step();
         }
+
+    }
+
+    @Test
+    public void testMultiThreading() throws InterruptedException {
+
+        InterpreterStack stack = h.makeStack(h.func("@testmultithreading"));
+
+        microVM.getTrapManager().setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+                long value = ((IntBox) kas.get(0)).getValue().longValue();
+
+                assertEquals(4950, value);
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        ThreadStackManager tsm = microVM.getThreadStackManager();
+        tsm.joinAll();
 
     }
 
