@@ -6,6 +6,7 @@ import java.io.InputStream;
 
 import uvm.ir.io.NestedIOException;
 import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 /**
  * A helper class that reads numbers from an input stream.
@@ -13,6 +14,8 @@ import uvm.util.LogUtil;
  * This class uses little endian as specified by the µVM design document.
  */
 public class BinaryInputStream extends FilterInputStream {
+    private static final Logger logger = LogUtil.getLogger("BinaryInputStream");
+
     public BinaryInputStream(InputStream in) {
         super(in);
     }
@@ -21,7 +24,7 @@ public class BinaryInputStream extends FilterInputStream {
         try {
             int b0 = in.read();
             int rv = b0;
-            LogUtil.log("Read byte %d [%02x]\n", rv, b0);
+            logger.format("Read byte %d [%02x]", rv, b0);
             return rv;
         } catch (IOException e) {
             throw new NestedIOException(e);
@@ -33,7 +36,7 @@ public class BinaryInputStream extends FilterInputStream {
             int b0 = in.read();
             int b1 = in.read();
             int rv = (b0 | (b1 << 8));
-            LogUtil.log("Read short %d [%02x %02x]\n", rv, b0, b1);
+            logger.format("Read short %d [%02x %02x]", rv, b0, b1);
             return rv;
         } catch (IOException e) {
             throw new NestedIOException(e);
@@ -47,7 +50,7 @@ public class BinaryInputStream extends FilterInputStream {
             int b2 = in.read();
             int b3 = in.read();
             int rv = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
-            LogUtil.log("Read int %d [%02x %02x %02x %02x]\n", rv, b0, b1, b2,
+            logger.format("Read int %d [%02x %02x %02x %02x]", rv, b0, b1, b2,
                     b3);
             return rv;
         } catch (IOException e) {
@@ -67,8 +70,8 @@ public class BinaryInputStream extends FilterInputStream {
             long b7 = in.read();
             long rv = b0 | (b1 << 8L) | (b2 << 16L) | (b3 << 24L) | (b4 << 32L)
                     | (b5 << 40L) | (b6 << 48L) | (b7 << 56L);
-            LogUtil.log(
-                    "Read long %d [%02x %02x %02x %02x %02x %02x %02x %02x]\n",
+            logger.format(
+                    "Read long %d [%02x %02x %02x %02x %02x %02x %02x %02x]",
                     rv, b0, b1, b2, b3, b4, b5, b6, b7);
             return rv;
         } catch (IOException e) {
@@ -79,14 +82,14 @@ public class BinaryInputStream extends FilterInputStream {
     public float readFloat() {
         int bits = readInt();
         float rv = Float.intBitsToFloat(bits);
-        LogUtil.log(" ... then interpret to float %f\n", rv);
+        logger.format(" ... then interpret to float %f", rv);
         return rv;
     }
 
     public double readDouble() {
         long bits = readLong();
         double rv = Double.longBitsToDouble(bits);
-        LogUtil.log(" ... then interpret to double %f\n", rv);
+        logger.format(" ... then interpret to double %f", rv);
         return rv;
     }
 
@@ -105,7 +108,7 @@ public class BinaryInputStream extends FilterInputStream {
     public int readOpc() {
         try {
             int rv = read();
-            LogUtil.log("Read opc %d [%02x]\n", rv, rv);
+            logger.format("Read opc %d [%02x]", rv, rv);
             return rv;
         } catch (IOException e) {
             throw new NestedIOException(e);
@@ -120,7 +123,7 @@ public class BinaryInputStream extends FilterInputStream {
     public int maybeReadOpc() {
         try {
             int rv = read();
-            LogUtil.log("Read maybeOpc %d [%02x]\n", rv, rv);
+            logger.format("Read maybeOpc %d [%02x]", rv, rv);
             return rv;
         } catch (IOException e) {
             throw new NestedIOException(e);

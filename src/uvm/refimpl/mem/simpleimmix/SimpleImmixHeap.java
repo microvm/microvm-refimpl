@@ -44,7 +44,7 @@ public class SimpleImmixHeap extends Heap {
                 return addr;
             }
 
-            mutatorTriggerAndWaitForGCEnd();
+            mutatorTriggerAndWaitForGCEnd(true);
         }
     }
 

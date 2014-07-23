@@ -1,9 +1,18 @@
 package uvm.refimpl.mem.los;
 
-import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import uvm.util.LogUtil;
+
 public class TestFreeList {
+    
+    @BeforeClass
+    public static void setUpClass() {
+        LogUtil.enableLoggers("FreeList");
+    }
 
     @Test
     public void testAllocSingle() {

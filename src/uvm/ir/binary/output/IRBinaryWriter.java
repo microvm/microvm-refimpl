@@ -26,6 +26,7 @@ import uvm.ssavalue.Instruction;
 import uvm.ssavalue.Parameter;
 import uvm.type.Type;
 import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 /**
  * This package writes a bundle in the binary form.
@@ -33,6 +34,8 @@ import uvm.util.LogUtil;
  * TODO: In the future, it should be written at a larger-than-bundle level.
  */
 public class IRBinaryWriter implements Closeable {
+    private static final Logger logger = LogUtil.getLogger("IRBinaryWriter");
+
     private static final String UTF8 = "UTF-8";
     private TypeWriter TYPE_WRITER;
     private ValueWriter VALUE_WRITER;
@@ -138,7 +141,7 @@ public class IRBinaryWriter implements Closeable {
 
         for (BasicBlock bb : bbs) {
             bos.writeID(bb);
-            
+
             List<Instruction> insts = bb.getInsts();
             bos.writeInt(insts.size());
 
@@ -152,7 +155,7 @@ public class IRBinaryWriter implements Closeable {
     private void maybeWriteNameBind(Identified obj) {
         try {
             if (obj.getName() != null) {
-                LogUtil.log("Binding %d to %s\n", obj.getID(), obj.getName());
+                logger.format("Binding %d to %s", obj.getID(), obj.getName());
                 bos.writeOpc(NAMEBIND);
                 bos.writeID(obj);
 

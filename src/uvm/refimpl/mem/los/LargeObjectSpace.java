@@ -7,6 +7,8 @@ import uvm.refimpl.mem.TypeSizes;
 import uvm.refimpl.mem.simpleimmix.SimpleImmixHeap;
 import uvm.refimpl.mem.simpleimmix.SimpleImmixSpace;
 import uvm.util.ErrorUtils;
+import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 /**
  * A mark-sweep freelist-based space to allocate large objects. An object always
@@ -24,6 +26,7 @@ import uvm.util.ErrorUtils;
  * Objects in this space are never moved.
  */
 public class LargeObjectSpace extends Space {
+    private static final Logger logger = LogUtil.getLogger("LOS");
     public static final long BLOCK_SIZE = SimpleImmixSpace.BLOCK_SIZE / 4;
 
     private static final long OFFSET_PREV = 0;
@@ -67,17 +70,16 @@ public class LargeObjectSpace extends Space {
         for (int tries = 0; tries < 2; tries++) {
             blockIndex = freeList.allocate(iBlocks);
             if (blockIndex == -1 && tries == 0) {
-                heap.mutatorTriggerAndWaitForGCEnd();
+                heap.mutatorTriggerAndWaitForGCEnd(true);
             } else {
                 break;
             }
         }
 
         if (blockIndex == -1) {
-            System.out
-                    .println("Out of memory when allocating large object of size: "
+            ErrorUtils
+                    .uvmError("Out of memory when allocating large object of size: "
                             + totalSize);
-            System.exit(0);
             return 0; // unreachable
         }
 
@@ -93,16 +95,15 @@ public class LargeObjectSpace extends Space {
 
     public void markBlockByObjRef(long objRef) {
         long blockAddr = objRefToBlockAddr(objRef);
-        System.out.printf("LOS: marking block addr %d for obj %d...\n",
-                blockAddr, objRef);
+        logger.format("marking block addr %d for obj %d...", blockAddr, objRef);
         markBlock(blockAddr);
     }
 
     public boolean collect() {
-        System.out.printf("LOS: Start collecting...\n");
+        logger.format("Start collecting...");
 
         if (head == 0) {
-            System.out.printf("LOS: not iterating because head == 0\n");
+            logger.format("not iterating because head == 0");
             return false;
         }
 
@@ -111,20 +112,17 @@ public class LargeObjectSpace extends Space {
         long lastBlock = getPrev(curBlock);
         long nextBlock = getNext(curBlock);
 
-        System.out.printf("LOS: Begin iteration from %d to %d\n", curBlock,
-                lastBlock);
+        logger.format("Begin iteration from %d to %d", curBlock, lastBlock);
 
         while (true) {
-            System.out.printf("LOS: Visiting block %d..\n", curBlock);
+            logger.format("Visiting block %d..", curBlock);
             long mark = getBlockMark(curBlock);
             if (mark != MARK_BIT) {
-                System.out.printf("LOS: Deallocating block addr %d...\n",
-                        curBlock);
+                logger.format("Deallocating block addr %d...", curBlock);
                 dealloc(curBlock);
                 anyDeallocated = true;
             } else {
-                System.out.printf("LOS: Block addr %d contains live object.\n",
-                        curBlock);
+                logger.format("Block addr %d contains live object.", curBlock);
                 unmarkBlock(curBlock);
             }
 

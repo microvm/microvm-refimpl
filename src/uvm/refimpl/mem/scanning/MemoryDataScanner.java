@@ -11,14 +11,18 @@ import uvm.type.Struct;
 import uvm.type.TagRef64;
 import uvm.type.Type;
 import uvm.type.WeakRef;
+import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 public class MemoryDataScanner {
-    public static void scanMemoryData(long objRef, long iRef, MicroVM microVM, RefFieldHandler handler) {
+    private static final Logger logger = LogUtil.getLogger("MDS");
+
+    public static void scanMemoryData(long objRef, long iRef, MicroVM microVM,
+            RefFieldHandler handler) {
         long tagAddr = objRef + TypeSizes.GC_HEADER_OFFSET_TAG;
         long tag = MEMORY_SUPPORT.loadLong(tagAddr);
         int typeID = (int) (tag & 0x00000000ffffffffL);
-        Type type = microVM.getGlobalBundle().getTypeNs()
-                .getByID(typeID);
+        Type type = microVM.getGlobalBundle().getTypeNs().getByID(typeID);
         MemoryDataScanner.scanField(type, objRef, objRef, handler);
     }
 
@@ -27,7 +31,7 @@ public class MemoryDataScanner {
         if (type instanceof Ref || type instanceof IRef
                 || type instanceof WeakRef) {
             long toObj = MEMORY_SUPPORT.loadLong(iRef);
-            System.out.format("Field %d -> %d\n", iRef, toObj);
+            logger.format("Field %d -> %d", iRef, toObj);
             handler.handle(false, null, objRef, iRef, toObj);
         } else if (type instanceof Struct) {
             Struct sTy = (Struct) type;

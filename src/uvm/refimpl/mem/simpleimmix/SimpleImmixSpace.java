@@ -3,6 +3,8 @@ package uvm.refimpl.mem.simpleimmix;
 import static uvm.util.ErrorUtils.*;
 import uvm.refimpl.mem.MemUtils;
 import uvm.refimpl.mem.Space;
+import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 /**
  * A simple mark-region space.
@@ -14,6 +16,7 @@ import uvm.refimpl.mem.Space;
  * memory, it is an out-of-memory case. The VM terminates in this case.
  */
 public class SimpleImmixSpace extends Space {
+    private static final Logger logger = LogUtil.getLogger("SIS");
 
     public static final long BLOCK_SIZE = 32768;
 
@@ -118,7 +121,7 @@ public class SimpleImmixSpace extends Space {
     public void markBlockByObjRef(long objRef) {
         int blockIndex = objRefToBlockIndex(objRef);
         markBlockByIndex(blockIndex);
-        System.out.format("Marked block %d\n", blockIndex);
+        logger.format("Marked block %d", blockIndex);
     }
 
     public boolean collectBlocks() {
@@ -130,19 +133,22 @@ public class SimpleImmixSpace extends Space {
                 freeList[newNFree] = i;
                 newNFree++;
             } else {
-                System.out.format(
-                        "Block %d is not freed because flag bits is %x\n", i,
-                        bits);
+                logger.format("Block %d is not freed because flag bits is %x",
+                        i, bits);
             }
             flag &= ~BLOCK_MARKED;
             blockFlags[i] = flag;
         }
         freeListValidCount = newNFree;
-        System.out.print("New freelist:");
-        for (int i = 0; i < freeListValidCount; i++) {
-            System.out.print(" " + freeList[i]);
+
+        if (logger.isEnabled()) {
+            StringBuilder sb = new StringBuilder("New freelist:");
+            for (int i = 0; i < freeListValidCount; i++) {
+                sb.append(" ").append(freeList[i]);
+            }
+            logger.format("%s", sb.toString());
         }
-        System.out.println();
+
         nextFree = 0;
 
         return newNFree > 0;

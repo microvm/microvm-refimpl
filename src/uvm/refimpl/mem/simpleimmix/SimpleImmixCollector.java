@@ -18,8 +18,11 @@ import uvm.refimpl.mem.scanning.MemoryDataScanner;
 import uvm.refimpl.mem.scanning.ObjectMarker;
 import uvm.refimpl.mem.scanning.RefFieldHandler;
 import uvm.util.ErrorUtils;
+import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 public class SimpleImmixCollector extends Collector implements Runnable {
+    private static final Logger logger = LogUtil.getLogger("SIC");
 
     private SimpleImmixHeap heap;
     private SimpleImmixSpace space;
@@ -41,9 +44,9 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
     @Override
     protected void collect() {
-        System.out.println("GC starts.");
+        logger.format("GC starts.");
 
-        System.out.println("Marking....");
+        logger.format("Marking....");
         AllScanner s1 = new AllScanner(new RefFieldHandler() {
             @Override
             public boolean handle(boolean fromClient, HasObjRef fromBox,
@@ -54,17 +57,17 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
         s1.scanAll();
 
-        System.out.println("Marked. Collecting blocks....");
+        logger.format("Marked. Collecting blocks....");
 
         boolean anyMemoryRecycled = collectBlocks();
 
-        if (!anyMemoryRecycled) {
+        if (!anyMemoryRecycled && heap.getMustFreeSpace()) {
             ErrorUtils
                     .uvmError("Out of memory because the GC failed to recycle any memory.");
             System.exit(1);
         }
 
-        System.out.println("Blocks collected. Unmarking....");
+        logger.format("Blocks collected. Unmarking....");
 
         AllScanner s2 = new AllScanner(new RefFieldHandler() {
             @Override
@@ -76,7 +79,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
         s2.scanAll();
 
-        System.out.println("GC finished.");
+        logger.format("GC finished.");
         heap.untriggerGC();
     }
 
@@ -85,7 +88,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
     private boolean testAndSetMark(long objRef) {
         long headerAddr = objRef + TypeSizes.GC_HEADER_OFFSET_TAG;
         long oldHeader = MEMORY_SUPPORT.loadLong(headerAddr);
-        System.out.format("GC header of %d is %x\n", objRef, oldHeader);
+        logger.format("GC header of %d is %x", objRef, oldHeader);
         long markBit = oldHeader & MARK_MASK;
         if (markBit == 0) {
             long newHeader = oldHeader | MARK_MASK;
@@ -104,7 +107,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         boolean wasMarked = testAndSetMark(addr);
 
         if (!wasMarked) {
-            System.out.format("Newly marked %d\n", addr);
+            logger.format("Newly marked %d", addr);
 
             if (space.isInSpace(addr)) {
                 space.markBlockByObjRef(addr);
@@ -112,7 +115,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
                 los.markBlockByObjRef(addr);
             } else {
                 ErrorUtils.uvmError(String.format(
-                        "Object ref %d not in any space: \n", addr));
+                        "Object ref %d not in any space", addr));
                 return false; // Unreachable
             }
 
@@ -136,7 +139,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
         long headerAddr = objRef + TypeSizes.GC_HEADER_OFFSET_TAG;
         long oldHeader = MEMORY_SUPPORT.loadLong(headerAddr);
-        System.out.format("GC header of %d is %x\n", objRef, oldHeader);
+        logger.format("GC header of %d is %x", objRef, oldHeader);
         long markBit = oldHeader & MARK_MASK;
         if (markBit != 0) {
             long newHeader = oldHeader & ~MARK_MASK;
@@ -162,11 +165,11 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         }
 
         private void traceRoots() {
-            System.out.println("Tracing external roots...");
+            logger.format("Tracing external roots...");
             traceExternal();
-            System.out.println("Tracing globals...");
+            logger.format("Tracing globals...");
             traceGlobal();
-            System.out.println("Tracing stacks...");
+            logger.format("Tracing stacks...");
             traceStacks();
         }
 
@@ -192,7 +195,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
                     .getStackRegistry();
             for (InterpreterStack sta : sr.values()) {
                 if (sta.getState() != InterpreterStack.DEAD) {
-                    System.out.format("Tracing stack %d for registers...\n",
+                    logger.format("Tracing stack %d for registers...",
                             sta.getID());
                     for (InterpreterFrame fra = sta.getTop(); fra != null; fra = fra
                             .getPrevFrame()) {
@@ -204,14 +207,13 @@ public class SimpleImmixCollector extends Collector implements Runnable {
                         }
                     }
 
-                    System.out.format(
-                            "Tracing stack %d memory chunk in LOS...\n",
+                    logger.format("Tracing stack %d memory chunk in LOS...",
                             sta.getID());
 
                     StackMemory stackMemory = sta.getStackMemory();
                     long stackMemObjAddr = stackMemory.getStackObjRef();
                     handle(false, null, 0, 0, stackMemObjAddr);
-                    System.out.format("Tracing stack %d for allocas...\n",
+                    logger.format("Tracing stack %d for allocas...",
                             sta.getID());
 
                     stackMemory.traverseFields(this);

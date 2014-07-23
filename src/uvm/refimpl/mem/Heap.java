@@ -7,7 +7,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import uvm.util.ErrorUtils;
 
 public abstract class Heap {
-    protected Lock lock; // Used to communicate between the mutator and the collector.
+    protected Lock lock; // Used to communicate between the mutator and the
+                         // collector.
     protected Condition gcCanStart;
     protected Condition gcFinished;
 
@@ -15,6 +16,7 @@ public abstract class Heap {
     protected static final int DOING_GC = 1;
 
     protected int gcState;
+    protected boolean mustFreeSpace;
 
     public Heap() {
         super();
@@ -26,10 +28,10 @@ public abstract class Heap {
         gcState = MUTATOR_RUNNING;
     }
 
-    public void mutatorTriggerAndWaitForGCEnd() {
+    public void mutatorTriggerAndWaitForGCEnd(boolean mustFreeSpace) {
         lock.lock();
         try {
-            triggerGC();
+            triggerGC(mustFreeSpace);
             mutatorWaitForGCEnd();
         } finally {
             lock.unlock();
@@ -37,11 +39,12 @@ public abstract class Heap {
 
     }
 
-    private void triggerGC() {
+    private void triggerGC(boolean mustFreeSpace) {
         lock.lock();
         try {
             assert (gcState == MUTATOR_RUNNING);
             gcState = DOING_GC;
+            this.mustFreeSpace = mustFreeSpace;
             gcCanStart.signalAll();
         } finally {
             lock.unlock();
@@ -88,5 +91,9 @@ public abstract class Heap {
     }
 
     public abstract Mutator makeMutator();
+
+    public boolean getMustFreeSpace() {
+        return mustFreeSpace;
+    }
 
 }

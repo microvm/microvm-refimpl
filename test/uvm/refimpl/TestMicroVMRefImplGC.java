@@ -86,7 +86,7 @@ public class TestMicroVMRefImplGC {
                         .getName();
                 if (trapName.equals("%gctrap")) {
                     microVM.getMemoryManager().getHeap()
-                            .mutatorTriggerAndWaitForGCEnd();
+                            .mutatorTriggerAndWaitForGCEnd(false);
                     return null;
                 } else if (trapName.equals("%checktrap")) {
                     List<ValueBox> kas = thread.getStack().getTop()
@@ -123,7 +123,7 @@ public class TestMicroVMRefImplGC {
                         .getName();
                 if (trapName.equals("%gctrap")) {
                     microVM.getMemoryManager().getHeap()
-                            .mutatorTriggerAndWaitForGCEnd();
+                            .mutatorTriggerAndWaitForGCEnd(false);
                     return null;
                 } else {
                     fail("Who set that trap: " + trapName);

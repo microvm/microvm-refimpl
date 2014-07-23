@@ -1,8 +1,12 @@
 package uvm.refimpl.mem.los;
 
 import uvm.util.ErrorUtils;
+import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 public class FreeList {
+    private static final Logger logger = LogUtil.getLogger("FreeList");
+
     private static final boolean DEBUG = false;
 
     private int nUnits;
@@ -96,14 +100,14 @@ public class FreeList {
      */
     private void allocInto(int freeStart, int allocSize) {
         int thisStart = freeStart;
-        debugLog("Allocate %d units into %d...\n", allocSize, thisStart);
+        logger.format("Allocate %d units into %d...", allocSize, thisStart);
         int thisPrev = prev[thisStart];
         int thisNext = next[thisStart];
         int thisSize = getSize(thisStart);
 
-        debugLog("thisPrev = %d\n", thisPrev);
-        debugLog("thisNext = %d\n", thisNext);
-        debugLog("thisSize = %d\n", thisSize);
+        logger.format("thisPrev = %d", thisPrev);
+        logger.format("thisNext = %d", thisNext);
+        logger.format("thisSize = %d", thisSize);
 
         unlink(thisStart);
 
@@ -220,7 +224,7 @@ public class FreeList {
     }
 
     public void debugPrintList() {
-        debugLog("head=%d\n", head);
+        logger.format("head=%d", head);
         int multiSkipTo = 0;
         for (int i = 0; i < nUnits; i++) {
             String multiSkip;
@@ -229,7 +233,7 @@ public class FreeList {
             } else {
                 multiSkip = "";
             }
-            debugLog("%d [%s%s] %d (%d %d)%s\n", i, isUsed[i] ? "U" : " ",
+            logger.format("%d [%s%s] %d (%d %d)%s", i, isUsed[i] ? "U" : " ",
                     isMulti[i] ? "m" : " ", size[i], prev[i], next[i],
                     multiSkip);
             if (i >= multiSkipTo && isMulti[i]) {
@@ -238,9 +242,4 @@ public class FreeList {
         }
     }
 
-    private void debugLog(String fmt, Object... args) {
-        if (DEBUG) {
-            System.out.printf(fmt, args);
-        }
-    }
 }

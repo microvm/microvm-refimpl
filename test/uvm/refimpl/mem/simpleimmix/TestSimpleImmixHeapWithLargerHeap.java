@@ -63,7 +63,7 @@ public class TestSimpleImmixHeapWithLargerHeap {
     public void cleanUp() {
         mutator.close();
 
-        microVM.getMemoryManager().getHeap().mutatorTriggerAndWaitForGCEnd();
+        microVM.getMemoryManager().getHeap().mutatorTriggerAndWaitForGCEnd(false);
     }
 
     @Test

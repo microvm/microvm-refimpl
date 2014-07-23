@@ -12,6 +12,8 @@ import uvm.refimpl.mem.scanning.RefFieldHandler;
 import uvm.type.Hybrid;
 import uvm.type.Type;
 import uvm.util.ErrorUtils;
+import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 /**
  * A bump-pointer allocator with "rewinding" capability. Used to implement
@@ -63,6 +65,8 @@ import uvm.util.ErrorUtils;
  * </pre>
  */
 public class RewindableBumpPointerAllocator implements Allocator {
+    private static final Logger logger = LogUtil
+            .getLogger("RBPA");
 
     private long begin;
     private long extend;
@@ -89,8 +93,7 @@ public class RewindableBumpPointerAllocator implements Allocator {
             return 0; // unreachable
         }
 
-        System.out.format(
-                "RBPA: alloc(%d, %d, %d) top=%d iRef=%d nextTop=%d\n", size,
+        logger.format("alloc(%d, %d, %d) top=%d iRef=%d nextTop=%d", size,
                 align, headerSize, top, iRef, nextTop);
 
         MemUtils.zeroRegion(dataStart, nextTop - dataStart);
@@ -105,14 +108,14 @@ public class RewindableBumpPointerAllocator implements Allocator {
     }
 
     public void traverseFields(RefFieldHandler handler) {
-        System.out.println("RBPA: Traversing a RewindableBumpPointerAllocator");
+        logger.format("Traversing a RewindableBumpPointerAllocator");
         long curTopLoc = top;
 
         while (true) {
-            System.out.format("RBPA: curTopLoc is %d\n", curTopLoc);
+            logger.format("curTopLoc is %d", curTopLoc);
             long iRef = MEMORY_SUPPORT.loadLong(curTopLoc);
 
-            System.out.format("RBPA: iRef is %d\n", iRef);
+            logger.format("iRef is %d", iRef);
 
             if (iRef == 0) {
                 break;
@@ -121,10 +124,10 @@ public class RewindableBumpPointerAllocator implements Allocator {
             long hdr = MEMORY_SUPPORT.loadLong(iRef
                     + TypeSizes.GC_HEADER_OFFSET_TAG);
             int typeID = (int) (hdr & 0xffffffffL);
-            System.out.format("RBPA: hdr=%d, typeID=%d\n", hdr, typeID);
+            logger.format("hdr=%d, typeID=%d", hdr, typeID);
             Type type = microVM.getGlobalBundle().getTypeNs().getByID(typeID);
-            System.out.format("RBPA: type=%s: %s\n",
-                    IdentifiedHelper.repr(type), type.getClass().getName());
+            logger.format("type=%s: %s", IdentifiedHelper.repr(type), type
+                    .getClass().getName());
             MemoryDataScanner.scanField(type, 0, iRef, handler);
 
             long prevTopLoc;

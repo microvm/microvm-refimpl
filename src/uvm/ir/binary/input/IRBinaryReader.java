@@ -85,6 +85,7 @@ import uvm.type.Struct;
 import uvm.type.Type;
 import uvm.type.WeakRef;
 import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 /**
  * Read a bundle in the binary form.
@@ -93,6 +94,8 @@ import uvm.util.LogUtil;
  * composed using "AbstractModel".
  */
 public class IRBinaryReader implements Closeable {
+    private static final Logger logger = LogUtil.getLogger("IRBinaryReader");
+
     private static final String UTF8 = "UTF-8";
 
     private BinaryInputStream bis;
@@ -841,7 +844,7 @@ public class IRBinaryReader implements Closeable {
             bis.read(buf);
             String name = new String(buf, UTF8);
             bindings.put(id, name);
-            LogUtil.log("Received binding %d to %s\n", id, name);
+            logger.format("Received binding %d to %s", id, name);
         } catch (IOException e) {
             throw new NestedIOException(e);
         }
@@ -938,7 +941,7 @@ public class IRBinaryReader implements Closeable {
             if (name != null) {
                 ns.bind(id, name);
                 ns.getByID(id).setName(name);
-                LogUtil.log("Using (ns) binding %d to %s\n", id, name);
+                logger.format("Using (ns) binding %d to %s", id, name);
             }
         }
     }

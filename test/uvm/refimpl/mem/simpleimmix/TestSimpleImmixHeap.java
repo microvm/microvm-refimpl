@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import uvm.Bundle;
@@ -19,6 +20,7 @@ import uvm.refimpl.mem.scanning.ObjectMarker;
 import uvm.type.Hybrid;
 import uvm.type.Int;
 import uvm.type.Struct;
+import uvm.util.LogUtil;
 
 public class TestSimpleImmixHeap {
 
@@ -50,6 +52,7 @@ public class TestSimpleImmixHeap {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
+        LogUtil.enableLoggers("RBPA", "LOS", "SIC", "SIM", "SIS", "MDS");
         try {
             microVM = new MicroVM(256 * 1024, 32 * 1024, 32 * 1024);
             microVM.setClient(client);
@@ -73,7 +76,7 @@ public class TestSimpleImmixHeap {
     public void cleanUp() {
         mutator.close();
 
-        microVM.getMemoryManager().getHeap().mutatorTriggerAndWaitForGCEnd();
+        microVM.getMemoryManager().getHeap().mutatorTriggerAndWaitForGCEnd(false);
     }
 
     @Test
@@ -127,6 +130,7 @@ public class TestSimpleImmixHeap {
     }
 
     @Test
+    @Ignore
     public void testLOS() {
         Hybrid ca = (Hybrid) bundle.getTypeNs().getByName("@hCharArray");
 

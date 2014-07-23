@@ -4,8 +4,11 @@ import uvm.refimpl.mem.Allocator;
 import uvm.refimpl.mem.MemConstants;
 import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.TypeSizes;
+import uvm.util.LogUtil;
+import uvm.util.Logger;
 
 public class SimpleImmixMutator extends Mutator implements Allocator {
+    private static final Logger logger = LogUtil.getLogger("SIM");
 
     public long curBlockAddr;
     public long cursor;
@@ -27,7 +30,7 @@ public class SimpleImmixMutator extends Mutator implements Allocator {
 
     @Override
     public long alloc(long size, long align, long headerSize) {
-        System.out.format("alloc(%d, %d, %d)\n", size, align, headerSize);
+        logger.format("alloc(%d, %d, %d)", size, align, headerSize);
         align = align < MemConstants.WORD_SIZE_BYTES ? MemConstants.WORD_SIZE_BYTES
                 : align;
 
@@ -39,9 +42,9 @@ public class SimpleImmixMutator extends Mutator implements Allocator {
                 if (userEnd - gcStart > SimpleImmixSpace.BLOCK_SIZE) {
                     return heap.allocLargeObject(size, align, headerSize);
                 }
-                System.out.println("Getting new block...");
+                logger.format("%s", "Getting new block...");
                 getNewBlock();
-                System.out.println("got new block.");
+                logger.format("%s", "got new block.");
                 continue;
             } else {
                 cursor = userEnd;
