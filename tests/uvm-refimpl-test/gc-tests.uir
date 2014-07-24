@@ -148,3 +148,45 @@
 %exit:
     RETVOID
 }
+
+.typedef @refi64array = hybrid <@void @refi64>
+
+.const @REM_SZ <@i64> = 2000
+.const @REM_PER_ALLOC <@i64> = 100000
+.const @NALLOCS <@i64> = 2000000
+
+.funcdef @breadcrumbs <@noparamsnoret> () {
+%entry:
+    %remember = NEWHYBRID <@refi64array> @REM_SZ
+    %rememberiref = GETIREF <@refi64array> %remember
+    %remv = GETVARPARTIREF <@refi64array> %rememberiref
+    
+    BRANCH %head
+    
+%head:
+    %i = PHI <@i64> { %entry: 0; %next: %i2; }
+    %nrem = PHI <@i64> { %entry: 0; %next: %nrem3; }
+    %enough = SLT <@i64> %i @NALLOCS
+    BRANCH2 %enough %body %exit
+
+%body:
+    %obj = NEW <@i64>
+    %rem = SREM <@i64> %i @REM_PER_ALLOC
+    %z = EQ <@i64> %rem 0
+    BRANCH2 %z %body2 %next
+
+%body2:
+    %loc = SHIFTIREF <@refi64> %remv %nrem
+    STORE <@refi64> %loc %obj
+    %nrem2 = ADD <@i64> %nrem 1
+    BRANCH %next
+    
+%next:
+    %nrem3 = PHI <@i64> { %body: %nrem; %body2: %nrem2; }
+    %i2 = ADD <@i64> %i 1
+    BRANCH %head
+
+%exit:
+    ICALL @uvm.thread_exit()
+    THROW @NULLREF
+}

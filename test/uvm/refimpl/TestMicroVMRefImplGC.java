@@ -21,6 +21,7 @@ import uvm.refimpl.itpr.RefBox;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.scanning.ObjectMarker;
 import uvm.ssavalue.Value;
+import uvm.util.LogUtil;
 
 public class TestMicroVMRefImplGC {
 
@@ -52,6 +53,8 @@ public class TestMicroVMRefImplGC {
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
+        LogUtil.enableLoggers("RBPA", "LOS", "SIC", "SIDM", "SIS");
+
         try {
             microVM = new MicroVM();
             microVM.setClient(client);
@@ -131,6 +134,21 @@ public class TestMicroVMRefImplGC {
                 }
             }
 
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+
+    }
+    @Test
+    public void testBreadcrumbs() throws Exception {
+        InterpreterStack stack = h.makeStack(h.func("@breadcrumbs"));
+
+        setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+                return null;
+            }
         });
 
         InterpreterThread thread = microVM.newThread(stack);

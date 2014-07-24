@@ -7,8 +7,6 @@ import uvm.util.Logger;
 public class FreeList {
     private static final Logger logger = LogUtil.getLogger("FreeList");
 
-    private static final boolean DEBUG = false;
-
     private int nUnits;
 
     private boolean isUsed[];
@@ -224,7 +222,7 @@ public class FreeList {
     }
 
     public void debugPrintList() {
-        logger.format("head=%d", head);
+        System.out.format("head=%d", head);
         int multiSkipTo = 0;
         for (int i = 0; i < nUnits; i++) {
             String multiSkip;
@@ -233,7 +231,7 @@ public class FreeList {
             } else {
                 multiSkip = "";
             }
-            logger.format("%d [%s%s] %d (%d %d)%s", i, isUsed[i] ? "U" : " ",
+            System.out.format("%d [%s%s] %d (%d %d)%s", i, isUsed[i] ? "U" : " ",
                     isMulti[i] ? "m" : " ", size[i], prev[i], next[i],
                     multiSkip);
             if (i >= multiSkipTo && isMulti[i]) {

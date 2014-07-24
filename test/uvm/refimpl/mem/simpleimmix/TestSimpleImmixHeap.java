@@ -52,7 +52,7 @@ public class TestSimpleImmixHeap {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        LogUtil.enableLoggers("RBPA", "LOS", "SIC", "SIM", "SIS", "MDS");
+        LogUtil.enableLoggers("RBPA", "LOS", "SIC", "SIM", "SIDM", "SIS", "MDS");
         try {
             microVM = new MicroVM(256 * 1024, 32 * 1024, 32 * 1024);
             microVM.setClient(client);
@@ -75,6 +75,7 @@ public class TestSimpleImmixHeap {
     @After
     public void cleanUp() {
         mutator.close();
+        testMarker = DO_NOTHING_MARKER;
 
         microVM.getMemoryManager().getHeap().mutatorTriggerAndWaitForGCEnd(false);
     }

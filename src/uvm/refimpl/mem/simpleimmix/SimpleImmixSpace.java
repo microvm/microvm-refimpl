@@ -23,15 +23,29 @@ public class SimpleImmixSpace extends Space {
     public static final int BLOCK_MARKED = 0x1;
     public static final int BLOCK_RESERVED = 0x2;
 
-    public SimpleImmixHeap heap;
+    private SimpleImmixHeap heap;
 
-    public int nBlocks;
+    private int nBlocks;
 
-    public int[] blockFlags; // for GC marking. maps block index -> flag
+    private int[] blockFlags; // for GC marking. maps block index -> flag
 
-    public int[] freeList; // a list of all indices of free blocks
-    public int freeListValidCount; // number of valid items in freeList
-    public int nextFree; // index into freeList, the next block to get
+    // Freelist block allocator
+    private int[] freeList; // a list of all indices of free blocks
+    private int freeListValidCount; // number of valid items in freeList
+    private int nextFree; // index into freeList, the next block to get
+
+    // Defrag
+    private long[] blockUsedStats; // statistics for GC to defrag
+    private int nReserved; // number of reserved blocks for defrag
+    private int[] defragResv; // A list of reserved blocks for defrag
+    private int defragResvFree; // number of free reserved blocks for defrag
+    private int nextResv; // index into defragResv, the next reserved block
+
+    // We don't have line, but line-sized buckets are used to estimate the
+    // defrag candidate threshold.
+    private static final long LINE_SIZE = 128;
+    private static final int N_BUCKETS = 256;
+    private long[] buckets = new long[N_BUCKETS];
 
     public SimpleImmixSpace(SimpleImmixHeap heap, String name, long begin,
             long extend) {
@@ -48,10 +62,22 @@ public class SimpleImmixSpace extends Space {
         nBlocks = (int) (extend / BLOCK_SIZE);
         blockFlags = new int[nBlocks];
         freeList = new int[nBlocks];
-        for (int i = 0; i < nBlocks; i++) {
-            freeList[i] = i;
+        blockUsedStats = new long[nBlocks];
+
+        nReserved = nBlocks / 20; // Reserve 5% of blocks for defrag. may be 0
+        defragResv = new int[nReserved];
+
+        for (int i = 0; i < nReserved; i++) {
+            defragResv[i] = i;
+            reserve(i);
         }
-        freeListValidCount = nBlocks;
+        defragResvFree = nReserved;
+        nextResv = 0;
+
+        for (int i = nReserved; i < nBlocks; i++) {
+            freeList[i - nReserved] = i;
+        }
+        freeListValidCount = nBlocks - nReserved;
         nextFree = 0;
 
     }
@@ -62,17 +88,17 @@ public class SimpleImmixSpace extends Space {
      * @return A block address, or 0 if no blocks are available.
      */
     public long tryGetBlock(long oldBlockAddr) {
+        if (oldBlockAddr != 0) {
+            returnBlock(oldBlockAddr);
+        }
+
         int myCursor = nextFree;
-        nextFree++;
 
         if (myCursor >= freeListValidCount) {
             return 0L;
         }
 
-        if (oldBlockAddr != 0) {
-            int oldBlockNum = blockAddrToBlockIndex(oldBlockAddr);
-            unreserve(oldBlockNum);
-        }
+        nextFree++;
 
         int blockNum = freeList[myCursor];
         reserve(blockNum);
@@ -125,13 +151,26 @@ public class SimpleImmixSpace extends Space {
     }
 
     public boolean collectBlocks() {
+        // Shift defrag reserved blocks to the beginning;
+        for (int i = nextResv; i < defragResvFree; i++) {
+            defragResv[i - nextResv] = defragResv[i];
+        }
+
+        int newDefragResvFree = defragResvFree - nextResv;
         int newNFree = 0;
         for (int i = 0; i < nBlocks; i++) {
             int flag = blockFlags[i];
             int bits = (flag & (BLOCK_MARKED | BLOCK_RESERVED));
             if (bits == 0) {
-                freeList[newNFree] = i;
-                newNFree++;
+                if (newDefragResvFree < nReserved) {
+                    defragResv[newDefragResvFree] = i;
+                    newDefragResvFree++;
+                    flag |= BLOCK_RESERVED;
+                } else {
+                    freeList[newNFree] = i;
+                    newNFree++;
+                    flag &= ~BLOCK_RESERVED;
+                }
             } else {
                 logger.format("Block %d is not freed because flag bits is %x",
                         i, bits);
@@ -139,16 +178,26 @@ public class SimpleImmixSpace extends Space {
             flag &= ~BLOCK_MARKED;
             blockFlags[i] = flag;
         }
+        defragResvFree = newDefragResvFree;
         freeListValidCount = newNFree;
 
         if (logger.isEnabled()) {
-            StringBuilder sb = new StringBuilder("New freelist:");
-            for (int i = 0; i < freeListValidCount; i++) {
-                sb.append(" ").append(freeList[i]);
+            StringBuilder sb1 = new StringBuilder("New reserved freelist:");
+            for (int i = 0; i < defragResvFree; i++) {
+                sb1.append(" ").append(defragResv[i]);
             }
-            logger.format("%s", sb.toString());
+            logger.format("%s", sb1.toString());
+            StringBuilder sb2 = new StringBuilder("New freelist:");
+            for (int i = 0; i < freeListValidCount; i++) {
+                sb2.append(" ").append(freeList[i]);
+            }
+            logger.format("%s", sb2.toString());
+            for (int i = 0; i < nBlocks; i++) {
+                logger.format("blockFlags[%d] = %d", i, blockFlags[i]);
+            }
         }
 
+        nextResv = 0;
         nextFree = 0;
 
         return newNFree > 0;
@@ -158,4 +207,99 @@ public class SimpleImmixSpace extends Space {
         int blockNum = blockAddrToBlockIndex(blockAddr);
         unreserve(blockNum);
     }
+
+    // Statistics
+
+    public void clearStats() {
+        for (int i = 0; i < nBlocks; i++) {
+            blockUsedStats[i] = 0L;
+        }
+    }
+
+    public void incStat(int blockNum, long size) {
+        blockUsedStats[blockNum] += size;
+    }
+
+    public long getStat(int pageNum) {
+        return blockUsedStats[pageNum];
+    }
+
+    public long getTotalReserveSpace() {
+        return defragResvFree * BLOCK_SIZE;
+    }
+
+    /**
+     * Blocks whose used bytes larger than the returned threshold are subject to
+     * defrag.
+     */
+    public long findThreshold(long avail) {
+        if (logger.isEnabled()) {
+            logger.format("Finding threshold. avail = %d", avail);
+            for (int i = 0; i < nBlocks; i++) {
+                logger.format("blockUsedStats[%d] = %d", i, blockUsedStats[i]);
+            }
+        }
+
+        for (int i = 0; i < N_BUCKETS; i++) {
+            buckets[i] = 0;
+        }
+
+        for (int i = 0; i < nBlocks; i++) {
+            if ((blockFlags[i] & BLOCK_MARKED) != 0) {
+                long used = blockUsedStats[i];
+                int bucket = (int) (used / LINE_SIZE);
+                buckets[bucket] += used;
+            }
+        }
+
+        if (logger.isEnabled()) {
+            long accum = 0;
+            for (int i = 0; i < nBlocks; i++) {
+                accum += buckets[i];
+                logger.format("buckets[%d] = %d, accum: %d", i, buckets[i],
+                        accum);
+            }
+        }
+
+        long curUsed = 0;
+        int curBucket = 0;
+        while (curBucket < N_BUCKETS) {
+            curUsed += buckets[curBucket];
+            if (curUsed > avail) {
+                break;
+            }
+            curBucket += 1;
+        }
+
+        long threshold = (long) curBucket * LINE_SIZE;
+
+        if (logger.isEnabled()) {
+            logger.format("threshold = %d", threshold);
+        }
+
+        return threshold;
+    }
+
+    // Defrag
+    public long getDefragBlock(long oldBlockAddr) {
+        if (oldBlockAddr != 0) {
+            returnBlock(oldBlockAddr);
+        }
+
+        int myCursor = nextResv;
+
+        if (myCursor >= defragResvFree) {
+            return 0L;
+        }
+
+        nextResv++;
+
+        int blockNum = defragResv[myCursor];
+
+        long blockAddr = blockIndexToBlockAddr(blockNum);
+        MemUtils.zeroRegion(blockAddr, BLOCK_SIZE);
+
+        return blockAddr;
+    }
+
 }

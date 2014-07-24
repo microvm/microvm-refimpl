@@ -9,22 +9,41 @@ import uvm.type.Type;
  * Responsible for object layout.
  * <p>
  * Scalar object:
+ * 
  * <pre>
- *   1bit     1bit    30bits   32bits  
- * +-------+--------+--------+---------+--------------
- * |            header (8bytes)        | payload... 
- * | moved | marked | unused | type ID |
- * +-------+--------+--------+---------+--------------
- * ^objref-8bytes                      ^ objref
+ *     8 bytes
+ * +----------------+----------------
+ * | tag            | payload... 
+ * +----------------+----------------
+ * ^objref-8bytes   ^ objref
  * </pre>
+ * 
  * Hybrid:
+ * 
  * <pre>
  *    8 bytes           8 bytes
  * +-----------------+-----------------+------------+--------------
- * | var part length |  header         | fixed part | var part
- * |                 |  same as scalar |            |
+ * | var part length | tag             | fixed part | var part
  * +-----------------+-----------------+------------+--------------
- * ^objref-16bytes  ^objref-8bytes    ^ objref
+ * ^objref-16bytes   ^objref-8bytes    ^ objref
+ * </pre>
+ * 
+ * tag: (not forwarded)
+ * 
+ * <pre>
+ *   1bit         1bit       30bit            32bit
+ * +-----------+--------+------------------+---------+
+ * | moved = 0 | marked | (unused bits...) | type id |
+ * +-----------+--------+------------------+---------+
+ * 64          63       62                 32        0
+ * </pre>
+ * (forwarded)
+ * <pre>
+ *   1bit            15bit               48bits
+ * +-----------+------------------+------------------+
+ * | moved = 1 | (unused bits...) | destination addr |
+ * +-----------+------------------+------------------+
+ * 64          63                 48                 0
  * </pre>
  */
 public class TypeSizes {

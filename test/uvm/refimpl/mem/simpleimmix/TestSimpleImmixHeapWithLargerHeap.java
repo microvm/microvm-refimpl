@@ -12,6 +12,7 @@ import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.facade.MicroVMClient;
 import uvm.refimpl.mem.scanning.ObjectMarker;
 import uvm.type.Hybrid;
+import uvm.util.LogUtil;
 
 public class TestSimpleImmixHeapWithLargerHeap {
 
@@ -40,6 +41,7 @@ public class TestSimpleImmixHeapWithLargerHeap {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
+        LogUtil.enableLoggers("RBPA", "LOS", "SIC", "SIM", "SIDM", "SIS", "MDS");
         try {
             microVM = new MicroVM();
             microVM.setClient(client);
@@ -62,8 +64,40 @@ public class TestSimpleImmixHeapWithLargerHeap {
     @After
     public void cleanUp() {
         mutator.close();
+        testMarker = DO_NOTHING_MARKER;
 
         microVM.getMemoryManager().getHeap().mutatorTriggerAndWaitForGCEnd(false);
+    }
+
+    @Test
+    public void testMoreAlloc() {
+        Hybrid ca = (Hybrid) bundle.getTypeNs().getByName("@hCharArray");
+
+        final long unitLen = 4096;
+        final int units = 600;
+        final long[] as = new long[units];
+        final int keepOnly = 10;
+
+        testMarker = new Marker() {
+            @Override
+            public void markExternalRoots(ObjectMarker marker) {
+                for (int i = 0; i < units; i++) {
+                    marker.markObjRef(as[i]);
+                }
+            }
+        };
+
+        for (int i = 0; i < units; i++) {
+            long a = mutator.newHybrid(ca, unitLen);
+            as[i] = a;
+            System.out.format("as[%d] = %d\n", i, a);
+            int forget = i - keepOnly;
+            if (forget >= 0) {
+                long b = as[forget];
+                System.out.format("forget as[%d] = %d\n", forget, b);
+                as[forget] = 0;
+            }
+        }
     }
 
     @Test

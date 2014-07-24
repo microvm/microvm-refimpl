@@ -31,7 +31,6 @@ import uvm.refimpl.itpr.RefBox;
 import uvm.refimpl.itpr.ThreadStackManager;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.TypeSizes;
-import uvm.refimpl.mem.scanning.ObjectMarker;
 import uvm.ssavalue.Instruction;
 import uvm.ssavalue.Value;
 

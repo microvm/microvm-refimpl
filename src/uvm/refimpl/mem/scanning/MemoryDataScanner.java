@@ -2,6 +2,7 @@ package uvm.refimpl.mem.scanning;
 
 import static uvm.platformsupport.Config.*;
 import uvm.refimpl.facade.MicroVM;
+import uvm.refimpl.mem.HeaderUtils;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.type.Array;
 import uvm.type.Hybrid;
@@ -19,10 +20,8 @@ public class MemoryDataScanner {
 
     public static void scanMemoryData(long objRef, long iRef, MicroVM microVM,
             RefFieldHandler handler) {
-        long tagAddr = objRef + TypeSizes.GC_HEADER_OFFSET_TAG;
-        long tag = MEMORY_SUPPORT.loadLong(tagAddr);
-        int typeID = (int) (tag & 0x00000000ffffffffL);
-        Type type = microVM.getGlobalBundle().getTypeNs().getByID(typeID);
+        long tag = HeaderUtils.getTag(objRef);
+        Type type = HeaderUtils.getType(microVM, tag);
         MemoryDataScanner.scanField(type, objRef, objRef, handler);
     }
 
@@ -62,8 +61,7 @@ public class MemoryDataScanner {
             long varAlign = TypeSizes.alignOf(varTy);
             long curAddr = iRef;
 
-            long varLength = MEMORY_SUPPORT.loadLong(iRef
-                    + TypeSizes.GC_HEADER_OFFSET_HYBRID_LENGTH);
+            long varLength = HeaderUtils.getVarLength(iRef);
 
             scanField(fixedTy, objRef, curAddr, handler);
             curAddr = TypeSizes.alignUp(curAddr + fixedSize, fixedAlign);
@@ -78,4 +76,5 @@ public class MemoryDataScanner {
             // its tag indicates it is a reference.
         }
     }
+
 }

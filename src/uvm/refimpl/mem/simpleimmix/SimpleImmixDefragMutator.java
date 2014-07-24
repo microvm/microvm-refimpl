@@ -1,53 +1,49 @@
 package uvm.refimpl.mem.simpleimmix;
 
+import static uvm.util.ErrorUtils.*;
 import uvm.refimpl.mem.Allocator;
 import uvm.refimpl.mem.MemConstants;
 import uvm.refimpl.mem.Mutator;
 import uvm.refimpl.mem.TypeSizes;
-import uvm.refimpl.mem.los.LargeObjectSpace;
 import uvm.util.LogUtil;
 import uvm.util.Logger;
 
-public class SimpleImmixMutator extends Mutator implements Allocator {
-    private static final Logger logger = LogUtil.getLogger("SIM");
+public class SimpleImmixDefragMutator extends Mutator implements Allocator {
+    private static final Logger logger = LogUtil.getLogger("SIDM");
 
     private SimpleImmixHeap heap;
     private SimpleImmixSpace space;
-    private LargeObjectSpace los;
 
-    private long curBlockAddr;
+    private long curBlockAddr; // may be 0 to indicate no more reserved block
     private long cursor;
     private long limit;
 
-    public SimpleImmixMutator(SimpleImmixHeap simpleImmixHeap,
-            SimpleImmixSpace simpleImmixSpace, LargeObjectSpace los) {
+    public SimpleImmixDefragMutator(SimpleImmixHeap simpleImmixHeap,
+            SimpleImmixSpace simpleImmixSpace) {
         this.heap = simpleImmixHeap;
         this.space = simpleImmixSpace;
-        this.los = los;
         this.curBlockAddr = 0L;
         getNewBlock();
     }
 
     private void getNewBlock() {
-        long newAddr = 0;
-        while (true) {
-            newAddr = space.tryGetBlock(curBlockAddr);
-
-            if (newAddr != 0L) {
-                break;
-            }
-
-            heap.mutatorTriggerAndWaitForGCEnd(true);
-        }
-
-        curBlockAddr = newAddr;
+        curBlockAddr = space.getDefragBlock(curBlockAddr);
         cursor = curBlockAddr;
         limit = curBlockAddr + SimpleImmixSpace.BLOCK_SIZE;
     }
 
+    /**
+     * Ordinary (non-defrag) mutator never returns 0, but out-of-memory error is
+     * fatal. Defragment mutator returns 0 when there is no reserved block.
+     */
     @Override
     public long alloc(long size, long align, long headerSize) {
         logger.format("alloc(%d, %d, %d)", size, align, headerSize);
+
+        if (curBlockAddr == 0) {
+            logger.format("No more reserved blocks. Cannot defragment.");
+            return 0;
+        }
 
         align = align < MemConstants.WORD_SIZE_BYTES ? MemConstants.WORD_SIZE_BYTES
                 : align;
@@ -58,11 +54,16 @@ public class SimpleImmixMutator extends Mutator implements Allocator {
             long userEnd = userStart + size;
             if (userEnd >= limit) {
                 if (userEnd - gcStart > SimpleImmixSpace.BLOCK_SIZE) {
-                    return los.alloc(size, align, headerSize);
+                    uvmError("Defrag mutators should not be used to allocate large objects.");
+                    return 0; // unreachable
                 }
-                logger.format("%s", "Getting new block...");
+                logger.format("Getting new reserved block...");
                 getNewBlock();
-                logger.format("%s", "got new block.");
+                logger.format("got new reserved block.");
+                if (curBlockAddr == 0) {
+                    logger.format("No more reserved blocks. Cannot defragment.");
+                    return 0;
+                }
                 continue;
             } else {
                 cursor = userEnd;
@@ -73,7 +74,9 @@ public class SimpleImmixMutator extends Mutator implements Allocator {
     }
 
     public void close() {
-        space.returnBlock(curBlockAddr);
+        if (curBlockAddr != 0) {
+            space.returnBlock(curBlockAddr);
+        }
     }
 
 }

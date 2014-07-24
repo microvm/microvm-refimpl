@@ -5,6 +5,7 @@ import static uvm.refimpl.mem.MemConstants.*;
 import uvm.IdentifiedHelper;
 import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.mem.Allocator;
+import uvm.refimpl.mem.HeaderUtils;
 import uvm.refimpl.mem.MemUtils;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.refimpl.mem.scanning.MemoryDataScanner;
@@ -65,8 +66,7 @@ import uvm.util.Logger;
  * </pre>
  */
 public class RewindableBumpPointerAllocator implements Allocator {
-    private static final Logger logger = LogUtil
-            .getLogger("RBPA");
+    private static final Logger logger = LogUtil.getLogger("RBPA");
 
     private long begin;
     private long extend;
@@ -121,8 +121,7 @@ public class RewindableBumpPointerAllocator implements Allocator {
                 break;
             }
 
-            long hdr = MEMORY_SUPPORT.loadLong(iRef
-                    + TypeSizes.GC_HEADER_OFFSET_TAG);
+            long hdr = HeaderUtils.getTag(iRef);
             int typeID = (int) (hdr & 0xffffffffL);
             logger.format("hdr=%d, typeID=%d", hdr, typeID);
             Type type = microVM.getGlobalBundle().getTypeNs().getByID(typeID);

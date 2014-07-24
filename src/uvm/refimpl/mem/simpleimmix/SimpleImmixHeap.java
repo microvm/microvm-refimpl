@@ -32,24 +32,8 @@ public class SimpleImmixHeap extends Heap {
 
     @Override
     public SimpleImmixMutator makeMutator() {
-        SimpleImmixMutator mutator = new SimpleImmixMutator(this, space);
+        SimpleImmixMutator mutator = new SimpleImmixMutator(this, space, los);
         return mutator;
-    }
-
-    public long getBlock(long oldBlockAddr) {
-        while (true) {
-            long addr = space.tryGetBlock(oldBlockAddr);
-
-            if (addr != 0L) {
-                return addr;
-            }
-
-            mutatorTriggerAndWaitForGCEnd(true);
-        }
-    }
-
-    public void returnBlock(long blockAddr) {
-        space.returnBlock(blockAddr);
     }
 
     public long allocLargeObject(long size, long align, long headerSize) {
