@@ -155,4 +155,49 @@ public class TestMicroVMRefImplGC {
         thread.join();
 
     }
+    
+
+    @Test
+    public void testWeakRef() throws Exception {
+        InterpreterStack stack = h.makeStack(h.func("@testweakref"));
+
+        setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+                String trapName = thread.getStack().getTop().getCurInst()
+                        .getName();
+                if (trapName.equals("%gctrap")) {
+                    microVM.getMemoryManager().getHeap()
+                            .mutatorTriggerAndWaitForGCEnd(false);
+                    return null;
+                } else if (trapName.equals("%checknztrap")) {
+                    List<ValueBox> kas = thread.getStack().getTop()
+                            .dumpKeepAlives();
+
+                    long refval = ((RefBox) kas.get(0)).getAddr();
+
+                    assertNotEquals(0, refval);
+
+                    return null;
+                } else if (trapName.equals("%checkztrap")) {
+                    List<ValueBox> kas = thread.getStack().getTop()
+                            .dumpKeepAlives();
+
+                    long refval = ((RefBox) kas.get(0)).getAddr();
+
+                    assertEquals(0, refval);
+
+                    return null;
+                } else {
+                    fail("Who set that trap: " + trapName);
+                    return null;
+                }
+            }
+
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+
+    }
 }

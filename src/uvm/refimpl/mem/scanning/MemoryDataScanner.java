@@ -31,7 +31,8 @@ public class MemoryDataScanner {
                 || type instanceof WeakRef) {
             long toObj = MEMORY_SUPPORT.loadLong(iRef);
             logger.format("Field %d -> %d", iRef, toObj);
-            handler.handle(false, null, objRef, iRef, toObj);
+            boolean isWeak = type instanceof WeakRef;
+            handler.handle(false, null, objRef, iRef, toObj, isWeak);
         } else if (type instanceof Struct) {
             Struct sTy = (Struct) type;
             long fieldAddr = iRef;

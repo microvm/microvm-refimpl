@@ -4,5 +4,5 @@ import uvm.refimpl.itpr.HasObjRef;
 
 public interface RefFieldHandler {
     public boolean handle(boolean fromClient, HasObjRef fromBox, long fromObj,
-            long fromIRef, long toObj);
+            long fromIRef, long toObj, boolean isWeak);
 }

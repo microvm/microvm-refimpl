@@ -190,3 +190,39 @@
     ICALL @uvm.thread_exit()
     THROW @NULLREF
 }
+
+.typedef @WRI64Cell = iref<@weakrefi64>
+
+.funcsig @makestorewri64sig = @void (@WRI64Cell)
+
+.funcdef @makestorewri64 <@makestorewri64sig> (%cell) {
+    %ri64 = NEW <@i64>
+    %iri64 = GETIREF <@i64> %ri64
+    STORE <@i64> %iri64 42
+    STORE <@weakrefi64> %cell %ri64
+    RETVOID
+}
+
+.funcdef @peekweakref <@makestorewri64sig> (%cell) {
+    %refval = LOAD <@weakrefi64> %cell
+    %checknztrap = TRAP <@void> %exit %exit KEEPALIVE (%refval)
+
+%exit:
+    RETVOID
+}
+
+.funcdef @testweakref <@noparamsnoret> () {
+    %irwr = ALLOCA <@weakrefi64>
+    CALL <@makestorewri64sig> @makestorewri64 (%irwr)
+    CALL <@makestorewri64sig> @peekweakref (%irwr)
+    
+    %gctrap = TRAP <@void> %next %next KEEPALIVE ()
+    
+%next:
+    %refval = LOAD <@weakrefi64> %irwr
+    %checkztrap = TRAP <@void> %exit %exit KEEPALIVE (%refval)
+
+%exit:
+    ICALL @uvm.thread_exit ()
+    THROW @NULLREF
+}
