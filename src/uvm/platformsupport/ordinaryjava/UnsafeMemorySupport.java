@@ -1,6 +1,7 @@
 package uvm.platformsupport.ordinaryjava;
 
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 
 import sun.misc.Unsafe;
 import uvm.platformsupport.MemorySupport;
@@ -56,6 +57,14 @@ public class UnsafeMemorySupport implements MemorySupport {
     }
 
     @Override
+    public BigInteger loadI128(long addr) {
+        long low = UNSAFE.getLong(mem, ABO + addr * AIS);
+        long high = UNSAFE.getLong(mem, ABO + (addr + 8) * AIS);
+        return BigInteger.valueOf(high).shiftLeft(64)
+                .add(BigInteger.valueOf(low));
+    }
+
+    @Override
     public float loadFloat(long addr) {
         return UNSAFE.getFloat(mem, ABO + addr * AIS);
     }
@@ -86,6 +95,14 @@ public class UnsafeMemorySupport implements MemorySupport {
     }
 
     @Override
+    public void storeI128(long addr, BigInteger value) {
+        long low = value.longValue();
+        long high = value.shiftRight(64).longValue();
+        UNSAFE.putLong(mem, ABO + addr * AIS, low);
+        UNSAFE.putLong(mem, ABO + (addr + 8) * AIS, high);
+    }
+
+    @Override
     public void storeFloat(long addr, float value) {
         UNSAFE.putFloat(mem, ABO + addr * AIS, value);
     }
@@ -93,66 +110,6 @@ public class UnsafeMemorySupport implements MemorySupport {
     @Override
     public void storeDouble(long addr, double value) {
         UNSAFE.putDouble(mem, ABO + addr * AIS, value);
-    }
-
-    @Override
-    public byte loadByteAtomic(long addr) {
-        return UNSAFE.getByteVolatile(mem, ABO + addr * AIS);
-    }
-
-    @Override
-    public short loadShortAtomic(long addr) {
-        return UNSAFE.getShortVolatile(mem, ABO + addr * AIS);
-    }
-
-    @Override
-    public int loadIntAtomic(long addr) {
-        return UNSAFE.getIntVolatile(mem, ABO + addr * AIS);
-    }
-
-    @Override
-    public long loadLongAtomic(long addr) {
-        return UNSAFE.getLongVolatile(mem, ABO + addr * AIS);
-    }
-
-    @Override
-    public float loadFloatAtomic(long addr) {
-        return UNSAFE.getFloatVolatile(mem, ABO + addr * AIS);
-    }
-
-    @Override
-    public double loadDoubleAtomic(long addr) {
-        return UNSAFE.getDoubleVolatile(mem, ABO + addr * AIS);
-    }
-
-    @Override
-    public void storeByteAtomic(long addr, byte value) {
-        UNSAFE.putByteVolatile(mem, ABO + addr * AIS, value);
-    }
-
-    @Override
-    public void storeShortAtomic(long addr, short value) {
-        UNSAFE.putShortVolatile(mem, ABO + addr * AIS, value);
-    }
-
-    @Override
-    public void storeIntAtomic(long addr, int value) {
-        UNSAFE.putIntVolatile(mem, ABO + addr * AIS, value);
-    }
-
-    @Override
-    public void storeLongAtomic(long addr, long value) {
-        UNSAFE.putLongVolatile(mem, ABO + addr * AIS, value);
-    }
-
-    @Override
-    public void storeFloatAtomic(long addr, float value) {
-        UNSAFE.putFloatVolatile(mem, ABO + addr * AIS, value);
-    }
-
-    @Override
-    public void storeDoubleAtomic(long addr, double value) {
-        UNSAFE.putDoubleVolatile(mem, ABO + addr * AIS, value);
     }
 
     @Override
@@ -346,9 +303,10 @@ public class UnsafeMemorySupport implements MemorySupport {
         storeLong(addr, newVal);
         return oldVal;
     }
-    
+
     @Override
     public synchronized void fence() {
         // TODO: Not sure how to implement this.
     }
+
 }

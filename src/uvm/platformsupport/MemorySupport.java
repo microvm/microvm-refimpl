@@ -1,5 +1,7 @@
 package uvm.platformsupport;
 
+import java.math.BigInteger;
+
 /**
  * An abstract interface for accessing the memory.
  */
@@ -11,6 +13,8 @@ public interface MemorySupport {
     int loadInt(long addr);
 
     long loadLong(long addr);
+
+    BigInteger loadI128(long addr);
 
     float loadFloat(long addr);
 
@@ -24,33 +28,11 @@ public interface MemorySupport {
 
     void storeLong(long addr, long value);
 
+    void storeI128(long addr, BigInteger value);
+     
     void storeFloat(long addr, float value);
 
     void storeDouble(long addr, double value);
-
-    byte loadByteAtomic(long addr);
-
-    short loadShortAtomic(long addr);
-
-    int loadIntAtomic(long addr);
-
-    long loadLongAtomic(long addr);
-
-    float loadFloatAtomic(long addr);
-
-    double loadDoubleAtomic(long addr);
-
-    void storeByteAtomic(long addr, byte value);
-
-    void storeShortAtomic(long addr, short value);
-
-    void storeIntAtomic(long addr, int value);
-
-    void storeLongAtomic(long addr, long value);
-
-    void storeFloatAtomic(long addr, float value);
-
-    void storeDoubleAtomic(long addr, double value);
 
     int cmpXchgInt(long addr, int expected, int desired);
 
@@ -101,4 +83,5 @@ public interface MemorySupport {
     long fetchUminLong(long addr, long opnd);
 
     void fence();
+
 }

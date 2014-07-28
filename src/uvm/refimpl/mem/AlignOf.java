@@ -52,7 +52,7 @@ public class AlignOf implements TypeVisitor<Long> {
 
     @Override
     public Long visitIRef(IRef type) {
-        return WORD_SIZE_BYTES;
+        return 2 * WORD_SIZE_BYTES;
     }
 
     @Override

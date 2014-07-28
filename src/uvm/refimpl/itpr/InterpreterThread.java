@@ -1150,20 +1150,22 @@ public class InterpreterThread {
             if (rt instanceof Int) {
                 Int irt = (Int) rt;
                 long loadSize = TypeSizes.nextPowOfTwo(irt.getSize());
-                long val;
+                BigInteger val;
                 if (loadSize == 8) {
-                    val = MEMORY_SUPPORT.loadByte(loc);
+                    val = BigInteger.valueOf(MEMORY_SUPPORT.loadByte(loc));
                 } else if (loadSize == 16) {
-                    val = MEMORY_SUPPORT.loadShort(loc);
+                    val = BigInteger.valueOf(MEMORY_SUPPORT.loadShort(loc));
                 } else if (loadSize == 32) {
-                    val = MEMORY_SUPPORT.loadInt(loc);
+                    val = BigInteger.valueOf(MEMORY_SUPPORT.loadInt(loc));
                 } else if (loadSize == 64) {
-                    val = MEMORY_SUPPORT.loadLong(loc);
+                    val = BigInteger.valueOf(MEMORY_SUPPORT.loadLong(loc));
+                } else if (loadSize == 128) {
+                    val = MEMORY_SUPPORT.loadI128(loc);
                 } else {
                     error("Unsupported Int length for load: " + loadSize);
                     return null;
                 }
-                setInt(inst, BigInteger.valueOf(val));
+                setInt(inst, val);
             } else if (rt instanceof uvm.type.Float) {
                 float val = MEMORY_SUPPORT.loadFloat(loc);
                 setFloat(inst, val);
@@ -1174,8 +1176,9 @@ public class InterpreterThread {
                 long addr = MEMORY_SUPPORT.loadLong(loc);
                 setRef(inst, addr);
             } else if (rt instanceof IRef) {
-                long base = MEMORY_SUPPORT.loadLong(loc);
-                long offset = MEMORY_SUPPORT.loadLong(loc + 8);
+                BigInteger bigVal = MEMORY_SUPPORT.loadI128(loc);
+                long base = bigVal.longValue();
+                long offset = bigVal.shiftRight(64).longValue();
                 setIRef(inst, base, offset);
             } else if (rt instanceof Func) {
                 long id = MEMORY_SUPPORT.loadLong(loc);
@@ -1215,6 +1218,8 @@ public class InterpreterThread {
                     MEMORY_SUPPORT.storeInt(loc, val.intValue());
                 } else if (loadSize == 64) {
                     MEMORY_SUPPORT.storeLong(loc, val.longValue());
+                } else if (loadSize == 128) {
+                    MEMORY_SUPPORT.storeI128(loc, val);
                 } else {
                     error("Unsupported Int length for store: " + loadSize);
                     return null;
@@ -1234,8 +1239,9 @@ public class InterpreterThread {
                 IRefBox irb = getValueBox(inst.getNewVal());
                 long base = irb.getBase();
                 long offset = irb.getOffset();
-                MEMORY_SUPPORT.storeLong(loc, base);
-                MEMORY_SUPPORT.storeLong(loc + 8, offset);
+                BigInteger bigVal = BigInteger.valueOf(offset).shiftLeft(64)
+                        .add(BigInteger.valueOf(base));
+                MEMORY_SUPPORT.storeI128(loc, bigVal);
             } else if (rt instanceof Func) {
                 Function func = getFunc(inst.getNewVal());
 
