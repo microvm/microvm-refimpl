@@ -28,9 +28,11 @@ import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
 import uvm.refimpl.itpr.RefBox;
+import uvm.refimpl.itpr.TagRef64Box;
 import uvm.refimpl.itpr.ThreadStackManager;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.TypeSizes;
+import uvm.refimpl.mem.scanning.ObjectMarker;
 import uvm.ssavalue.Instruction;
 import uvm.ssavalue.Value;
 
@@ -40,6 +42,11 @@ public class TestMicroVMRefImpl {
     private static MicroVMHelper h;
 
     private static MicroVMClient client = new DumbClient() {
+        public void markExternalRoots(ObjectMarker marker) {
+            // No external roots.
+            // GC may be triggered when doing too many tests and creating too
+            // many stacks.
+        };
 
         @Override
         public Long onTrap(InterpreterThread thread, ValueBox trapValue) {
@@ -815,6 +822,68 @@ public class TestMicroVMRefImpl {
                 long value = ((IntBox) kas.get(0)).getValue().longValue();
 
                 assertEquals(4950, value);
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        ThreadStackManager tsm = microVM.getThreadStackManager();
+        tsm.joinAll();
+
+    }
+
+    @Test
+    public void testTagRef64() throws InterruptedException {
+
+        InterpreterStack stack = h.makeStack(h.func("@testtr64"));
+
+        setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+                List<ValueBox> kas = thread.getStack().getTop()
+                        .dumpKeepAlives();
+
+                long rv = ((RefBox) kas.get(0)).getAddr();
+
+                TagRef64Box f = (TagRef64Box) kas.get(1);
+                TagRef64Box i = (TagRef64Box) kas.get(2);
+                TagRef64Box r = (TagRef64Box) kas.get(3);
+
+                long f_is_f = ((IntBox) kas.get(4)).getValue().longValue();
+                long f_is_i = ((IntBox) kas.get(5)).getValue().longValue();
+                long f_is_r = ((IntBox) kas.get(6)).getValue().longValue();
+                long i_is_f = ((IntBox) kas.get(7)).getValue().longValue();
+                long i_is_i = ((IntBox) kas.get(8)).getValue().longValue();
+                long i_is_r = ((IntBox) kas.get(9)).getValue().longValue();
+                long r_is_f = ((IntBox) kas.get(10)).getValue().longValue();
+                long r_is_i = ((IntBox) kas.get(11)).getValue().longValue();
+                long r_is_r = ((IntBox) kas.get(12)).getValue().longValue();
+
+                double fb = ((DoubleBox) kas.get(13)).getValue();
+                long ib = ((IntBox) kas.get(14)).getValue().longValue();
+                long rb = ((RefBox) kas.get(15)).getAddr();
+                long rt = ((IntBox) kas.get(16)).getValue().longValue();
+
+                assertEquals(42.0, f.getFp(), 0.001);
+                assertEquals(0xfedcba9876543L, i.getInt().longValue());
+                assertEquals(rv, r.getRef());
+                assertEquals(31, r.getTag().longValue());
+
+                assertEquals(1, f_is_f);
+                assertEquals(0, f_is_i);
+                assertEquals(0, f_is_r);
+                assertEquals(0, i_is_f);
+                assertEquals(1, i_is_i);
+                assertEquals(0, i_is_r);
+                assertEquals(0, r_is_f);
+                assertEquals(0, r_is_i);
+                assertEquals(1, r_is_r);
+
+                assertEquals(42.0, fb, 0.001);
+                assertEquals(0xfedcba9876543L, ib);
+                assertEquals(rv, rb);
+                assertEquals(31, rt);
+
                 return null;
             }
         });

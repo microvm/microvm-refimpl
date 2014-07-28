@@ -650,6 +650,44 @@
     THROW @NULLREF
 }
 
+.typedef @i6 = int<6>
+.typedef @i52 = int<52>
+
+.const @I6_31 <@i6> = 31
+.const @I52_SAMPLE <@i52> = 0xfedcba9876543
+.const @D_42 <@double> = 42.0d
+
+.funcdef @testtr64 <@noparamsnoret> () {
+    %someobj = NEW <@i64>
+    %rv = REFCAST <@refi64 @refvoid> %someobj
+
+    %f = ICALL @uvm.tr64.from_fp  (@D_42)
+    %i = ICALL @uvm.tr64.from_int (@I52_SAMPLE)
+    %r = ICALL @uvm.tr64.from_ref (%rv @I6_31)
+    
+    %f_is_f = ICALL @uvm.tr64.is_fp  (%f)
+    %f_is_i = ICALL @uvm.tr64.is_int (%f)
+    %f_is_r = ICALL @uvm.tr64.is_ref (%f)
+    %i_is_f = ICALL @uvm.tr64.is_fp  (%i)
+    %i_is_i = ICALL @uvm.tr64.is_int (%i)
+    %i_is_r = ICALL @uvm.tr64.is_ref (%i)
+    %r_is_f = ICALL @uvm.tr64.is_fp  (%r)
+    %r_is_i = ICALL @uvm.tr64.is_int (%r)
+    %r_is_r = ICALL @uvm.tr64.is_ref (%r)
+    
+    %fb = ICALL @uvm.tr64.to_fp  (%f)
+    %ib = ICALL @uvm.tr64.to_int (%i)
+    %rb = ICALL @uvm.tr64.to_ref (%r)
+    %rt = ICALL @uvm.tr64.to_tag (%r)
+    
+    TRAP <@void> %exit %exit KEEPALIVE (%rv %f %i %r %f_is_f %f_is_i %f_is_r
+            %i_is_f %i_is_i %i_is_r %r_is_f %r_is_i %r_is_r %fb %ib %rb %rt)
+            
+%exit:
+    ICALL @uvm.thread_exit ()
+    THROW @NULLREF
+}
+
 ///////////////////////// Simple sum
 
 .funcdef @simplesum <@void (@i64 @i64)> (%from %to) {

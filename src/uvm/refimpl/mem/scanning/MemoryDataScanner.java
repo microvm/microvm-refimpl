@@ -2,6 +2,7 @@ package uvm.refimpl.mem.scanning;
 
 import static uvm.platformsupport.Config.*;
 import uvm.refimpl.facade.MicroVM;
+import uvm.refimpl.itpr.OpHelper;
 import uvm.refimpl.mem.HeaderUtils;
 import uvm.refimpl.mem.TypeSizes;
 import uvm.type.Array;
@@ -17,6 +18,8 @@ import uvm.util.Logger;
 
 public class MemoryDataScanner {
     private static final Logger logger = LogUtil.getLogger("MDS");
+    private static final Logger loggerParanoid = LogUtil
+            .getLogger("MDSParanoia");
 
     public static void scanMemoryData(long objRef, long iRef, MicroVM microVM,
             RefFieldHandler handler) {
@@ -27,12 +30,41 @@ public class MemoryDataScanner {
 
     public static void scanField(Type type, long objRef, long iRef,
             RefFieldHandler handler) {
-        if (type instanceof Ref || type instanceof IRef
-                || type instanceof WeakRef) {
+        if (type instanceof Ref) {
             long toObj = MEMORY_SUPPORT.loadLong(iRef);
-            logger.format("Field %d -> %d", iRef, toObj);
-            boolean isWeak = type instanceof WeakRef;
-            handler.handle(false, null, objRef, iRef, toObj, isWeak);
+            logger.format("Ref field %d -> %d", iRef, toObj);
+            handler.handle(false, null, objRef, iRef, toObj, false, false);
+        } else if (type instanceof IRef) {
+            long toObj = MEMORY_SUPPORT.loadLong(iRef);
+            logger.format("IRef field %d -> %d", iRef, toObj);
+            handler.handle(false, null, objRef, iRef, toObj, false, false);
+        } else if (type instanceof WeakRef) {
+            long toObj = MEMORY_SUPPORT.loadLong(iRef);
+            logger.format("WeakRef field %d -> %d", iRef, toObj);
+            handler.handle(false, null, objRef, iRef, toObj, true, false);
+        } else if (type instanceof TagRef64) {
+            long bits = MEMORY_SUPPORT.loadLong(iRef);
+            if (loggerParanoid.isEnabled()) {
+                loggerParanoid.format("Tagref bits %d", bits);
+                if (OpHelper.tr64IsFp(bits)) {
+                    loggerParanoid.format("Tagref is FP: %f",
+                            OpHelper.tr64ToFp(bits));
+                } else if (OpHelper.tr64IsInt(bits)) {
+                    loggerParanoid.format("Tagref is Int: %d",
+                            OpHelper.tr64ToInt(bits));
+                } else if (OpHelper.tr64IsRef(bits)) {
+                    loggerParanoid.format("Tagref is Ref: %d tag: %d",
+                            OpHelper.tr64ToRef(bits), OpHelper.tr64ToTag(bits));
+                }
+            }
+            if (OpHelper.tr64IsRef(bits)) {
+                long toObj = OpHelper.tr64ToRef(bits);
+                if (logger.isEnabled()) {
+                    logger.format("TagRef64 field %d -> %d tag: %d", iRef,
+                            toObj, OpHelper.tr64ToTag(bits));
+                }
+                handler.handle(false, null, objRef, iRef, toObj, false, true);
+            }
         } else if (type instanceof Struct) {
             Struct sTy = (Struct) type;
             long fieldAddr = iRef;
@@ -71,10 +103,6 @@ public class MemoryDataScanner {
                 scanField(varTy, objRef, curAddr, handler);
                 curAddr = TypeSizes.alignUp(curAddr + varSize, varAlign);
             }
-        } else if (type instanceof TagRef64) {
-            // TODO: Despite not implemented now, it should be traced only
-            // if
-            // its tag indicates it is a reference.
         }
     }
 

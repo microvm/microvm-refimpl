@@ -226,3 +226,110 @@
     ICALL @uvm.thread_exit ()
     THROW @NULLREF
 }
+
+.typedef @i6 = int<6>
+
+.const @I6_13 <@i6> = 13
+
+.funcdef @maketr64intref <@tagref64 ()> () {
+    %refi64 = NEW <@i64>
+    %irefi64 = GETIREF <@i64> %refi64
+    STORE <@i64> %irefi64 42
+    %refv = REFCAST <@refi64 @refvoid> %refi64
+    %tr = ICALL @uvm.tr64.from_ref (%refv @I6_13)
+    RET <@tagref64> %tr
+}
+
+.funcdef @testtagrefgc <@noparamsnoret> () {
+    %tr = CALL <@tagref64 ()> @maketr64intref ()
+    %gctrap = TRAP <@void> %next %next KEEPALIVE ()
+    
+%next:
+    %refv = ICALL @uvm.tr64.to_ref(%tr)
+    %tagv = ICALL @uvm.tr64.to_tag(%tr)
+    %refi = REFCAST <@refvoid @refi64> %refv
+    %irefi = GETIREF <@i64> %refi
+    %iv = LOAD <@i64> %irefi
+    %checktrap = TRAP <@void> %exit %exit KEEPALIVE (%tr %refv %tagv %iv)
+
+%exit:
+    ICALL @uvm.thread_exit ()
+    THROW @NULLREF
+}
+
+.typedef @ireftr64 = iref<@tagref64>
+
+.funcdef @settr64intref <@void (@ireftr64)> (%ireftr64) {
+    %refi64 = NEW <@i64>
+    %irefi64 = GETIREF <@i64> %refi64
+    STORE <@i64> %irefi64 42
+    %refv = REFCAST <@refi64 @refvoid> %refi64
+    %tr = ICALL @uvm.tr64.from_ref (%refv @I6_13)
+    
+    STORE <@tagref64> %ireftr64 %tr
+    RETVOID
+}
+
+.funcdef @testtagrefgcmem <@noparamsnoret> () {
+    %ireftr64 = ALLOCA <@tagref64>
+    CALL <@void (@ireftr64)> @settr64intref (%ireftr64)
+    %gctrap = TRAP <@void> %next %next KEEPALIVE ()
+    
+%next:
+    %tr = LOAD <@tagref64> %ireftr64
+    %refv = ICALL @uvm.tr64.to_ref(%tr)
+    %tagv = ICALL @uvm.tr64.to_tag(%tr)
+    %refi = REFCAST <@refvoid @refi64> %refv
+    %irefi = GETIREF <@i64> %refi
+    %iv = LOAD <@i64> %irefi
+    %checktrap = TRAP <@void> %exit %exit KEEPALIVE (%tr %refv %tagv %iv)
+
+%exit:
+    ICALL @uvm.thread_exit ()
+    THROW @NULLREF
+}
+
+
+.typedef @tr64array = hybrid <@void @tagref64>
+
+.const @REM_SZ <@i64> = 2000
+.const @REM_PER_ALLOC <@i64> = 100000
+.const @NALLOCS <@i64> = 2000000
+
+.funcdef @breadcrumbstr64 <@noparamsnoret> () {
+%entry:
+    %remember = NEWHYBRID <@tr64array> @REM_SZ
+    %rememberiref = GETIREF <@tr64array> %remember
+    %remv = GETVARPARTIREF <@tr64array> %rememberiref
+    
+    BRANCH %head
+    
+%head:
+    %i = PHI <@i64> { %entry: 0; %next: %i2; }
+    %nrem = PHI <@i64> { %entry: 0; %next: %nrem3; }
+    %enough = SLT <@i64> %i @NALLOCS
+    BRANCH2 %enough %body %exit
+
+%body:
+    %obj = NEW <@i64>
+    %rem = SREM <@i64> %i @REM_PER_ALLOC
+    %z = EQ <@i64> %rem 0
+    BRANCH2 %z %body2 %next
+
+%body2:
+    %loc = SHIFTIREF <@tagref64> %remv %nrem
+    %objv = REFCAST <@refi64 @refvoid> %obj
+    %tr = ICALL @uvm.tr64.from_ref(%objv @I6_13)
+    STORE <@tagref64> %loc %tr
+    %nrem2 = ADD <@i64> %nrem 1
+    BRANCH %next
+    
+%next:
+    %nrem3 = PHI <@i64> { %body: %nrem; %body2: %nrem2; }
+    %i2 = ADD <@i64> %i 1
+    BRANCH %head
+
+%exit:
+    ICALL @uvm.thread_exit()
+    THROW @NULLREF
+}

@@ -76,6 +76,7 @@ import uvm.type.Hybrid;
 import uvm.type.IRef;
 import uvm.type.Int;
 import uvm.type.Ref;
+import uvm.type.TagRef64;
 import uvm.type.Type;
 import uvm.type.WeakRef;
 import uvm.util.ErrorUtils;
@@ -128,7 +129,13 @@ public class InterpreterThread {
 
     public void step() {
         if (running) {
-            getCurInst().accept(executor);
+            try {
+                getCurInst().accept(executor);
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+                error("Error occured when executing instruction.");
+                throw e;
+            }
         }
     }
 
@@ -237,6 +244,11 @@ public class InterpreterThread {
 
     private void setStack(Value opnd, InterpreterStack sta) {
         ((StackBox) getValueBox(opnd)).setStack(sta);
+    }
+
+    private TagRef64Box getTr64Box(Value opnd) {
+        return (TagRef64Box) getValueBox(opnd);
+
     }
 
     private static BigInteger ps(BigInteger n, int l) {
@@ -1194,6 +1206,9 @@ public class InterpreterThread {
                 InterpreterStack sta = threadStackManager().getStackByID(
                         (int) id);
                 setStack(inst, sta);
+            } else if (rt instanceof TagRef64) {
+                long bits = MEMORY_SUPPORT.loadLong(loc);
+                getTr64Box(inst).setBits(bits);
             } else {
                 error("Unsupported type to load: " + rt.getClass().getName());
             }
@@ -1255,6 +1270,9 @@ public class InterpreterThread {
                 InterpreterStack sta = getStack(inst.getNewVal());
                 long id = sta.getID();
                 MEMORY_SUPPORT.storeLong(loc, id);
+            } else if (rt instanceof TagRef64) {
+                long bits = getTr64Box(inst.getNewVal()).getBits();
+                MEMORY_SUPPORT.storeLong(loc, bits);
             } else {
                 error("Unsupported type to store: " + rt.getClass().getName());
             }
@@ -1545,6 +1563,60 @@ public class InterpreterThread {
         }
         case IFuncFactory.IFUNC__UVM__CURRENT_STACK: {
             setStack(inst, stack);
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__IS_FP: {
+            TagRef64Box box = getTr64Box(args.get(0).getDst());
+            setInt(inst, box.isFp() ? BigInteger.ONE : BigInteger.ZERO);
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__IS_INT: {
+            TagRef64Box box = getTr64Box(args.get(0).getDst());
+            setInt(inst, box.isInt() ? BigInteger.ONE : BigInteger.ZERO);
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__IS_REF: {
+            TagRef64Box box = getTr64Box(args.get(0).getDst());
+            setInt(inst, box.isRef() ? BigInteger.ONE : BigInteger.ZERO);
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__FROM_FP: {
+            double opnd = getDouble(args.get(0).getDst());
+            TagRef64Box box = getTr64Box(inst);
+            box.setFp(opnd);
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__FROM_INT: {
+            BigInteger opnd = getInt(args.get(0).getDst());
+            TagRef64Box box = getTr64Box(inst);
+            box.setInt(opnd);
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__FROM_REF: {
+            long opnd = getRefAddr(args.get(0).getDst());
+            BigInteger tag = getInt(args.get(1).getDst());
+            TagRef64Box box = getTr64Box(inst);
+            box.setRef(opnd, tag);
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__TO_FP: {
+            TagRef64Box box = getTr64Box(args.get(0).getDst());
+            setDouble(inst, box.getFp());
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__TO_INT: {
+            TagRef64Box box = getTr64Box(args.get(0).getDst());
+            setInt(inst, box.getInt());
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__TO_REF: {
+            TagRef64Box box = getTr64Box(args.get(0).getDst());
+            setRef(inst, box.getRef());
+            break;
+        }
+        case IFuncFactory.IFUNC__UVM__TR64__TO_TAG: {
+            TagRef64Box box = getTr64Box(args.get(0).getDst());
+            setInt(inst, box.getTag());
             break;
         }
         default: {

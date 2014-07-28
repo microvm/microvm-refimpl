@@ -3,6 +3,7 @@ package uvm.refimpl.mem.simpleimmix;
 import static uvm.platformsupport.Config.*;
 import static uvm.util.ErrorUtils.*;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -10,6 +11,8 @@ import uvm.refimpl.facade.MicroVM;
 import uvm.refimpl.itpr.HasObjRef;
 import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
+import uvm.refimpl.itpr.OpHelper;
+import uvm.refimpl.itpr.TagRef64Box;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.AddressQueue;
 import uvm.refimpl.mem.Collector;
@@ -72,7 +75,8 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         AllScanner s1 = new AllScanner(new RefFieldHandler() {
             @Override
             public boolean handle(boolean fromClient, HasObjRef fromBox,
-                    long fromObj, long fromIRef, long toObj, boolean isWeak) {
+                    long fromObj, long fromIRef, long toObj, boolean isWeak,
+                    boolean isTR64) {
                 if (isWeak) {
                     if (toObj != 0) {
                         logger.format("Enqueued weak reference %d to %d",
@@ -93,7 +97,8 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         AllScanner s2 = new AllScanner(new RefFieldHandler() {
             @Override
             public boolean handle(boolean fromClient, HasObjRef fromBox,
-                    long fromObj, long fromIRef, long toObj, boolean isWeak) {
+                    long fromObj, long fromIRef, long toObj, boolean isWeak,
+                    boolean isTR64) {
                 return clearMark(toObj);
             }
         });
@@ -125,7 +130,8 @@ public class SimpleImmixCollector extends Collector implements Runnable {
                         iRefWR, toObj);
                 MEMORY_SUPPORT.storeLong(iRefWR, 0);
             } else {
-                logger.format("WeakRef %d whose value was %d is still marked. Do not zero.",
+                logger.format(
+                        "WeakRef %d whose value was %d is still marked. Do not zero.",
                         iRefWR, toObj);
             }
         }
@@ -144,7 +150,8 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         AllScanner s4 = new AllScanner(new RefFieldHandler() {
             @Override
             public boolean handle(boolean fromClient, HasObjRef fromBox,
-                    long fromObj, long fromIRef, long toObj, boolean isWeak) {
+                    long fromObj, long fromIRef, long toObj, boolean isWeak,
+                    boolean isTR64) {
                 return clearMark(toObj);
             }
         });
@@ -205,7 +212,8 @@ public class SimpleImmixCollector extends Collector implements Runnable {
     private class MarkMover implements RefFieldHandler {
         @Override
         public boolean handle(boolean fromClient, HasObjRef fromBox,
-                long fromObj, long fromIRef, long toObj, boolean isWeak) {
+                long fromObj, long fromIRef, long toObj, boolean isWeak,
+                boolean isTR64) {
 
             if (toObj == 0 || isWeak) {
                 return false;
@@ -220,7 +228,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
             if (wasMoved) {
                 long dest = HeaderUtils.getForwardedDest(oldHeader);
-                updateSrcRef(fromClient, fromBox, fromIRef, dest);
+                updateSrcRef(fromClient, fromBox, fromIRef, dest, isTR64);
                 return false;
             } else {
                 if (wasMarked) {
@@ -248,7 +256,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
                         actualObj = evacuate(toObj);
                         if (actualObj != toObj) {
                             updateSrcRef(fromClient, fromBox, fromIRef,
-                                    actualObj);
+                                    actualObj, isTR64);
                         }
                     } else {
                         actualObj = toObj;
@@ -314,13 +322,20 @@ public class SimpleImmixCollector extends Collector implements Runnable {
         }
 
         private void updateSrcRef(boolean fromClient, HasObjRef fromBox,
-                long fromIRef, long dest) {
+                long fromIRef, long dest, boolean isTR64) {
             if (fromClient) {
                 return;
             } else if (fromBox != null) {
                 fromBox.setObjRef(dest);
             } else {
-                MEMORY_SUPPORT.storeLong(fromIRef, dest);
+                if (isTR64) {
+                    long oldBits = MEMORY_SUPPORT.loadLong(fromIRef);
+                    long oldTag = OpHelper.tr64ToTag(oldBits);
+                    long newBits = OpHelper.refToTr64(dest, oldTag);
+                    MEMORY_SUPPORT.storeLong(fromIRef, newBits);
+                } else {
+                    MEMORY_SUPPORT.storeLong(fromIRef, dest);
+                }
             }
         }
     }
@@ -382,7 +397,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
             @Override
             public void markObjRef(long objRef) {
-                handle(true, null, 0, 0, objRef, false);
+                handle(true, null, 0, 0, objRef, false, false);
             }
         };
 
@@ -403,7 +418,16 @@ public class SimpleImmixCollector extends Collector implements Runnable {
                         for (ValueBox vb : fra.getValueDict().values()) {
                             if (vb instanceof HasObjRef) {
                                 HasObjRef rvb = (HasObjRef) vb;
-                                handle(false, rvb, 0, 0, rvb.getObjRef(), false);
+                                if (rvb instanceof TagRef64Box) {
+                                    TagRef64Box trb = (TagRef64Box) rvb;
+                                    if (trb.isRef()) {
+                                        handle(false, rvb, 0, 0, trb.getRef(),
+                                                false, true);
+                                    }
+                                } else {
+                                    handle(false, rvb, 0, 0, rvb.getObjRef(),
+                                            false, false);
+                                }
                             }
                         }
                     }
@@ -413,7 +437,7 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
                     StackMemory stackMemory = sta.getStackMemory();
                     long stackMemObjAddr = stackMemory.getStackObjRef();
-                    handle(false, null, 0, 0, stackMemObjAddr, false);
+                    handle(true, null, 0, 0, stackMemObjAddr, false, false);
                     logger.format("Tracing stack %d for allocas...",
                             sta.getID());
 
@@ -431,9 +455,10 @@ public class SimpleImmixCollector extends Collector implements Runnable {
 
         @Override
         public boolean handle(boolean fromClient, HasObjRef fromBox,
-                long fromObj, long fromIRef, long toObj, boolean isWeak) {
+                long fromObj, long fromIRef, long toObj, boolean isWeak,
+                boolean isTR64) {
             boolean toEnqueue = handler.handle(fromClient, fromBox, fromObj,
-                    fromIRef, toObj, isWeak);
+                    fromIRef, toObj, isWeak, isTR64);
             if (toEnqueue) {
                 queue.add(toObj);
             }

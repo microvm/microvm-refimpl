@@ -18,6 +18,7 @@ import uvm.refimpl.itpr.InterpreterFrame;
 import uvm.refimpl.itpr.InterpreterStack;
 import uvm.refimpl.itpr.InterpreterThread;
 import uvm.refimpl.itpr.RefBox;
+import uvm.refimpl.itpr.TagRef64Box;
 import uvm.refimpl.itpr.ValueBox;
 import uvm.refimpl.mem.scanning.ObjectMarker;
 import uvm.ssavalue.Value;
@@ -140,6 +141,7 @@ public class TestMicroVMRefImplGC {
         thread.join();
 
     }
+
     @Test
     public void testBreadcrumbs() throws Exception {
         InterpreterStack stack = h.makeStack(h.func("@breadcrumbs"));
@@ -155,7 +157,6 @@ public class TestMicroVMRefImplGC {
         thread.join();
 
     }
-    
 
     @Test
     public void testWeakRef() throws Exception {
@@ -198,6 +199,108 @@ public class TestMicroVMRefImplGC {
 
         InterpreterThread thread = microVM.newThread(stack);
         thread.join();
+
+    }
+
+    @Test
+    public void testTagRefGC() {
+        InterpreterStack stack = h.makeStack(h.func("@testtagrefgc"));
+
+        setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+                String trapName = thread.getStack().getTop().getCurInst()
+                        .getName();
+                if (trapName.equals("%gctrap")) {
+                    microVM.getMemoryManager().getHeap()
+                            .mutatorTriggerAndWaitForGCEnd(false);
+                    return null;
+                } else if (trapName.equals("%checktrap")) {
+                    List<ValueBox> kas = thread.getStack().getTop()
+                            .dumpKeepAlives();
+
+                    TagRef64Box tr = (TagRef64Box) kas.get(0);
+                    long refv = ((RefBox) kas.get(1)).getAddr();
+                    long tagv = ((IntBox) kas.get(2)).getValue().longValue();
+                    long iv = ((IntBox) kas.get(3)).getValue().longValue();
+
+                    assertTrue(tr.isRef());
+                    assertNotEquals(0, refv);
+                    assertEquals(13, tagv);
+                    assertEquals(42, iv);
+
+                    return null;
+                } else {
+                    fail("Who set that trap: " + trapName);
+                    return null;
+                }
+            }
+
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+
+    }
+
+    @Test
+    public void testTagRefGCMem() {
+        InterpreterStack stack = h.makeStack(h.func("@testtagrefgcmem"));
+
+        setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+                String trapName = thread.getStack().getTop().getCurInst()
+                        .getName();
+                if (trapName.equals("%gctrap")) {
+                    microVM.getMemoryManager().getHeap()
+                            .mutatorTriggerAndWaitForGCEnd(false);
+                    return null;
+                } else if (trapName.equals("%checktrap")) {
+                    List<ValueBox> kas = thread.getStack().getTop()
+                            .dumpKeepAlives();
+
+                    TagRef64Box tr = (TagRef64Box) kas.get(0);
+                    long refv = ((RefBox) kas.get(1)).getAddr();
+                    long tagv = ((IntBox) kas.get(2)).getValue().longValue();
+                    long iv = ((IntBox) kas.get(3)).getValue().longValue();
+
+                    assertTrue(tr.isRef());
+                    assertNotEquals(0, refv);
+                    assertEquals(13, tagv);
+                    assertEquals(42, iv);
+
+                    return null;
+                } else {
+                    fail("Who set that trap: " + trapName);
+                    return null;
+                }
+            }
+
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+
+    }
+
+    @Test
+    public void testBreadcrumbsTr64() throws Exception {
+        LogUtil.enableLoggers("MDS");
+        
+        InterpreterStack stack = h.makeStack(h.func("@breadcrumbstr64"));
+
+        setTrapHandler(new TrapHandler() {
+            @Override
+            public Long onTrap(InterpreterThread thread, ValueBox trapValueBox) {
+                return null;
+            }
+        });
+
+        InterpreterThread thread = microVM.newThread(stack);
+        thread.join();
+        
+        LogUtil.disableLoggers("MDS");
 
     }
 }

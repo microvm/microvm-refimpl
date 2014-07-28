@@ -1,75 +1,73 @@
 package uvm.refimpl.itpr;
 
+import java.math.BigInteger;
+
 public class TagRef64Box extends ValueBox implements HasObjRef {
-    public static final int FP_KIND = 0;
-    public static final int INT_KIND = 1;
-    public static final int REF_KIND = 2;
-
-    private int kind;
-
-    private double fpVal;
-    private long intVal;
-    private long refAddr;
+    private long bits;
 
     public boolean isFp() {
-        return kind == FP_KIND;
+        return OpHelper.tr64IsFp(bits);
+
     }
 
     public boolean isInt() {
-        return kind == INT_KIND;
+        return OpHelper.tr64IsInt(bits);
     }
 
     public boolean isRef() {
-        return kind == REF_KIND;
+        return OpHelper.tr64IsRef(bits);
     }
 
     public double getFp() {
-        return fpVal;
+        return OpHelper.tr64ToFp(bits);
     }
 
-    public long getInt() {
-        return intVal;
+    public BigInteger getInt() {
+        return BigInteger.valueOf(OpHelper.tr64ToInt(bits));
     }
 
     public long getRef() {
-        return refAddr;
+        return OpHelper.tr64ToRef(bits);
+    }
+
+    public BigInteger getTag() {
+        return BigInteger.valueOf(OpHelper.tr64ToTag(bits));
     }
 
     public void setFp(double val) {
-        fpVal = val;
-        kind = FP_KIND;
+        bits = OpHelper.fpToTr64(val);
     }
 
-    public void setInt(long val) {
-        intVal = val;
-        kind = INT_KIND;
+    public void setInt(BigInteger val) {
+        bits = OpHelper.intToTr64(val.longValue());
     }
 
-    public void setRef(long addr) {
-        refAddr = addr;
-        kind = REF_KIND;
+    public void setRef(long addr, BigInteger tag) {
+        bits = OpHelper.refToTr64(addr, tag.longValue());
     }
 
     @Override
     public void copyValue(ValueBox _that) {
         TagRef64Box that = (TagRef64Box) _that;
-        this.kind = that.kind;
-        this.fpVal = that.fpVal;
-        this.intVal = that.intVal;
-        this.refAddr = that.refAddr;
+        this.bits = that.bits;
     }
 
     @Override
     public long getObjRef() {
-        if (kind == REF_KIND) {
-            return getRef();
-        } else {
-            return 0;
-        }
+        return getRef();
     }
 
     @Override
     public void setObjRef(long objRef) {
-        setRef(objRef);
+        BigInteger tag = getTag();
+        setRef(objRef, tag);
+    }
+
+    public long getBits() {
+        return this.bits;
+    }
+
+    public void setBits(long bits) {
+        this.bits = bits;
     }
 }
