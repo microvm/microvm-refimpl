@@ -28,4 +28,10 @@ public class LogUtil {
         }
     }
 
+    public static synchronized void disableAll() {
+        for (Logger logger : loggers.values()) {
+            logger.setEnabled(false);
+        }
+    }
+
 }

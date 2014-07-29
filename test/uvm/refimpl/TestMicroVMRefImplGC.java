@@ -54,6 +54,7 @@ public class TestMicroVMRefImplGC {
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
+        LogUtil.disableAll();
         LogUtil.enableLoggers("RBPA", "LOS", "SIC", "SIDM", "SIS");
 
         try {
