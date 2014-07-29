@@ -52,7 +52,6 @@ import parser.uIRParser.InstWatchPointContext;
 import parser.uIRParser.KeepAliveContext;
 import parser.uIRParser.ValueContext;
 import uvm.BasicBlock;
-import uvm.MicroVM;
 import uvm.ssavalue.CallLike;
 import uvm.ssavalue.HandlesException;
 import uvm.ssavalue.HasArgs;
@@ -102,6 +101,7 @@ import uvm.type.Type;
  */
 public class PopulateInstruction extends uIRBaseVisitor<Void> {
 
+    private static final Type WORD_TYPE = new Int(64);
     private FuncBuilder fb;
 
     public PopulateInstruction(FuncBuilder funcBuilder) {
@@ -321,7 +321,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     @Override
     public Void visitInstNewHybrid(InstNewHybridContext ctx) {
         InstNewHybrid inst = ctxToInst(ctx);
-        inst.setLength(value(ctx.value(), MicroVM.WORD_TYPE));
+        inst.setLength(value(ctx.value(), WORD_TYPE));
         return null;
     }
 
@@ -334,7 +334,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     @Override
     public Void visitInstAllocaHybrid(InstAllocaHybridContext ctx) {
         InstAllocaHybrid inst = ctxToInst(ctx);
-        inst.setLength(value(ctx.value(), MicroVM.WORD_TYPE));
+        inst.setLength(value(ctx.value(), WORD_TYPE));
         return null;
     }
 
@@ -356,7 +356,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     public Void visitInstGetElemIRef(InstGetElemIRefContext ctx) {
         InstGetElemIRef inst = ctxToInst(ctx);
         inst.setOpnd(value(ctx.value(0)));
-        inst.setIndex(value(ctx.value(1), MicroVM.WORD_TYPE));
+        inst.setIndex(value(ctx.value(1), WORD_TYPE));
         return null;
     }
 
@@ -364,7 +364,7 @@ public class PopulateInstruction extends uIRBaseVisitor<Void> {
     public Void visitInstShiftIRef(InstShiftIRefContext ctx) {
         InstShiftIRef inst = ctxToInst(ctx);
         inst.setOpnd(value(ctx.value(0)));
-        inst.setOffset(value(ctx.value(1), MicroVM.WORD_TYPE));
+        inst.setOffset(value(ctx.value(1), WORD_TYPE));
         return null;
     }
 

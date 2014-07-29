@@ -31,13 +31,6 @@ public class Function implements IdentifiedSettable {
      */
     private CFG cfg;
 
-    /**
-     * Its current compiled function. It has non-null value only when it is
-     * defined and a compiled version of the currently defined version of CFG is
-     * compiled.
-     */
-    private CompiledFunction compiledFunc;
-
     public Function() {
     }
 
@@ -46,7 +39,6 @@ public class Function implements IdentifiedSettable {
         this.name = name;
         this.sig = sig;
         this.cfg = null;
-        this.compiledFunc = null;
     }
 
     @Override
@@ -88,14 +80,6 @@ public class Function implements IdentifiedSettable {
 
     public void setCFG(CFG cfg) {
         this.cfg = cfg;
-    }
-
-    public CompiledFunction getCompiledFunc() {
-        return compiledFunc;
-    }
-
-    public void setCompiledFunc(CompiledFunction compiledFunc) {
-        this.compiledFunc = compiledFunc;
     }
 
     public boolean isDefined() {

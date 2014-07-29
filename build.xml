@@ -1,7 +1,4 @@
 <project name="uvm-compiler" default="build" basedir=".">
-
-	<property name="backend-dir" location="backend"/>
-
 	<property name="antlr-jar" location="antlr-4.2-complete.jar"/>
 	
 	<property name="uvm-dir" location="src"/>
@@ -9,16 +6,6 @@
 	<property name="uir-rule"  location="uIR.g4"/>
 	<property name="uir-parser-package"   value="parser"/>
 	<property name="uir-parser-generated" location="parser-generated"/>
-	
-	<property name="burg-rule" location="burg.g4"/>
-	<property name="codegengen-dir" location="${backend-dir}/codegengen-gen"/>
-	<property name="burg-impl-dir" location="${backend-dir}/codegengen"/>
-	<property name="burg-exec-dir" location="${codegengen-dir}/burg-temp"/>
-	
-	<property name="target" value="x64"/>
-	<property name="target-rule-file" location="${backend-dir}/${target}/${target}.target"/>
-	<property name="burm-dir" location="${codegengen-dir}/burm"/>
-	<property name="burm-file" location="${burm-dir}/BURM_GENERATED.java"/>
 	
 	<target name="build-uir-parser">
 		<echo message="Generating uIR parser from ${uir-rule} to ${uir-parser-generated}"/> 
@@ -30,71 +17,15 @@
 			<arg line="-o ${uir-parser-generated}/${uir-parser-package}/"/>
 		</java>
 	</target>
-
-	<target name="build-burg">
-		<echo message="Generating burg from ${burg-rule}"/>
-		<java jar="${antlr-jar}" fork="true" failonerror="true">
-			<arg value="${burg-rule}"/>
-			<arg line="-o ${codegengen-dir}/burg"/>
-			<arg line="-package burg"/>
-		</java>
-	</target>
-	
-	<target name="generate-BURM">
-		<echo message="javac for Burg:"/>
-		<mkdir dir="${burg-exec-dir}"/>
-		
-		<echo message="javac some uVM classes..."/>
-		<javac srcdir="${uvm-dir}/uvm"
-		       includeantruntime="false"
-		       destdir="${burg-exec-dir}">
-		       <include name="OpCode.java"/>
-		</javac>
-		<javac srcdir="${uvm-dir}/uvm/mc"
-			   includeantruntime="false"
-			   destdir="${burg-exec-dir}"/>
-			   
-		<echo message="javac burg..."/>
-		<javac srcdir="${codegengen-dir}/burg" 
-		       classpath="${antlr-jar}:${burg-exec-dir}" 
-		       includeantruntime="false"
-		       destdir="${burg-exec-dir}"/>
-		<javac srcdir="${burg-impl-dir}/burg" 
-		       classpath="${antlr-jar}:${codegengen-dir}:${burg-exec-dir}"
-		       includeantruntime="false"
-		       destdir="${burg-exec-dir}"/>
-		<echo message=""/>
-	
-		<echo message="Generating BURM for target ${target}"/>
-		<echo message="to ${burm-dir}"/>
-	    <echo message="(in case of any error in this step, check ${burm-dir}/build-burm.log)"/>
-		<mkdir dir="${burm-dir}"/>
-		<mkdir dir="${burm-dir}/mc"/>
-		<java classname="burg.Burg" fork="true" failonerror="true"
-		      output="${burm-dir}/build-burm.log">
-			<classpath>
-				<pathelement path="${burg-exec-dir}"/>
-				<pathelement path="${antlr-jar}"/>
-			</classpath>
-			<arg value="${target-rule-file}"/>
-			<arg line="-o ${burm-dir}"/>
-		</java>
-
-	</target>
 	
 	<target name="clean">
 		<delete dir="${uir-parser-generated}"/>
-		<delete dir="${codegengen-dir}"/>
 	</target>
 	
 	<target name="gen-antlr">
 		<antcall target="build-uir-parser"/>
-		<antcall target="build-burg"/>
 	</target>
 	
-	<target name="build" depends="gen-antlr, generate-BURM">
-	</target>
-	
-	<target name="build-eclipse" depends="gen-antlr, generate-BURM">
+	<target name="build" depends="gen-antlr">
 	</target>
 </project>
