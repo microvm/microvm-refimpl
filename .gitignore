@@ -1,0 +1,11 @@
+*.swp
+.DS_Store
+.ant_targets
+*.class
+bin
+resource
+target
+package-list
+parser-generated
+backend/codegengen-gen
+
