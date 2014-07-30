@@ -1,6 +1,6 @@
 package uvm.ir.text.input;
 
-import static uvm.ir.text.input.ParserHelper.parseError;
+import static uvm.ir.text.input.ParserHelper.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -181,7 +181,10 @@ class FuncBuilder {
     private Value getGlobalVal(String name) {
         Value rv = rbb.bundle.getGlobalValueNs().getByName(name);
         if (rv == null) {
-            parseError("Undefined global value " + name);
+            rv = rbb.globalBundle.getGlobalValueNs().getByName(name);
+            if (rv == null) {
+                parseError("Undefined global value " + name);
+            }
         }
         return rv;
     }

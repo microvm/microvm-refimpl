@@ -66,4 +66,6 @@ Contact
 
 Kunshan Wang <kunshan.wang@anu.edu.au>
 
-<!-- vim: tw=80 -->
+<!--
+vim: tw=80
+-->

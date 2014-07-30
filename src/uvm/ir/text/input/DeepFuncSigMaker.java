@@ -16,13 +16,15 @@ class DeepFuncSigMaker extends ShallowFuncSigMaker {
     }
 
     @Override
-    public FunctionSignature visitReferencedFuncSig(
-            ReferencedFuncSigContext ctx) {
+    public FunctionSignature visitReferencedFuncSig(ReferencedFuncSigContext ctx) {
         String name = ctx.GLOBAL_ID().getText();
         FunctionSignature sig = rbb.bundle.getFuncSigNs().getByName(name);
 
         if (sig == null) {
-            ParserHelper.parseError(ctx, "Undefined sig " + name);
+            sig = rbb.globalBundle.getFuncSigNs().getByName(name);
+            if (sig == null) {
+                ParserHelper.parseError(ctx, "Undefined sig " + name);
+            }
         }
 
         return sig;

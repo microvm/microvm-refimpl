@@ -13,6 +13,7 @@ import uvm.Bundle;
 import uvm.Function;
 import uvm.FunctionSignature;
 import uvm.GlobalData;
+import uvm.IdentifiedHelper;
 import uvm.ssavalue.Constant;
 import uvm.ssavalue.FunctionConstant;
 import uvm.ssavalue.GlobalDataConstant;
@@ -22,10 +23,19 @@ import uvm.type.Type;
  * RecursiveUIRBuilder builds a uvm Bundle from a uir parse tree.
  * <p>
  * Not thread safe. Don't use from multiple threads.
+ * <p>
+ * One time use only. Please create a new instance for each bundle.
  */
 public class RecursiveBundleBuilder {
+    private static final Bundle EMPTY_BUNDLE = new Bundle();
 
     // Interface for the user.
+
+    /**
+     * The global bundle, used to resolve non-local IDs (for types, signatures,
+     * constants, globals and functions).
+     */
+    Bundle globalBundle;
 
     /**
      * The result bundle.
@@ -33,7 +43,12 @@ public class RecursiveBundleBuilder {
     Bundle bundle;
 
     public RecursiveBundleBuilder() {
+        this(EMPTY_BUNDLE);
+    }
+
+    public RecursiveBundleBuilder(Bundle globalBundle) {
         bundle = new Bundle();
+        this.globalBundle = globalBundle;
     }
 
     /**
@@ -144,6 +159,15 @@ public class RecursiveBundleBuilder {
 
     int makeID() {
         return IDMakerForText.INSTANCE.makeID();
+    }
+
+    int getOldFuncID(String name) {
+        Function func = globalBundle.getFuncNs().getByName(name);
+        if (func != null) {
+            return func.getID();
+        } else {
+            return 0;
+        }
     }
 
     // Types and function signatures
@@ -278,13 +302,16 @@ public class RecursiveBundleBuilder {
 
     private Function declareFunction(String name, FunctionSignature sig) {
         Function function = new Function();
-        int id = makeID();
+        int oldID = getOldFuncID(name);
+        int id = oldID == 0 ? makeID() : oldID;
         function.setID(id);
         function.setName(name);
         function.setSig(sig);
 
         bundle.getFuncNs().put(id, name, function);
-
+        if (oldID == 0) {
+            makeFunctionConstant(function);
+        }
         return function;
     }
 
@@ -323,8 +350,7 @@ public class RecursiveBundleBuilder {
 
         FunctionSignature sig = deepFuncSigMaker.visit(ctx.funcSig());
 
-        Function function = declareFunction(name, sig);
-        makeFunctionConstant(function);
+        declareFunction(name, sig);
     }
 
     private void handleFuncDecl(FuncDeclContext ctx) {
@@ -339,8 +365,7 @@ public class RecursiveBundleBuilder {
 
         FunctionSignature sig = deepFuncSigMaker.visit(ctx.funcSig());
 
-        Function function = declareFunction(name, sig);
-        makeFunctionConstant(function);
+        declareFunction(name, sig);
     }
 
 }

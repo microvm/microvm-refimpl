@@ -16,14 +16,24 @@ import uvm.Bundle;
 import uvm.ir.text.input.RecursiveBundleBuilder;
 
 public class TestingHelper {
+    public static Bundle parseUir(String file, Bundle globalBundle)
+            throws IOException, FileNotFoundException {
+        FileInputStream is = new FileInputStream(file);
+        return parseUir(is, globalBundle);
+    }
 
     public static Bundle parseUir(String file) throws IOException,
             FileNotFoundException {
         FileInputStream is = new FileInputStream(file);
-        return parseUir(is);
+        return parseUir(is, null);
     }
 
     public static Bundle parseUir(InputStream is) throws IOException {
+        return parseUir(is, null);
+    }
+
+    public static Bundle parseUir(InputStream is, Bundle globalBundle)
+            throws IOException {
         ANTLRInputStream input = new ANTLRInputStream(is);
         uIRLexer lexer = new uIRLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -35,7 +45,8 @@ public class TestingHelper {
             Assert.fail("Syntax error");
         }
 
-        RecursiveBundleBuilder rbb = new RecursiveBundleBuilder();
+        RecursiveBundleBuilder rbb = globalBundle == null ? new RecursiveBundleBuilder()
+                : new RecursiveBundleBuilder(globalBundle);
         rbb.build(ir);
         return rbb.getBundle();
     }

@@ -23,7 +23,16 @@ public class DeepConstMaker extends ShallowConstMaker {
     @Override
     public Constant visitReferencedConst(ReferencedConstContext ctx) {
         String name = ctx.GLOBAL_ID().getText();
-        return rbb.bundle.getGlobalValueNs().getByName(name);
+        Constant constant = rbb.bundle.getGlobalValueNs().getByName(name);
+        
+        if (constant == null) {
+            constant = rbb.globalBundle.getGlobalValueNs().getByName(name);
+            if (constant == null) {
+                ParserHelper.parseError(ctx, "Undefined constant " + name);
+            }
+        }
+        
+        return constant;
     }
 
     @Override

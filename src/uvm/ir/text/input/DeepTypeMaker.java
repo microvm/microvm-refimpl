@@ -20,9 +20,9 @@ import uvm.type.WeakRef;
 /**
  * Private for RecursiveBundleBuilder use.
  * <p>
- * Visit types recursively. This visitor class assumes that all declared
- * types (by .typedef) and declared function signatures (by .funcsig) are
- * already handled and will lookup the bundle for those types.
+ * Visit types recursively. This visitor class assumes that all declared types
+ * (by .typedef) and declared function signatures (by .funcsig) are already
+ * handled and will lookup the bundle for those types.
  */
 class DeepTypeMaker extends ShallowTypeMaker {
 
@@ -36,7 +36,10 @@ class DeepTypeMaker extends ShallowTypeMaker {
         Type type = this.rbb.bundle.getTypeNs().getByName(name);
 
         if (type == null) {
-            ParserHelper.parseError(ctx, "Undefined type " + name);
+            type = this.rbb.globalBundle.getTypeNs().getByName(name);
+            if (type == null) {
+                ParserHelper.parseError(ctx, "Undefined type " + name);
+            }
         }
 
         return type;
