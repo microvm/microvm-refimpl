@@ -512,12 +512,9 @@
 .funcdef @testswapstack <@noparamsnoret> () {
     %valueret = ALLOCA <@i64>
     %shouldstop = ALLOCA <@i64> // initially zeroed
-    %myself = ALLOCA <@stack>
-    
-    %iter = NEWSTACK <@itersig> @rangeiter (3 %myself %valueret %shouldstop)
-    
     %thisstack = ICALL @uvm.current_stack ()
-    STORE <@stack> %myself %thisstack
+    
+    %iter = NEWSTACK <@itersig> @rangeiter (3 %thisstack %valueret %shouldstop)
     ICALL @uvm.swap_stack (%iter)
     BRANCH %head
     
@@ -543,12 +540,10 @@
 
 .typedef @irefstack = iref<@stack>
 
-.funcsig @itersig = @void (@i64 @irefstack @irefi64 @irefi64)
+.funcsig @itersig = @void (@i64 @stack @irefi64 @irefi64)
 
-.funcdef @rangeiter <@itersig> (%n %srciref %valueret %shouldstop) {
+.funcdef @rangeiter <@itersig> (%n %src %valueret %shouldstop) {
 %entry:
-    %src = LOAD <@stack> %srciref
-    
     BRANCH %head
 
 %head:
