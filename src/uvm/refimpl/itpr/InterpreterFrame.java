@@ -23,7 +23,6 @@ import uvm.type.Type;
 import uvm.util.ErrorUtils;
 
 public class InterpreterFrame {
-    private Function func;
     private CFG cfg;
     private HashMap<Value, ValueBox> valueDict = new HashMap<Value, ValueBox>();
 
@@ -34,7 +33,6 @@ public class InterpreterFrame {
     private long savedStackPointer;
 
     public InterpreterFrame(Function func, InterpreterFrame prev) {
-        this.func = func;
         this.cfg = func.getCFG();
 
         this.curBb = this.cfg.getEntry();
@@ -101,7 +99,7 @@ public class InterpreterFrame {
     }
 
     public Function getFunc() {
-        return func;
+        return cfg.getFunc();
     }
 
     public CFG getCfg() {
