@@ -1,7 +1,11 @@
 MicroVM Reference Implementation
 ================================
 
-This is a reference implementation of a MicroVM.
+**This project is outdated. Please use the
+[microvm-refimpl2](https://github.com/microvm/microvm-refimpl2).**
+
+This is the previous reference implementation of MicroVM. It implements the
+specification in https://github.com/microvm/microvm-spec-legacy/wiki
 
 MicroVM, a.k.a. µVM, or uvm, is a low-level virtual machine designed to support
 high-level programming languages. It is designed to provide concurrency, JIT
@@ -9,9 +13,6 @@ compiling and garbage collection as its core functions while keeping the VM
 itself minimal. The purpose of this reference implementation, however, is to
 demonstrate its interface to its client, which is the program that compiles
 high-level language programs to the MicroVM intermediate representation.
-
-An implementation-neutral MicroVM interface specification is available at
-https://github.com/microvm-project/microvm-spec/wiki
 
 Implementation Details
 ----------------------
